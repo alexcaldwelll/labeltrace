@@ -32,3 +32,6 @@ Keep secrets in files that git ignores (like `.env`), and make sure those files 
 ## 6. Use plain language
 Explain everything in plain language, at about an 8th-grade reading level.
 Avoid jargon. If a technical word is needed, explain what it means.
+
+## 7. Say which skill you're using
+Before using any skill, tell me which skill you're using and why, in one sentence.
