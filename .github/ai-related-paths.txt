@@ -1,0 +1,39 @@
+# AI-related paths: the official list (constitution, Principle III).
+# A pull request that changes any file matching a path below needs a passing
+# AI test run before it can merge. Changes to this file need the project
+# owner's approval (see .github/CODEOWNERS).
+# Format: one path pattern per line. "**" means "everything inside this folder".
+# Lines starting with "#" are comments.
+
+# The AI clients (the answer AI and the grader)
+src/lib/ai/**
+
+# Prompts (the instructions given to the AIs)
+src/lib/prompts/**
+
+# Model choice (which AI models are used)
+src/config/models.ts
+
+# Label handling (getting, saving, and searching FDA labels)
+src/lib/labels/**
+
+# The personal-details scrubber (masks names, emails, phone numbers)
+src/lib/scrub/**
+
+# The emergency checks
+src/lib/emergency/**
+
+# The text matching the emergency checks use (typos, capitals)
+src/lib/text/match.ts
+
+# The order of the question steps (emergency first, scrub before any AI)
+src/lib/pipeline/ask.ts
+
+# Answer checks (word count, reading level, citations, dosing numbers)
+src/lib/checks/**
+
+# Refusal rules (dosing, comparisons, other drugs)
+src/lib/refusals/**
+
+# This list itself
+.github/ai-related-paths.txt

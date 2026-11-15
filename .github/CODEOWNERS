@@ -1,0 +1,5 @@
+# The project owner must approve every change.
+* @alexcaldwelll
+
+# Named on its own so this rule stays even if the line above changes.
+/.github/ai-related-paths.txt @alexcaldwelll
