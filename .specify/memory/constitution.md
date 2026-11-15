@@ -40,7 +40,13 @@ principles.
   Precautions") and show the label's date.
 - If the label does not answer the question, the app MUST say "The label doesn't cover this"
   and MUST NOT guess.
-- Nothing may be merged unless all automated tests pass.
+- Automated tests come in two tiers:
+  - **Fast tests** make no AI calls. They MUST run and pass on every pull request.
+  - **AI tests** call the answer AI and the second-AI grader. They MUST run and pass before
+    merging any pull request that changes AI-related code (prompts, model choice, label
+    handling, the personal-details scrubber, or the emergency checks), and before every
+    release.
+- A required automated check MUST block a merge when one of these rules is not met.
 
 **Why:** People can check the answer against the label for themselves.
 
@@ -118,7 +124,8 @@ still makes the final call.
 
 1. Do all work on a separate branch.
 2. Open a pull request.
-3. All automated tests pass, and every grader flag has a recorded decision.
+3. All required automated tests pass (fast tests always; AI tests too when AI-related code
+   changed), and every grader flag has a recorded decision.
 4. The project owner reviews and approves.
 5. Only then is the work merged into `main`.
 
@@ -136,4 +143,4 @@ still makes the final call.
 - Every pull request review MUST check that the change follows this constitution.
 - Day-to-day rules for AI agents are in `CLAUDE.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-15 | **Last Amended**: 2026-11-15
+**Version**: 1.1.0 | **Ratified**: 2026-11-15 | **Last Amended**: 2026-11-15
