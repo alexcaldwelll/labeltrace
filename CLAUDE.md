@@ -35,3 +35,6 @@ Avoid jargon. If a technical word is needed, explain what it means.
 
 ## 7. Say which skill you're using
 Before using any skill, tell me which skill you're using and why, in one sentence.
+
+## 8. Log every rule break
+Log every rule break in docs/rule-incidents.md (date, rule, what happened, how it was caught, how it was fixed) and tell me in the same message.
