@@ -65,8 +65,8 @@ One row per answered question (FR-023).
 |---|---|---|
 | id | id | Primary key |
 | created_at | time | |
-| scrubbed_question | text | After masking. Never raw. |
-| answer_type | text | `normal`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error` |
+| scrubbed_question | text | After masking. Never raw. **Empty** for `prompt_for_question` and `english_only` rows (see below). |
+| answer_type | text | `normal`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only` |
 | answer | text | Exactly what the patient saw |
 | drug | text | `emgality`, `reyvow`, `both`, or empty |
 | model_name | text | Empty when the AI was skipped (emergencies, rule-based refusals) |
@@ -86,6 +86,12 @@ One row per answered question (FR-023).
 
 - **Who can read it**: signed-in reviewers and the owner only. Patients and the public
   can't.
+- **Blank and non-English questions**: rows with `answer_type` of `prompt_for_question`
+  or `english_only` hold **only** `id`, `created_at`, `answer_type`, `answer`, `source`,
+  and `review_status`. No question text is stored, not even scrubbed text, because the
+  scrubber only works on English. `grading_status` is `not_applicable`. (The emergency
+  check still runs first on every question. If it finds a phrase, the row is an
+  `emergency` row instead.)
 - **review_status changes**: `not_reviewed` → `approved` or `flagged` (by a reviewer). A
   later review can change it again. Every decision is kept in `review_decisions`.
 - **grading_status changes**:
