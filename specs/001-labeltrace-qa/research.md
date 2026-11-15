@@ -1,0 +1,295 @@
+# Research: LabelTrace Patient Q&A
+
+**Feature**: `001-labeltrace-qa` | **Date**: 2026-11-15 | **Plan**: [plan.md](plan.md)
+
+Each section below records one decision: what we chose, why, and what else we looked at.
+Words that may be new are explained the first time they appear.
+
+---
+
+## R1. Language and web framework
+
+- **Decision**: Next.js (App Router) with TypeScript, on Node.js 22 (long-term support).
+- **Why**: One codebase holds both the web pages and the server code. TypeScript is
+  JavaScript with type checks, which catch many mistakes before the code runs. The
+  project's `.gitignore` already expects a Node project.
+- **Alternatives**: Python (FastAPI) backend plus a separate frontend. Rejected: two
+  projects to build, test, and host instead of one.
+
+## R2. Hosting
+
+- **Decision**: Netlify, using its built-in Next.js support. Every pull request gets a
+  Netlify "deploy preview" (a private test copy of the site).
+- **Details that matter**:
+  - Netlify server functions stop after a time limit (10 seconds by default). The answer
+    AI call gets an 8-second timeout. If it runs out, the patient sees "try again later"
+    and nothing is made up. This also fits SC-013 (answers in under 10 seconds).
+  - Two **scheduled functions** (code Netlify runs on a timer):
+    `label-check` (once a day, see R6) and `grading-worker` (every 10 minutes, see R11).
+  - Secrets (API keys) are set in the Netlify dashboard as environment variables, never
+    in files. Deploy previews use test keys, not production keys.
+- **Alternatives**: Vercel (first suggestion). Changed at the owner's request because they
+  already use Netlify.
+
+## R3. Answer AI model, and the larger-model comparison
+
+- **Decision**: Start with **Claude Haiku 5.5** (`claude-haiku-5-5`), Anthropic's smallest
+  current model. The model name lives in one config file, `src/config/models.ts`, and is
+  saved in every log entry.
+- **Why**: The constitution (VII) says to use the smallest model that passes all tests.
+- **Comparison test (planned)**: Run the full AI test suite twice on the same commit,
+  once with Haiku 5.5 and once with **Claude Sonnet 5.5** (`claude-sonnet-5-5`). Started
+  by hand from GitHub Actions (`ai-tests` workflow, `model` input). For each model,
+  record:
+
+  | Measure | Haiku 5.5 | Sonnet 5.5 |
+  |---|---|---|
+  | AI tests passed (out of total) | _pending_ | _pending_ |
+  | Answers flagged by the grader | _pending_ | _pending_ |
+  | Answers over 120 words | _pending_ | _pending_ |
+  | Answers above grade 9 reading level | _pending_ | _pending_ |
+  | Slowest 5% of answers (seconds) | _pending_ | _pending_ |
+  | Cost per 100 questions (USD) | _pending_ | _pending_ |
+  | Run date and commit | _pending_ | _pending_ |
+
+  **Result**: _Pending. This table is filled in after the first full AI test run (a task
+  in tasks.md), in a PR the owner reviews._
+
+- **Decision rule**: Keep Haiku if it passes every AI test. Move to Sonnet only if Haiku
+  fails tests that Sonnet passes. That move needs a written reason in the PR
+  (constitution VII).
+- **Alternatives**: Starting with a larger model. Rejected: it breaks the "smallest model"
+  rule unless the tests show it's needed.
+
+## R4. Second-AI grader
+
+- **Decision**: An **OpenAI** model (a different company from the answer AI, per FR-034).
+  The exact model is set in `src/config/models.ts` and the `GRADER_MODEL` environment
+  variable. We pick it with a **calibration test**: 10 hand-made answers (5 that stick to
+  the label, 5 with a known mistake, such as an added fact or a wrong section). Choose the
+  smallest OpenAI model that catches all 5 bad answers and passes at least 4 of the 5 good
+  ones. Record the chosen model ID and the calibration result in this file.
+- **What the grader sees**: the scrubbed question, the label sections given to the answer
+  AI, and the answer. Never the raw question (FR-020).
+- **Output**: `pass` or `fail`, plus a short reason.
+- **Alternatives**: Google Gemini. It would also work. OpenAI was picked because its key
+  is already in `.env.example`.
+
+## R5. Database and reviewer logins
+
+- **Decision**: **Supabase** (a hosted Postgres database with built-in logins).
+  - Reviewers and the owner sign in with Supabase Auth (email and password). Public
+    sign-up is turned off, and the owner creates each account. Patients never sign in.
+  - **Row Level Security** (database rules that decide who can read or change each row)
+    makes sure only signed-in reviewers can read logs, and only the owner can record
+    grader-flag decisions.
+  - The service role key (full admin power) is used only in server code.
+- **Alternatives**: Netlify Blobs or plain files. Rejected: no logins, no access rules,
+  and harder to search for the privacy test (SC-006).
+
+## R6. Getting the label from openFDA, and checking for updates
+
+- **Decision**:
+  - **First download**: Ask openFDA's drug label endpoint for the Eli Lilly label of each
+    drug, for example
+    `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"REYVOW"+AND+openfda.manufacturer_name:"Eli Lilly"&limit=1`.
+    Save the whole record, its `set_id` (the label's permanent ID), and its
+    `effective_time` (the label date) in Supabase.
+  - **Update check** (once a day, by the `label-check` scheduled function): Ask openFDA
+    only for a label with the same `set_id` **and** a date **newer** than the saved one:
+    `search=set_id:"<id>"+AND+effective_time:[<saved date + 1 day>+TO+99991231]`.
+    If nothing is newer, openFDA answers "no matches" (a tiny reply), and **no label is
+    downloaded**. If something is newer, that reply is the new label, and we save it.
+  - **openFDA down**: Keep using the saved label (FR-028). Log the failed check (no
+    question text is involved).
+- **Why**: This meets constitution VII and SC-008. The label is downloaded again only when
+  its date changes.
+- **Alternatives**:
+  - Re-download and compare each day. Rejected: it downloads the label every day.
+  - DailyMed version API. Rejected: the constitution says openFDA is the only data source.
+
+## R7. Label sections
+
+- **Decision**: openFDA splits a label into named fields (for example
+  `warnings_and_cautions`, `adverse_reactions`, `dosage_and_administration`). We keep a
+  fixed map from field name to the section name people see (for example
+  `warnings_and_cautions` → "Warnings and Precautions"). A section "really exists"
+  (FR-018) when that field is present and not empty in the saved label.
+
+## R8. Finding emergency phrases (no AI)
+
+- **Decision**: Plain code that runs before anything else (FR-004). Full rules are in
+  [contracts/emergency-rules.md](contracts/emergency-rules.md). In short:
+  1. **Normalize**: lowercase the text, turn punctuation into spaces, and squash repeated
+     spaces.
+  2. **Exact match** against each phrase and its listed variants (for example "suicidal",
+     "kill my self", "killing myself").
+  3. **Typo match**: each word may be off by a small number of letters, judged by *edit
+     distance* (how many single-letter changes turn one word into another). Words of 4–7
+     letters may be off by 1. Words of 8 or more letters may be off by 2.
+- **Why**: It's fast (well under SC-013's 1 second), it's predictable, and every phrase
+  can be tested. Catching a few non-emergencies by mistake is acceptable. The spec says
+  that's safer than missing one.
+- **Alternatives**: An AI classifier. Rejected: the constitution says emergency phrases
+  must skip the AI completely.
+
+## R9. Sorting emergency questions into cases (no AI)
+
+- **Decision**: Fixed word rules exactly as FR-047 says. They're spelled out in
+  [contracts/emergency-rules.md](contracts/emergency-rules.md). "Happening now" signs
+  ("I", "me", "now", …) are matched as **whole words** only, so "Is" doesn't count as "I".
+  The drug name must be spelled correctly (any capitalization). A misspelled drug name
+  makes the question "unclear".
+
+## R10. Removing personal details (scrubber)
+
+- **Decision**: Plain code, no AI. It runs right after the emergency check and before any
+  AI or storage.
+  - **Emails**: a standard email pattern → `[EMAIL]`.
+  - **Phone numbers**: US and international number patterns → `[PHONE]`.
+  - **Names**, in three layers. "Mask when unsure" wins:
+    1. Intro phrases: "I'm X", "my name is X", "this is X", sign-offs like "thanks, X".
+    2. A name finder from the `compromise` text library, which runs on our server.
+    3. Any capitalized word that isn't at the start of a sentence and isn't on a known-word
+       list (drug names, section names, common English words) → `[NAME]`.
+- **Alternatives**: Sending text to an AI to find names. Rejected: the raw text would
+  reach an AI before being scrubbed.
+
+## R11. Grader timing and the 10% sample
+
+- **Decision**: When a real answer is made, the server draws a secure random number. If
+  it's below 0.10, the answer is marked "to be graded" (FR-036). The `grading-worker`
+  runs every 10 minutes and grades waiting answers. If the grader is down, the status
+  stays "not graded yet", and it tries again later, up to 5 times (Edge Cases).
+- **Test answers**: The AI test suite grades **every** answer right away (FR-035).
+- **Why**: Patients never wait on the grader.
+
+## R12. Choosing which label sections to send to the AI
+
+- **Decision**: Simple keyword scoring over the saved label sections, plus a
+  **synonym map** that links everyday words to label words ("shot" → "injection",
+  "throw up" → "vomiting", "side effects" → "adverse reactions"). Words with typos are
+  matched with the same edit-distance rule as R8. The top 3 sections (up to about 4,000
+  tokens, or roughly 3,000 words) are sent to the AI.
+- **Why**: Smaller input means a small model works well and costs less (VII). The synonym
+  map and typo matching help the "same question three ways" tests (FR-043).
+- **Alternatives**: Embeddings (number-based meaning search). Rejected for now. It adds
+  a service and cost, and a label is short enough for keyword search.
+
+## R13. Checking answers before they're shown
+
+- **Decision**: Every AI answer must pass code checks before anyone sees it:
+  - 120 words or fewer (FR-015).
+  - Reading level grade 9 or lower using the **Flesch-Kincaid grade** formula. Drug names
+    and label section names are left out of the score (spec Assumptions).
+  - Every cited section exists in the saved label (FR-018).
+  - The answer cites at least one section and shows the label date (FR-017).
+  - If a check fails, the AI tries once more. If it fails again, the app says "The label
+    doesn't cover this." It doesn't show an unchecked answer.
+- The AI returns **structured output** (a fixed JSON shape: answer text, sections used,
+  answer type), so code can check it reliably.
+
+## R14. Refusals (dosing, comparisons, other drugs, which drug)
+
+- **Decision**: Two layers.
+  1. **Rules first (no AI)**: A list of other drug names (all common migraine drugs plus
+     about 200 common medicines) catches other-drug questions. Comparison words ("better
+     than", "vs", "compared to", "instead of") with two drug names catch comparisons.
+     Personal-dosing patterns ("how much should I", "my weight", "I weigh", "for my age")
+     catch dosing questions. No drug named → ask "Do you mean Emgality or Reyvow?"
+  2. **AI backstop**: The prompt tells the AI to label its answer type as `refusal` when
+     a question slips past the rules.
+- Personal-dosing questions still get the general dosing text from the label, with "Ask
+  your doctor or pharmacist" (FR-011).
+
+## R15. Two tiers of tests
+
+- **Decision**: **Vitest** (a test runner) with two test groups:
+
+  | Tier | Folder | Calls an AI? | When it runs |
+  |---|---|---|---|
+  | **Fast** | `tests/fast/` | No. AI calls are replaced by a fake that gives fixed replies. | Every PR, automatically |
+  | **AI** | `tests/ai/` | Yes: Haiku 5.5 plus the OpenAI grader | By hand (GitHub Actions "Run workflow" button), and before every release. Required before merging PRs that change AI-related code (constitution v1.1.0, PR #7). |
+
+- **Fast tier** covers every emergency phrase and case (FR-010, FR-050, FR-051), the
+  scrubber, refusal rules, answer checks (R13), label caching (with saved openFDA sample
+  replies, so no live calls), logging, and review-page access. It runs against a local
+  Supabase database started inside GitHub Actions. That lets the "search all stored data
+  for the raw question" test (SC-006) run for real.
+- **AI tier** runs the full test question set (at least 20 questions, FR-040) through the
+  real answer AI. The grader grades every answer, and results are saved to Supabase,
+  tagged with the commit ID.
+
+## R16. GitHub Actions (automatic checks on GitHub)
+
+- **Decision**: Three workflow files in `.github/workflows/`. They're created during
+  implementation, once the code and `package.json` exist. Before that, they would fail
+  every PR.
+
+  | Workflow | Runs when | What it does | Check name |
+  |---|---|---|---|
+  | `fast-tests.yml` | Every PR, every push to `main` | Install, type-check, lint, start local Supabase, run fast tests | `fast-tests` |
+  | `ai-tests.yml` | By hand (choose branch and model) | Run the AI test tier, grade every answer, save results for that commit | `ai-tests` |
+  | `ai-gate.yml` | Every PR | (1) If the PR changes AI-related files, require a passing AI test run for the PR's latest commit. (2) For every PR, require that all grader flags from that run have an owner decision. | `ai-gate` |
+
+- **AI-related files** (from constitution v1.1.0): `src/lib/ai/**`, `src/lib/prompts/**`,
+  `src/lib/labels/**`, `src/lib/scrub/**`, `src/lib/emergency/**`,
+  `src/config/models.ts`.
+- **Secrets**: API keys are stored as **GitHub Actions secrets** (encrypted settings on
+  GitHub, not files in the repo). Rule 5 is followed.
+- **Alternatives**: Netlify's build step running the tests. Rejected: GitHub can't use
+  that as a required check as cleanly, and AI tests would run on every deploy.
+
+## R17. Branch protection and the bot account
+
+- **Decision**: Claude opens PRs from a separate GitHub account (a "machine user", for
+  example `labeltrace-bot`). That way the owner (`alexcaldwelll`) can truly approve them.
+  GitHub never lets people approve their own PRs. GitHub's terms allow one free machine
+  account per person.
+- **Bot setup (owner does this)**:
+  1. Create the bot GitHub account with its own email.
+  2. Add it to the repo as a collaborator with **Write** access (not Admin).
+  3. On this computer, sign the `gh` tool in as the bot (`gh auth login`). Git pushes
+     also use the bot's login.
+- **Branch protection settings for `main`** (Settings → Branches → Add rule, pattern
+  `main`):
+
+  | Setting | Value |
+  |---|---|
+  | Require a pull request before merging | ✅ On |
+  | → Required approvals | **1** |
+  | → Dismiss stale approvals when new commits are pushed | ✅ On |
+  | → Require review from Code Owners | ✅ On (needs `.github/CODEOWNERS` with `* @alexcaldwelll`) |
+  | → Require approval of the most recent reviewable push | ✅ On |
+  | Require status checks to pass before merging | ✅ On |
+  | → Require branches to be up to date before merging | ✅ On |
+  | → Required checks | `fast-tests`, `ai-gate` |
+  | Require conversation resolution before merging | ✅ On |
+  | Do not allow bypassing the above settings | ✅ On (rules apply to admins too) |
+  | Allow force pushes | ❌ Off |
+  | Allow deletions | ❌ Off |
+
+- **Order matters**: GitHub only lists a check name after it has run at least once. Turn
+  on the "required checks" part after the first PR that adds the workflows.
+- **Alternatives**: Admin override, or zero required approvals. Rejected by the owner on
+  2026-11-15.
+
+## R18. Keeping the raw question out of storage
+
+- **Decision**: The raw question exists only in memory during one request. Server code
+  never writes request bodies to logs (`console.log`) or error reports. A fast test spies
+  on logging and fails if the raw text shows up. The fast tier's SC-006 test searches every
+  database table for the raw text after the privacy tests.
+
+## R19. Language and length checks
+
+- **Decision**: Blank question → friendly "Please type a question." Longer than 1,000
+  characters → cut to 1,000, and the user is told. Non-English questions are found with
+  the small `franc-min` library and get "I can only answer in English right now." The
+  emergency check still runs first on the full text.
+
+---
+
+All "NEEDS CLARIFICATION" items are resolved. Two results are **measured later**, not
+guessed now: the grader model ID (R4 calibration) and the Haiku-vs-Sonnet comparison
+(R3).
