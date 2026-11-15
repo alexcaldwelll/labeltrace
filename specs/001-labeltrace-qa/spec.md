@@ -15,8 +15,9 @@
 - Q: When a question matches an emergency phrase, what does the app show? → A: The emergency message always shows first. If the question is clearly asking for label information (for example, "Does Reyvow cause chest pain?"), the label's own matching sentences also show below it. If it sounds like it is happening to the person now, or it is unclear, only the emergency message shows.
 - Q: How is the label answer under an emergency message made, given the constitution says emergency phrases must skip the AI completely? → A: The label's matching sentences are shown word for word, with section name and label date. The AI is never used, so the constitution is followed as written.
 - Q: Who decides whether a question is informational, happening now, or unclear? → A: Fixed word rules with no AI (FR-047). The drug may be named by brand name (Emgality, Reyvow) or generic name (galcanezumab, lasmiditan).
-- Q: Do self-harm phrases ever get label text? → A: No. Self-harm matches always show only the 988 message (plus 911 for immediate danger), with no exceptions.
+- Q: Do self-harm phrases ever get label text? → A: No. Self-harm matches never get label text and always show the 988 message (plus 911 for immediate danger), with no exceptions.
 - Q: What happens when the drug name is misspelled (for example, "Reyvo")? → A: The question counts as "unclear" and gets only the emergency message. This is on purpose: in emergency handling, the Safe principle overrides the Fair and Equitable principle (which asks that typos get the same quality of answer). Typos in the emergency phrase itself are still caught (FR-009).
+- Q: What does the app show when a question has both a medical emergency phrase and a self-harm phrase? → A: Both messages: "Call 911 or see a doctor now" first, then the 988 Suicide & Crisis Lifeline message. Never label text, whatever the case (informational, happening now, or unclear).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -34,7 +35,7 @@ A patient types something that sounds like a medical emergency or like they migh
 
 **Independent Test**: Type each phrase on the emergency phrase list and confirm the right message appears and no AI answer is made. Then try informational, happening-now, and unclear versions and confirm label text appears only for informational medical questions.
 
-**Tests built with this story**: One automated test for **every** phrase on the emergency phrase list (FR-005), medical and self-harm alike. Plus tests for each of the three cases (informational, happening now, unclear) for both a medical phrase and a self-harm phrase, a test for each generic drug name, and a test for a misspelled drug name (FR-050).
+**Tests built with this story**: One automated test for **every** phrase on the emergency phrase list (FR-005), medical and self-harm alike. Plus tests for each of the three cases (informational, happening now, unclear) for both a medical phrase and a self-harm phrase, a test for each generic drug name, a test for a misspelled drug name (FR-050), and three tests for questions with both a medical and a self-harm phrase (FR-051).
 
 **Acceptance Scenarios**:
 
@@ -52,6 +53,9 @@ A patient types something that sounds like a medical emergency or like they migh
 12. **Self-harm, informational**: **Given** "Does Emgality cause suicide?", **When** it is sent, **Then** only the 988 message (and 911 for immediate danger) shows. No label text is shown.
 13. **Self-harm, happening now**: **Given** "I want to end my life", **When** it is sent, **Then** only the 988 message (and 911 for immediate danger) shows.
 14. **Self-harm, unclear**: **Given** "reyvow suicide", **When** it is sent, **Then** only the 988 message (and 911 for immediate danger) shows.
+15. **Mixed, informational**: **Given** "Does Reyvow cause chest pain or suicide?", **When** it is sent, **Then** "Call 911 or see a doctor now" shows first, then the 988 message (and 911 for immediate danger). No label text is shown, and the question is never sent to the AI.
+16. **Mixed, happening now**: **Given** "I have chest pain and I want to kill myself", **When** it is sent, **Then** "Call 911 or see a doctor now" shows first, then the 988 message (and 911 for immediate danger). No label text is shown.
+17. **Mixed, unclear**: **Given** "reyvow fainting suicide", **When** it is sent, **Then** "Call 911 or see a doctor now" shows first, then the 988 message (and 911 for immediate danger). No label text is shown.
 
 ---
 
@@ -207,6 +211,7 @@ An AI from a different company than the one that writes answers checks whether a
 - A question names both drugs but doesn't compare them (for example, "How is each one given?"): the app answers for each drug separately, with each one's source, and no comparison.
 - A question is an emergency **and** asks about dosing: the emergency message wins and the AI is skipped.
 - A self-harm phrase is mixed with a normal question: only the 988 message shows, with no label text, and the AI is skipped. There are no exceptions.
+- A question has both a medical emergency phrase and a self-harm phrase: "Call 911 or see a doctor now" shows first, then the 988 message. No label text is shown (FR-051).
 - A question names the drug with a typo (for example, "Reyvo") and has an emergency phrase: it counts as "unclear" and gets only the emergency message (see Clarifications).
 - A question is blank or very long: blank questions get a friendly prompt to type a question. Very long questions are cut off at a set limit, and the user is told.
 - A question is in another language: the app says it only answers in English right now.
@@ -242,8 +247,9 @@ An AI from a different company than the one that writes answers checks whether a
   - **Happening now**: the question has any of these signs: "I," "I'm," "me," "my," "we," "now," "right now," "today," or "having."
   - **Unclear**: anything that is not informational or happening now, including questions where the drug name is misspelled.
 - **FR-048**: For an informational question, the app MUST show, below the emergency message, the sentences from that drug's stored label that mention the emergency phrase, word for word, with the section name and label date. If no sentence matches, it MUST show "The label doesn't cover this." The AI MUST NOT be used.
-- **FR-049**: For happening-now and unclear questions, the app MUST show only the emergency message. For self-harm phrases, the app MUST always show only the 988 message (and 911 for immediate danger), with no label text, no matter which case the question falls into. There are no exceptions.
-- **FR-050**: Automated tests MUST cover: the informational, happening-now, and unclear cases for a medical phrase and for a self-harm phrase; an informational question for each generic name (lasmiditan and galcanezumab); an informational question whose phrase is not in the label; and a misspelled drug name falling to "unclear."
+- **FR-049**: For happening-now and unclear questions, the app MUST show only the emergency message. For self-harm phrases, the app MUST always show the 988 message (and 911 for immediate danger) and MUST NOT show label text, no matter which case the question falls into. There are no exceptions. If the question has no medical emergency phrase, the 988 message is the only message shown.
+- **FR-050**: Automated tests MUST cover: the informational, happening-now, and unclear cases for a medical phrase and for a self-harm phrase; an informational question for each generic name (lasmiditan and galcanezumab); an informational question whose phrase is not in the label; a misspelled drug name falling to "unclear"; and the informational, happening-now, and unclear cases for a question with both a medical and a self-harm phrase (FR-051).
+- **FR-051**: When a question has both a medical emergency phrase and a self-harm phrase, the app MUST show "Call 911 or see a doctor now" first, then the 988 Suicide & Crisis Lifeline message (and 911 for immediate danger). It MUST NOT show label text, whatever the case (informational, happening now, or unclear). The AI MUST NOT be used.
 
 **Refusals and "not covered" (US-03)**
 
@@ -333,7 +339,7 @@ An AI from a different company than the one that writes answers checks whether a
 - **SC-011**: The owner's disagreement rate with the grader can be seen at any time.
 - **SC-012**: The test suite has at least 20 questions, and all pass before any merge.
 - **SC-013**: A patient sees an answer in under 10 seconds for at least 95% of questions, and sees emergency messages in under 1 second.
-- **SC-014**: 100% of emergency-case tests (FR-050) show the right output: label text only for informational medical questions, and never for self-harm. 0 of them reach the AI.
+- **SC-014**: 100% of emergency-case tests (FR-050) show the right output: label text only for informational medical questions, and never for self-harm. 100% of mixed-phrase tests (FR-051) show both messages with the 911 message first and no label text. 0 of them reach the AI.
 
 ## Assumptions
 
