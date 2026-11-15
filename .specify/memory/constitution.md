@@ -43,9 +43,13 @@ principles.
 - Automated tests come in two tiers:
   - **Fast tests** make no AI calls. They MUST run and pass on every pull request.
   - **AI tests** call the answer AI and the second-AI grader. They MUST run and pass before
-    merging any pull request that changes AI-related code (prompts, model choice, label
-    handling, the personal-details scrubber, or the emergency checks), and before every
-    release.
+    merging any pull request that changes AI-related code, and before every release.
+- AI-related code means: prompts, model choice, label handling, the personal-details
+  scrubber, the emergency checks and the text matching they use, the order of the question
+  steps, the answer checks, and the refusal rules.
+- The official list of AI-related files is `.github/ai-related-paths.txt`. The list
+  includes itself, so changing it also needs AI tests. Changes to it MUST be approved by
+  the project owner through CODEOWNERS.
 - A required automated check MUST block a merge when one of these rules is not met.
 
 **Why:** People can check the answer against the label for themselves.
@@ -66,6 +70,9 @@ principles.
   logs.
 - The scrubbed question MUST be stored in the audit log, along with the answer, the label
   section cited, and the label date, so a reviewer can judge the answer.
+  - **Exception:** blank questions and questions not in English are logged with only the
+    reply type and the time, and no question text. The scrubber only works on English, so
+    it can't safely clean non-English text.
 - Real patient data MUST NOT be used anywhere, including tests.
 - API keys and other secrets MUST stay in git-ignored files such as `.env` and MUST NOT be
   pushed to GitHub.
@@ -97,6 +104,16 @@ principles.
   before it is used.
 
 **Why:** AI is there to help people read the label, not to replace it.
+
+## When Principles Conflict
+
+- If two principles can't both be followed, **Safe (II)** comes first, then **Privacy
+  (V)**, then the others.
+- Each such decision MUST be written down in the feature spec's Clarifications section. It
+  names the principles involved, which one won, and why.
+
+**Why:** Some choices can't satisfy every rule at once. A fixed order keeps those choices
+consistent, and writing them down keeps them open for review.
 
 ## Release Safeguards
 
@@ -143,4 +160,4 @@ still makes the final call.
 - Every pull request review MUST check that the change follows this constitution.
 - Day-to-day rules for AI agents are in `CLAUDE.md`.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-15 | **Last Amended**: 2026-11-15
+**Version**: 2.0.0 | **Ratified**: 2026-11-15 | **Last Amended**: 2026-11-15
