@@ -251,6 +251,11 @@ Words that may be new are explained the first time they appear.
   2. Add it to the repo as a collaborator with **Write** access (not Admin).
   3. On this computer, sign the `gh` tool in as the bot (`gh auth login`). Git pushes
      also use the bot's login.
+  4. Set this repo's git identity to the bot (this repo only, not global):
+     `git config --local user.name "labeltrace-bot"` and
+     `git config --local user.email "357053411+labeltrace-bot@users.noreply.github.com"`.
+     This is GitHub's no-reply email for the bot (account ID `357053411`), so commits
+     show up as the bot's without exposing a real email.
 - **Branch protection settings for `main`** (Settings → Branches → Add rule, pattern
   `main`):
 
