@@ -1,0 +1,59 @@
+# ---- Secrets (never upload) ----
+.env
+.env.*
+# The "!" means: DO upload this one (it only has blank placeholders)
+!.env.example
+*.pem
+*.key
+.supabase/
+
+# ---- Claude Code personal settings ----
+.claude/settings.local.json
+
+# ---- Mac / Windows / Linux junk ----
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+*~
+
+# ---- Code editors ----
+.vscode/
+.idea/
+*.swp
+
+# ---- Node (JavaScript) ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+.nuxt/
+dist/
+build/
+.vercel/
+.turbo/
+coverage/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ---- R / RStudio ----
+.Rhistory
+.RData
+.Rproj.user/
+
+# ---- Logs and temp files ----
+*.log
+logs/
+tmp/
