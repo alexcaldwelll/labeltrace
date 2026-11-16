@@ -73,8 +73,8 @@ One row per answered question (FR-023).
 | id | id | Primary key |
 | created_at | time | |
 | scrubbed_question | text | After masking. Never raw. **Empty** for blank and non-English rows, including non-English emergencies (see below). |
-| answer_type | text | `normal`, `label_pointer`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only` |
-| answer | text | Exactly what the patient saw |
+| answer_type | text | `normal`, `label_pointer`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only`. A `try_again` reply is logged as `error`. |
+| answer | text | Exactly what the patient saw. For English emergency rows: the emergency messages shown, in order, plus any label sentences (or "The label doesn't cover this.") (FR-025). |
 | drug | text | `emgality`, `reyvow`, `both`, or empty |
 | model_name | text | Empty when the AI was skipped (emergencies, rule-based refusals) |
 | prompt_version | text | For example `answer-v3`. Empty when the AI was skipped. |
@@ -88,10 +88,12 @@ One row per answered question (FR-023).
 | ai_skipped | yes/no | Yes for all emergencies |
 | source | text | `real` or `test` |
 | test_run_id | → test_runs | For test answers only |
-| review_status | text | Starts `not_reviewed` |
+| review_status | text | Set to `not_reviewed` by the log writer for rows with a question. **No database default**, so blank and non-English rows stay empty (FR-055). |
 | grading_status | text | See the state changes below |
 | grading_attempts | number | 0 to 5 |
 
+- **No column defaults**: the log writer (`src/lib/db/log.ts`) fills in every field. A
+  database default would put values into blank and non-English rows and break FR-055.
 - **Who can read it**: signed-in reviewers and the owner only. Patients and the public
   can't.
 - **Blank and non-English questions** (FR-055, constitution V): these rows hold **only**
@@ -179,8 +181,10 @@ One run of the AI test tier.
 | answer_model | text | For example `claude-haiku-5-5` |
 | started_at / finished_at | time | |
 | passed / failed / total | numbers | |
-| status | text | `running`, `passed`, `failed` |
+| status | text | `running`, `passed`, `failed`, `incomplete` |
 
+- `incomplete`: the grader was down for at least one AI-written answer, so not every
+  answer was graded. It never counts as passing; `ai-gate` and the release check block it.
 - Stored in the **online** database. Written only by the `ai-tests` workflow, which uses
   the `ai-tests` GitHub environment (owner-approved runs, R16).
 - A run is `passed` only if at least one checked entry ran and every one passed (R15).

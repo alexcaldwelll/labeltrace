@@ -30,13 +30,13 @@ binding: code and tests must match them.
 | `kind` | When | Extra fields |
 |---|---|---|
 | `emergency` | Emergency phrase found | `messages` (in order: 911 first, then 988), `case`, `label_excerpts` (informational medical only, else empty), `not_covered` (yes/no) |
-| `answer` | Normal answer | `answers`: list of `{ drug, type, text, sections[], label_date, link? }`. One item per drug. Two items when both drugs are asked about without a comparison (made at the same time). `type` is `ai` (AI-written, passed every check) or `label_pointer` (FR-052, see below). `link` is only on `label_pointer` items. |
+| `answer` | Normal answer | `answers`: list of `{ drug, type, text, sections[], label_date, link?, typed_as? }`. One item per drug. Two items when both drugs are asked about without a comparison (made at the same time). `type` is `ai` (AI-written, passed every check) or `label_pointer` (FR-052, see below). `link` is only on `label_pointer` items. `typed_as` is only there when the drug name was misspelled and matched by the typo rules (FR-056): it holds the word as typed, and the page shows "Answering about Reyvow (you typed 'Reyvo')." |
 | `refusal` | Dosing, comparison, other drug | `reason` (`personal_dosing`, `comparison`, `other_drug`), `text`, plus for dosing: `sections[]`, `label_date` |
 | `not_covered` | Label doesn't answer | `text: "The label doesn't cover this."`, `drug`, `label_date` |
 | `ask_which_drug` | No drug named | `text: "Do you mean Emgality or Reyvow?"` |
 | `prompt_for_question` | Blank question | `text` |
 | `english_only` | Not English | `text: "I can only answer in English right now."` |
-| `try_again` | Answer AI down or slow | `text`. Nothing made up. |
+| `try_again` | Answer AI down or slow | `text`. Nothing made up. Logged with `answer_type = error`. |
 
 **Emergency example (informational, medical)**
 
