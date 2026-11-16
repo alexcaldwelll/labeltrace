@@ -19,15 +19,21 @@ Words that may be new are explained the first time they appear.
 ## R2. Hosting
 
 - **Decision**: Netlify, using its built-in Next.js support. Every pull request gets a
-  Netlify "deploy preview" (a private test copy of the site).
+  Netlify "deploy preview" (a private test copy of the site). The public site is
+  published only by the release workflow (R21). Netlify's automatic publishing of `main`
+  is turned off.
 - **Details that matter**:
-  - Netlify server functions stop after a time limit (10 seconds by default). The answer
-    AI call gets an 8-second timeout. If it runs out, the patient sees "try again later"
-    and nothing is made up. This also fits SC-013 (answers in under 10 seconds).
+  - Netlify server functions stop after 10 seconds. The app sets its own **9-second time
+    limit** for the whole reply (FR-053), so there's always time to save the log row and
+    send a reply. See R13 for how the time is shared.
   - Two **scheduled functions** (code Netlify runs on a timer):
     `label-check` (once a day, see R6) and `grading-worker` (every 10 minutes, see R11).
+    They run only on the published site, so the owner checks them after the first
+    release.
   - Secrets (API keys) are set in the Netlify dashboard as environment variables, never
     in files. Deploy previews use test keys, not production keys.
+  - **No outside error-reporting service.** Server messages go only to Netlify's function
+    logs, through one small logger (R18).
 - **Alternatives**: Vercel (first suggestion). Changed at the owner's request because they
   already use Netlify.
 
@@ -130,6 +136,12 @@ Words that may be new are explained the first time they appear.
 - **Why**: It's fast (well under SC-013's 1 second), it's predictable, and every phrase
   can be tested. Catching a few non-emergencies by mistake is acceptable. The spec says
   that's safer than missing one.
+- **No skip list**: Real words close to emergency words ("paint", "painting", "saint"
+  next to "faint", "fainting") still trigger the emergency message. A real word can also
+  be a typo hiding a real emergency, and Safe comes before Fair and Equitable (spec
+  PC-6). Fast tests show these false alarms on purpose. Each emergency log row records
+  which phrase IDs matched (FR-054), so the owner can measure how often false alarms
+  happen before considering a constitution amendment.
 - **Alternatives**: An AI classifier. Rejected: the constitution says emergency phrases
   must skip the AI completely.
 
@@ -151,7 +163,14 @@ Words that may be new are explained the first time they appear.
     1. Intro phrases: "I'm X", "my name is X", "this is X", sign-offs like "thanks, X".
     2. A name finder from the `compromise` text library, which runs on our server.
     3. Any capitalized word that isn't at the start of a sentence and isn't on a known-word
-       list (drug names, section names, common English words) → `[NAME]`.
+       list → `[NAME]`. The known-word list holds: our 4 drug names, **every name on the
+       other-drug list** (`src/lib/refusals/other-drugs.json`, R14), label section names,
+       and common English words.
+  - **Why other drugs are known words**: the scrubber runs **before** the refusal rules.
+    If "Imitrex" or "Ubrelvy" were masked as `[NAME]`, the comparison and other-drug
+    refusals could never see them. Drug names aren't personal details, so keeping them
+    is safe. The scrubber also never masks a word on the known-word list, even when the
+    name finder (layer 2) flags it.
 - **Alternatives**: Sending text to an AI to find names. Rejected: the raw text would
   reach an AI before being scrubbed.
 
@@ -184,8 +203,23 @@ Words that may be new are explained the first time they appear.
     and label section names are left out of the score (spec Assumptions).
   - Every cited section exists in the saved label (FR-018).
   - The answer cites at least one section and shows the label date (FR-017).
-  - If a check fails, the AI tries once more. If it fails again, the app says "The label
-    doesn't cover this." It doesn't show an unchecked answer.
+  - If a check fails, the AI tries once more, but **only if at least 3 seconds are left**
+    in the 9-second limit. If it fails again, or there's no time to retry, the app shows
+    the **label-section pointer** (FR-052): "I couldn't put this into plain language
+    reliably. The answer is in the [section name] section of the label (dated [date])."
+    with a link to `/label/[drug]#[section]`. It doesn't show an unchecked answer, and it
+    doesn't say "The label doesn't cover this," because that would be false.
+  - **Which section the pointer names**: the first section the AI cited that really
+    exists in the saved label. If none does, the top section from the section search
+    (R12).
+  - **Time sharing** (FR-053): the 9 seconds start when the request arrives. Each AI call
+    gets a timeout equal to the time left minus 0.5 seconds, which is kept back for
+    building the reply and saving the log row. If the **first** AI call runs out of time,
+    the reply is "try again later." When both drugs are asked about, the two drug
+    answers run at the same time, each with the same deadline.
+  - Personal-dosing summaries go through the same checks. If they fail, the dosing
+    fallback (word-for-word "Dosage and Administration" text, spec PC-7) is used, not the
+    pointer.
 - The AI returns **structured output** (a fixed JSON shape: answer text, sections used,
   answer type), so code can check it reliably.
 
@@ -195,6 +229,10 @@ Words that may be new are explained the first time they appear.
   1. **Rules first (no AI)**: A list of other drug names (all common migraine drugs plus
      about 200 common medicines) catches other-drug questions. Comparison words ("better
      than", "vs", "compared to", "instead of") with two drug names catch comparisons.
+     The word "or" counts **only inside comparison phrasing**: together with "which",
+     "better", "best", "worse", "stronger", "safer", "choose", or "should I take/use
+     … or …". So "Which is better, Emgality or Reyvow?" is refused, but "How are Emgality
+     or Reyvow given?" is answered for each drug.
      Personal-dosing patterns ("how much should I", "my weight", "I weigh", "for my age")
      catch dosing questions. No drug named → ask "Do you mean Emgality or Reyvow?"
   2. **AI backstop**: The prompt tells the AI to label its answer type as `refusal` when
@@ -209,34 +247,65 @@ Words that may be new are explained the first time they appear.
   | Tier | Folder | Calls an AI? | When it runs |
   |---|---|---|---|
   | **Fast** | `tests/fast/` | No. AI calls are replaced by a fake that gives fixed replies. | Every PR, automatically |
-  | **AI** | `tests/ai/` | Yes: Haiku 5.5 plus the OpenAI grader | By hand (GitHub Actions "Run workflow" button), and before every release. Required before merging PRs that change AI-related code (constitution v1.1.0, PR #7). |
+  | **AI** | `tests/ai/` | Yes: Haiku 5.5 plus the OpenAI grader | By hand (GitHub Actions "Run workflow" button). Required before merging PRs that change a file on `.github/ai-related-paths.txt`, and before every release (constitution v2.0.0, III). |
 
 - **Fast tier** covers every emergency phrase and case (FR-010, FR-050, FR-051), the
   scrubber, refusal rules, answer checks (R13), label caching (with saved openFDA sample
   replies, so no live calls), logging, and review-page access. It runs against a local
   Supabase database started inside GitHub Actions. That lets the "search all stored data
   for the raw question" test (SC-006) run for real.
-- **AI tier** runs the full test question set (at least 20 questions, FR-040) through the
-  real answer AI. The grader grades every answer, and results are saved to Supabase,
-  tagged with the commit ID.
+- **AI tier** runs the test question set through the real pipeline and real AI clients.
+  The grader grades every AI-written answer. Results are saved to the **online**
+  Supabase database, tagged with the commit ID, so `ai-gate`, the release workflow, and
+  the owner's flag page can all see them.
+- **The AI tier starts small, in Phase 2** (before any story): the runner, the test-run
+  recorder, and the grader calibration set (R4) as its first checked entries. Each story
+  then adds its own AI-tier questions, and the owner signs them off (`checked_by`,
+  `checked_on`) in the same PR. By the end it has at least 20 questions (FR-040).
+- **A run passes only when** at least one checked entry ran and all of them passed. A run
+  with no entries fails, so a pass always means something was tested.
+- **The AI tier never sends blank or non-English questions.** Those make no AI calls and
+  are fully covered by fast tests. This keeps every AI-tier log row marked
+  `source = test`, while blank and non-English rows hold only reply type and time
+  (FR-055).
 
 ## R16. GitHub Actions (automatic checks on GitHub)
 
-- **Decision**: Three workflow files in `.github/workflows/`. They're created during
+- **Decision**: Four workflow files in `.github/workflows/`. They're created during
   implementation, once the code and `package.json` exist. Before that, they would fail
   every PR.
 
   | Workflow | Runs when | What it does | Check name |
   |---|---|---|---|
   | `fast-tests.yml` | Every PR, every push to `main` | Install, type-check, lint, start local Supabase, run fast tests | `fast-tests` |
-  | `ai-tests.yml` | By hand (choose branch and model) | Run the AI test tier, grade every answer, save results for that commit | `ai-tests` |
-  | `ai-gate.yml` | Every PR | (1) If the PR changes AI-related files, require a passing AI test run for the PR's latest commit. (2) For every PR, require that all grader flags from that run have an owner decision. | `ai-gate` |
+  | `ai-tests.yml` | By hand (choose branch and model) | Run the AI test tier, grade every AI-written answer, save results for that commit to the online database | `ai-tests` |
+  | `ai-gate.yml` | Every PR | (1) If the PR changes a file on `.github/ai-related-paths.txt`, require a passing AI test run for the PR's latest commit. (2) For every PR, require that all grader flags from that run have an owner decision. | `ai-gate` |
+  | `release.yml` | A `v*` tag is pushed | Check the tag was pushed by the owner, require a passing AI test run with all flags decided for the tagged commit, then publish to Netlify (R21) | `release` |
 
-- **AI-related files** (from constitution v1.1.0): `src/lib/ai/**`, `src/lib/prompts/**`,
-  `src/lib/labels/**`, `src/lib/scrub/**`, `src/lib/emergency/**`,
-  `src/config/models.ts`.
+- **AI-related files**: `ai-gate` reads the official list, **`.github/ai-related-paths.txt`**,
+  every time it runs (constitution v2.0.0, III). It never keeps its own copy, so a change
+  to the list takes effect right away. The list includes itself, so changing the list
+  also needs a passing AI test run. CODEOWNERS names the owner for that file.
+- **Pending additions**: `.github/workflows/**`, `scripts/ai-gate.ts`, and `src/lib/ci/**`
+  are being added in a separate PR (task T083). It can merge only after the AI test tier
+  exists and passes for it. Until then, those files are protected only by the owner's
+  review (spec Clarifications, temporary bootstrap gap).
+- **Pattern rules**: one pattern per line. `**` means "everything inside this folder."
+  Lines starting with `#` and blank lines are skipped. A line with no `*` matches that
+  exact file.
 - **Secrets**: API keys are stored as **GitHub Actions secrets** (encrypted settings on
   GitHub, not files in the repo). Rule 5 is followed.
+  - The online database's admin key and the AI keys for `ai-tests` live in a GitHub
+    **environment** named `ai-tests`. The Netlify token lives in an environment named
+    `release`. A GitHub environment is a locked group of secrets that a workflow can use
+    only after the owner approves the run. This stops a changed workflow on a branch from
+    reading the keys without the owner knowing.
+  - `ai-gate` reads results with a **read-only** database login
+    (`AI_GATE_DATABASE_URL`) that can only read `test_runs`, `grader_results`, and
+    `owner_flag_decisions`.
+  - The online database's admin key is **never** put in a local `.env` file. Local work
+    uses the local database. That way the bot account can't write test results to the
+    online database by itself.
 - **Alternatives**: Netlify's build step running the tests. Rejected: GitHub can't use
   that as a required check as cleanly, and AI tests would run on every deploy.
 
@@ -274,17 +343,41 @@ Words that may be new are explained the first time they appear.
   | Allow force pushes | ❌ Off |
   | Allow deletions | ❌ Off |
 
-- **Order matters**: GitHub only lists a check name after it has run at least once. Turn
-  on the "required checks" part after the first PR that adds the workflows.
+- **Order matters**: GitHub only lists a check name after it has run at least once. So
+  each check becomes required as soon as it first runs:
+  - `fast-tests`: right after its workflow (task T006) runs. Owner task T070.
+  - `ai-gate`: right after its workflow (task T015) runs. Owner task T068. The small AI
+    test tier is built in Phase 2, before this, so AI-related PRs can pass it from the
+    start.
+- **Tag ruleset for releases** (Settings → Rules → Rulesets → New tag ruleset), owner
+  task T075:
+
+  | Setting | Value |
+  |---|---|
+  | Target tags | `v*` |
+  | Restrict creations | ✅ On |
+  | Restrict deletions | ✅ On |
+  | Block force pushes | ✅ On |
+  | Bypass list | The owner (`alexcaldwelll`) only. **Not** the bot. |
+
+  The release workflow also checks that the tag was pushed by `alexcaldwelll`, as a
+  second lock.
 - **Alternatives**: Admin override, or zero required approvals. Rejected by the owner on
   2026-11-15.
 
 ## R18. Keeping the raw question out of storage
 
-- **Decision**: The raw question exists only in memory during one request. Server code
-  never writes request bodies to logs (`console.log`) or error reports. A fast test spies
-  on logging and fails if the raw text shows up. The fast tier's SC-006 test searches every
-  database table for the raw text after the privacy tests.
+- **Decision**: The raw question exists only in memory during one request. There is **no
+  outside error-reporting service**. Server messages go only to Netlify's function logs,
+  through one logger, `src/lib/log/server-log.ts`:
+  - It accepts question text only as `ScrubbedText` (the scrubbed type), so passing raw
+    text won't compile.
+  - For blank and non-English questions it takes no question text at all (FR-055).
+  - Errors are logged by type and message only, never with the request body.
+  - Lint bans `console` everywhere in `src/**` except this one file.
+- A fast test spies on the logger and on `console` and fails if raw text shows up. The
+  fast tier's SC-006 test searches every database table for the raw text after the
+  privacy tests.
 
 ## R19. Language and length checks
 
@@ -292,6 +385,37 @@ Words that may be new are explained the first time they appear.
   characters → cut to 1,000, and the user is told. Non-English questions are found with
   the small `franc-min` library and get "I can only answer in English right now." The
   emergency check still runs first on the full text.
+- **Language check on the emergency path**: the same language check (in
+  `src/lib/pipeline/language.ts`) runs after an emergency match and **before the log row
+  is saved**. The emergency message shows either way. If the question isn't English, the
+  row holds only the reply type (`emergency`) and the time (FR-055, spec PC-8).
+
+## R20. Other-drug name list
+
+_Added by task T024 (query URLs, download date, and number of names)._
+
+## R21. Releases
+
+- **Decision**: A **release** is a `v*` tag (for example `v1.0.0`) pushed by the owner,
+  with a **passing AI test run for that commit** and every grader flag from that run
+  decided. Nothing else counts as a release.
+  - Only the owner can create or delete `v*` tags (tag ruleset, R17). The bot can't.
+  - `release.yml` runs on the tag. It (1) checks the tag was pushed by `alexcaldwelll`,
+    (2) uses the same check code as `ai-gate` (`src/lib/ci/gate.ts`) to require a passing
+    `test_runs` row for the tagged commit with all flags decided, and (3) publishes that
+    commit to Netlify's live site.
+  - Netlify's automatic publishing of `main` is turned off. Merges to `main` don't
+    change the public site. Deploy previews for PRs still work.
+- **Secrets (names only)**: `NETLIFY_AUTH_TOKEN` (lets the workflow publish) and
+  `NETLIFY_SITE_ID` are GitHub secrets in the `release` environment. They're never put in
+  a file. `.env.example` lists `NETLIFY_AUTH_TOKEN` as a name with no value, so people
+  know it exists.
+- **Why**: Netlify publishes `main` on every merge by default, which would make every
+  merge a release. A tag pushed by the owner keeps releases rare, deliberate, and always
+  tested (constitution III).
+- **Alternatives**: Every merge is a release (AI tests on every PR, more cost). A manual
+  publish button in Netlify (no automated check). Both rejected by the owner on
+  2026-11-15.
 
 ---
 

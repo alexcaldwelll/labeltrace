@@ -12,21 +12,28 @@ description: "Task list for LabelTrace Patient Q&A"
 
 **Tests**: Required. Tests are built **inside the same task** as the code they check, not in
 a separate phase (spec "How testing works", FR-042). A task is not done until its tests pass.
-Fast tests live in `tests/fast/` (no AI). AI-tier tests live in `tests/ai/` (real models).
+Fast tests live in `tests/fast/` (no AI). AI-tier tests live in `tests/ai/` (real models,
+results saved to the online database).
 
-**Organization**: Tasks are grouped by user story. Emergencies (US1) and refusals (US2) come
-first, right after the minimum setup. Scrubbing (US5) comes **before** the real answer AI is
-connected (T039), so no real AI call ever gets unscrubbed text, even in development.
+**Organization**: Tasks are grouped by user story. A small AI test tier is built in Phase 2,
+so `ai-gate` can be a required check from the start. Emergencies (US1) and refusals (US2)
+come first. Scrubbing (US5) comes **before** the real answer AI is connected (T039), so no
+real AI call ever gets unscrubbed text, even in development. Grading of test answers comes
+**before** the first AI-written test answer (T042), so every test answer is graded.
+
+**Task IDs**: Tasks added after `/speckit-analyze` use IDs T070 and up, so existing IDs
+don't change. Some tasks moved to an earlier phase. They kept their IDs.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run at the same time as the other [P] tasks named under "Runs alongside"
   (different files, no waiting on each other)
 - **[Story]**: Which user story the task serves (US1 to US9, from spec.md)
+- **Owner task**: done by the owner (`alexcaldwelll`), not by Claude
 - Under each task: **Tests** = the tests built in that task; **Runs alongside** = tasks that
   can be done at the same time; **Needs** = tasks that must be finished first
 
-## Story key (spec.md → product owner's story ID)
+## Story key (spec.md → owner's story ID)
 
 | Label | Story | Priority | Owner ID |
 |---|---|---|---|
@@ -40,8 +47,22 @@ connected (T039), so no real AI call ever gets unscrubbed text, even in developm
 | US8 | Human review of answers | P3 | US-07 |
 | US9 | Second-AI grader | P3 | US-08 |
 
-**Build order** (changed from plan.md at the owner's request): US1 → US2 → **US5** → US3 →
-US4 → US6 → US7 → US8 → US9.
+**Build order**: Setup → Foundation (with the small AI test tier) → US1 → US2 → **US5** →
+**grading of test answers** (parts of US8 and US9) → US3 → US4 → US6 → US7 → US8 (rest) →
+US9 (rest) → Polish.
+
+---
+
+## Standing owner tasks (repeat during the whole build)
+
+- [ ] T066 **Owner task**: check every new answer-key entry (`tests/ai/questions/*.json`
+  and `tests/ai/grader/calibration.json`) against the real label, and fill in `checked_by`
+  and `checked_on` **in the same PR that adds the entry** (FR-044, constitution VIII). The
+  loader (T025) refuses unchecked entries, so the AI test run, and `ai-gate`, fail until
+  they're signed off.
+- [ ] T082 **Owner task**: after a PR with a new file in `supabase/migrations/` merges,
+  apply it to the online database (`supabase db push` with your own login). The bot never
+  holds the online database's admin key (research R16).
 
 ---
 
@@ -54,36 +75,37 @@ US4 → US6 → US7 → US8 → US9.
   - Runs alongside: —
 - [ ] T002 [P] Set up Vitest with two projects in `vitest.config.ts`: `fast` (`tests/fast/**`, never loads real AI clients) and `ai` (`tests/ai/**`). Add `tests/fast/smoke.test.ts`.
   - Tests: `tests/fast/smoke.test.ts`.
-  - Runs alongside: T003, T004, T005. Needs: T001.
-- [ ] T003 [P] Add ESLint and Prettier config (`eslint.config.mjs`, `.prettierrc`) with `no-console` set to error for `src/**` (keeps raw questions out of logs, research R18).
+  - Runs alongside: T003, T004. Needs: T001.
+- [ ] T003 [P] Add ESLint and Prettier config (`eslint.config.mjs`, `.prettierrc`) with `no-console` set to error for `src/**`, **except** the one server logger `src/lib/log/server-log.ts` (research R18). There is no outside error-reporting service.
   - Tests: `npm run lint` passes.
-  - Runs alongside: T002, T004, T005. Needs: T001.
-- [ ] T004 [P] Check `.env.example` has blank placeholders for `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GRADER_MODEL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Add any that are missing, with no values. Confirm `.env` is listed in `.gitignore` (CLAUDE.md rule 5).
+  - Runs alongside: T002, T004. Needs: T001.
+- [ ] T004 [P] Check `.env.example` has blank placeholders for `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GRADER_MODEL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `NETLIFY_AUTH_TOKEN` (name only; the real value is a GitHub secret, research R21). Add any that are missing, with no values. Confirm `.env` is listed in `.gitignore` (CLAUDE.md rule 5).
   - Tests: —
-  - Runs alongside: T002, T003, T005.
-- [ ] T005 [P] Create `.github/CODEOWNERS` with `* @alexcaldwelll`.
-  - Tests: —
-  - Runs alongside: T002, T003, T004.
+  - Runs alongside: T002, T003.
+- [x] T005 Create `.github/CODEOWNERS` with `* @alexcaldwelll`. (Done. It also names the owner for `/.github/ai-related-paths.txt`.)
 - [ ] T006 Create `.github/workflows/fast-tests.yml` (check name `fast-tests`): runs on every PR and every push to `main`. Install, type-check, lint, start local Supabase, run `npm run test:fast` (research R16).
   - Tests: the workflow runs `tests/fast/smoke.test.ts` on the PR and passes.
   - Needs: T001–T003.
+- [ ] T070 **Owner task**: right after `fast-tests` first runs on T006's PR, add `fast-tests` as a required check in branch protection for `main` (research R17).
+  - Needs: T006.
 
-**Checkpoint**: Every later PR is checked automatically.
+**Checkpoint**: Every later PR must pass fast tests.
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: Shared pieces every story needs: label tables, the log table, the fake AI, the
-ordered question steps, and the "AI, not a doctor" banner.
+ordered question steps, the "AI, not a doctor" banner, the online setup, the small AI test
+tier, `ai-gate`, and the release workflow.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
 - [ ] T007 Set up local Supabase (`supabase/config.toml`) and migration `supabase/migrations/0001_labels.sql` creating `drug_labels` and `label_sections` per data-model.md. Rules: `drug` is "`emgality` or `reyvow`"; `is_current` "Exactly one current label per drug" (partial unique index on `drug` where `is_current`); `label_sections.text` "Not empty. Empty openFDA fields aren't saved." (check constraint). Lock both tables to the server (service role) only.
   - Tests: `tests/fast/db/labels-schema.test.ts`: a second current label for the same drug is rejected; empty section text is rejected; `drug = 'advil'` is rejected.
   - Needs: T006.
-- [ ] T008 Migration `supabase/migrations/0002_log_and_runs.sql` creating `log_entries` and `test_runs` per data-model.md. Enforce: `answer_type` in `normal`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only`; `drug` in `emgality`, `reyvow`, `both`, or empty; `emergency_group` in `medical`, `self_harm`, `both`, or empty; `emergency_case` in `informational`, `happening_now`, `unclear`, or empty; `review_status` "Starts `not_reviewed`"; `grading_attempts` "0 to 5"; `source` `real` or `test`; `test_runs.status` `running`, `passed`, `failed`. **No column may hold the raw question.** Server-only access for now (US8 adds reviewer read access).
-  - Tests: `tests/fast/db/log-schema.test.ts`: bad `answer_type` rejected; `grading_attempts = 6` rejected; new rows default to `not_reviewed`.
+- [ ] T008 Migration `supabase/migrations/0002_log_and_runs.sql` creating `log_entries` and `test_runs` per data-model.md. Enforce: `answer_type` in `normal`, `label_pointer`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only`; `drug` in `emgality`, `reyvow`, `both`, or empty; `emergency_group` in `medical`, `self_harm`, `both`, or empty; `emergency_phrase_ids` (list of text); `emergency_case` in `informational`, `happening_now`, `unclear`, or empty; `review_status` "Starts `not_reviewed`"; `grading_attempts` "0 to 5"; `source` `real` or `test`; `test_runs.status` `running`, `passed`, `failed`. **Rule for rows with no question** (FR-055): a row whose `scrubbed_question` is empty must have every field except `id`, `created_at`, and `answer_type` empty; every other row must have a `scrubbed_question`. **No column may hold the raw question.** Server-only access for now (T051 adds reviewer read access).
+  - Tests: `tests/fast/db/log-schema.test.ts`: bad `answer_type` rejected; `grading_attempts = 6` rejected; new rows with a question default to `not_reviewed`; a row with no question but a `source` or `answer` filled in is rejected; a row with only `id`, `created_at`, `answer_type` is accepted.
   - Needs: T007.
 - [ ] T009 [P] Create `src/config/models.ts` (answer model `claude-haiku-5-5`, its company `anthropic`, grader model from `GRADER_MODEL`, its company `openai`) and `src/lib/db/client.ts` (server-only Supabase client using the service role key; import guard so it can never load in the browser).
   - Tests: —
@@ -94,20 +116,54 @@ ordered question steps, and the "AI, not a doctor" banner.
 - [ ] T011 Create `src/lib/labels/sections.ts` (fixed map from openFDA field to display name, research R7, e.g. `warnings_and_cautions` → "Warnings and Precautions"; skips empty fields) and `src/lib/labels/store.ts` (`getCurrentLabel(drug)` returns label date and sections).
   - Tests: `tests/fast/labels/sections.test.ts`: known fields get the right names; empty fields are skipped; `getCurrentLabel` returns the seeded label and date.
   - Runs alongside: T012. Needs: T009, T010.
-- [ ] T012 [P] Create the AI client interface `src/lib/ai/types.ts` (answer client and grader client shapes) and `tests/helpers/fake-ai.ts` (returns fixed replies and records every call, so tests can prove the AI was or wasn't called).
-  - Tests: —
+- [ ] T012 [P] Create the AI client interface `src/lib/ai/types.ts` (answer client and grader client shapes), the **`ScrubbedText`** branded type in `src/lib/scrub/types.ts` (a type that plain strings can't pass as; only `scrub()` in T033 makes real ones), and `tests/helpers/fake-ai.ts` (returns fixed replies and records every call, so tests can prove the AI was or wasn't called).
+  - Tests: a type test (`// @ts-expect-error`) proves a plain string can't be used as `ScrubbedText`.
   - Runs alongside: T009, T010, T011.
-- [ ] T013 Create the ordered question steps `src/lib/pipeline/ask.ts` (empty slots for: emergency, basic checks, scrub, refusals, section search, answer AI, answer checks, log, grading sample) and `src/app/api/ask/route.ts` per contracts/api.md: `zod` request check; every reply has `"disclaimer": "LabelTrace is an AI, not a doctor."`; blank → `kind: "prompt_for_question"`; over 1,000 characters → cut, `truncated: true`; non-English (`franc-min`) → `kind: "english_only"` with "I can only answer in English right now." The route never logs, stores, or echoes the raw question.
+- [ ] T013 Create the ordered question steps `src/lib/pipeline/ask.ts` (empty slots for: emergency, basic checks, scrub, refusals, section search, answer AI, answer checks, log, grading sample), the language check `src/lib/pipeline/language.ts` (`franc-min`; shared with the emergency path in T047), and `src/app/api/ask/route.ts` per contracts/api.md: `zod` request check; every reply has `"disclaimer": "LabelTrace is an AI, not a doctor."`; blank → `kind: "prompt_for_question"`; over 1,000 characters → cut, `truncated: true`; non-English → `kind: "english_only"` with "I can only answer in English right now." The route never logs, stores, or echoes the raw question.
   - Tests: `tests/fast/pipeline/basic-checks.test.ts`: blank, 1,001-character, and Spanish questions; disclaimer on every reply kind.
-  - Runs alongside: T014, T015. Needs: T012.
+  - Runs alongside: T014. Needs: T012.
 - [ ] T014 [P] Create the shared layout `src/app/layout.tsx` with a visible "LabelTrace is an AI, not a doctor." banner on every page (FR-003), and a simple question page `src/app/page.tsx` that posts to `/api/ask`.
   - Tests: `tests/fast/ui/banner.test.tsx`: banner is present on the question page.
-  - Runs alongside: T013, T015. Needs: T001.
-- [ ] T015 [P] Create `.github/workflows/ai-tests.yml` (started by hand; inputs: branch, `model`) and `.github/workflows/ai-gate.yml` (check name `ai-gate`, every PR) with `scripts/ai-gate.ts`, **part 1**: if the PR changes any AI-related file (`src/lib/ai/**`, `src/lib/prompts/**`, `src/lib/labels/**`, `src/lib/scrub/**`, `src/lib/emergency/**`, `src/config/models.ts`), require a `test_runs` row for the PR's latest commit with `status = passed`. Put the decision in a pure function `src/lib/ci/gate.ts` so it can be tested. API keys come from GitHub Actions secrets only.
-  - Tests: `tests/fast/ci/ai-gate.test.ts`: README-only change → pass; prompt change with no run → fail with "Run the ai-tests workflow on this commit"; prompt change with a passed run → pass.
-  - Runs alongside: T013, T014. Needs: T008.
+  - Runs alongside: T013. Needs: T001.
+- [ ] T071 **Owner task**: set up the online database and GitHub secrets (research R16).
+  1. Create the online Supabase project. Turn off public sign-up. Apply migrations 0001 and 0002 (and every later one, T082).
+  2. Create a **read-only** database login that can only read `test_runs`, `grader_results`, and `owner_flag_decisions`. Save its connection string as the GitHub secret `AI_GATE_DATABASE_URL`.
+  3. Create a GitHub environment `ai-tests` that needs your approval for each run. Put in it: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GRADER_MODEL`, the online `SUPABASE_URL`, and the online `SUPABASE_SERVICE_ROLE_KEY`.
+  4. Never put the online admin key in a local `.env` file.
+  - Needs: T008.
+- [ ] T072 **Owner task**: set up the Netlify site (research R2, R21). Connect the repo, turn on deploy previews for PRs, and **turn off automatic publishing of `main`** (the live site is published only by the release workflow). Add the app's secrets (Anthropic, OpenAI, online Supabase keys) as Netlify environment variables, with test keys for deploy previews.
+  - Needs: T001.
+- [ ] T025 [P] Create the AI-tier answer-key loader `tests/ai/questions/load.ts` with a `zod` shape matching data-model.md "Test questions and answer key". `category` in `normal`, `refusal_dosing`, `refusal_compare`, `refusal_other_drug`, `not_covered`, `three_ways`, `privacy`, `emergency`. Blank and non-English questions are refused (research R15). `checked_by / checked_on` "**Required.** The loader refuses any entry without them" (FR-044, constitution VIII). *(Moved here from US2.)*
+  - Tests: `tests/fast/ai-key/loader.test.ts`: an entry without `checked_by` is refused; a bad category is refused; a blank question is refused; a good entry loads.
+  - Runs alongside: T056. Needs: T001.
+- [ ] T056 [P] [US9] Create the grader prompt `src/lib/prompts/grader-v1.ts` and client `src/lib/ai/grader.ts` (`openai` SDK; model from `GRADER_MODEL`). The client refuses to start if the grader's company equals the answer model's company (FR-034). Input: the scrubbed question (`ScrubbedText` only), the sections given to the answer AI, and the answer. Output: `pass` or `fail` plus a short reason. *(Moved here from US9.)*
+  - Tests: `tests/fast/ai/grader-client.test.ts` (mocked SDK): same-company config throws; the request contains no raw personal details; reply shape is checked.
+  - Runs alongside: T025. Needs: T009, T012.
+- [ ] T063 [US9] Create the grader calibration set `tests/ai/grader/calibration.json` (10 hand-made answers: 5 that stick to the label, 5 with a known mistake such as an added fact or a wrong section) and `tests/ai/grader/calibrate.test.ts`. Pick the smallest OpenAI model that catches all 5 bad answers and passes at least 4 of the 5 good ones. Record the model ID and results in research.md R4. These are the AI tier's **first checked entries**: the owner signs them off (T066). *(Moved here from US9.)*
+  - Tests: the calibration set itself (AI tier).
+  - Needs: T025, T056.
+- [ ] T073 Create the AI-tier runner and test-run recorder: `tests/ai/setup.ts` and `.github/workflows/ai-tests.yml` (started by hand; inputs: branch, `model`; uses the `ai-tests` environment). Each run creates a `test_runs` row in the **online** database (commit, branch, answer model), runs every checked entry (calibration set now; each story adds more), and finishes the row with passed/failed/total. A run is `passed` only if **at least one** checked entry ran and all passed (research R15). Put the pass rule in a pure function so it can be tested.
+  - Tests: `tests/fast/ai/test-run-recorder.test.ts` (fake AI, fake database): 0 entries → `failed`; all pass → `passed`; one fails → `failed`; the row records commit and model.
+  - Needs: T008, T025, T063, T071.
+- [ ] T083 Merge the separate **path-list PR**, which adds `.github/workflows/**`, `scripts/ai-gate.ts`, and `src/lib/ci/**` to `.github/ai-related-paths.txt` (owner-approved 2026-11-15). The list counts as AI-related, so the PR needs a passing AI test run before it merges (constitution III). Run `ai-tests` (T073) on the PR's latest commit, then the owner reviews and merges. Until this merges, changes to workflow and gate files are protected only by the owner's review (spec Clarifications, temporary bootstrap gap). **Phase 3 can't start until this is merged.**
+  - Tests: the passing `test_runs` row for the PR's commit. After T015 exists, its every-pattern test also covers the new lines.
+  - Needs: T073.
+- [ ] T015 Create `.github/workflows/ai-gate.yml` (check name `ai-gate`, every PR) with `scripts/ai-gate.ts`, **part 1**: read **`.github/ai-related-paths.txt`** each run (never a copied list; skip `#` comments and blank lines; `**` means everything in that folder); if any changed file matches, require a `test_runs` row for the PR's latest commit with `status = passed`. Reads results with `AI_GATE_DATABASE_URL` (read-only). Put the decision in a pure function `src/lib/ci/gate.ts` so it can be tested.
+  - Tests: `tests/fast/ci/ai-gate.test.ts`: README-only change → pass; for **every** pattern in the real `.github/ai-related-paths.txt`, a matching file with no run → fail with "Run the ai-tests workflow on this commit" (so adding a line to the list automatically adds a test); a change to `.github/ai-related-paths.txt` itself with no run → fail; prompt change with a passed run → pass; comment lines are ignored.
+  - Needs: T008, T073.
+- [ ] T068 **Owner task**: right after `ai-gate` first runs on T015's PR, add `ai-gate` as a required check in branch protection for `main` (research R17). *(Moved here from Polish.)*
+  - Needs: T015.
+- [ ] T074 Create `.github/workflows/release.yml` (runs on `v*` tags; uses the `release` environment) and `scripts/release-check.ts`: (1) fail with "Only the owner can release" unless the tag was pushed by `alexcaldwelll`; (2) use `src/lib/ci/gate.ts` to require a passing `test_runs` row for the tagged commit with every grader flag decided; (3) publish that commit to Netlify's live site using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets (research R21).
+  - Tests: `tests/fast/ci/release-check.test.ts`: tag by the bot → fail; no run → fail with "Run the ai-tests workflow on this commit before releasing"; failed run → fail; passed run with undecided flags → fail; passed run, all decided, owner tag → pass.
+  - Needs: T015.
+- [ ] T075 **Owner task**: lock down releases (research R17, R21).
+  1. Add a tag ruleset for `v*`: restrict creations and deletions, block force pushes, and put **only** `alexcaldwelll` on the bypass list (not the bot).
+  2. Create a GitHub environment `release` that needs your approval. Put `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` in it. Never put them in a file.
+  - Needs: T072, T074.
 
-**Checkpoint**: Foundation ready. Story work can begin.
+**Checkpoint**: Foundation ready. `fast-tests` and `ai-gate` are required checks, the AI
+tier runs and saves results online, the path-list PR is merged (T083), and only the owner
+can release. Story work can begin.
 
 ---
 
@@ -123,14 +179,16 @@ informational medical questions.
 All rules: [contracts/emergency-rules.md](contracts/emergency-rules.md). No AI anywhere in
 this phase.
 
+**⚠️ Blocked until T083 is merged** (the path-list PR).
+
 - [ ] T016 [P] [US1] Create text matching in `src/lib/text/match.ts`: normalize (lowercase, `’` → `'`, other punctuation → space, squash spaces), split into words, edit distance, and phrase matching with the typo allowance: "1–3 letters: exact only; 4–7 letters: off by at most 1 change; 8 or more letters: off by at most 2 changes". Words must appear next to each other, in order.
   - Tests: `tests/fast/emergency/match.test.ts`: capitals; curly apostrophe; phrase inside a long sentence; a 3-letter word with one typo does **not** match; a 5-letter word off by 1 matches, off by 2 doesn't; a 9-letter word off by 2 matches.
   - Runs alongside: T017.
-- [ ] T017 [P] [US1] Create the phrase list and exact messages in `src/lib/emergency/phrases.ts`: all 10 medical ids and 6 self-harm ids with their variants (contract section 2), and `MSG_911`, `MSG_988`, `MSG_NOT_COVERED` with the exact text from contract section 1.
+- [ ] T017 [P] [US1] Create the phrase list and exact messages in `src/lib/emergency/phrases.ts`: all 10 medical ids and 6 self-harm ids with their variants (contract section 2), and `MSG_911`, `MSG_988`, `MSG_NOT_COVERED` with the exact text from contract section 1. No skip list (contract section 3, rule 5).
   - Tests: `tests/fast/emergency/phrase-coverage.test.ts`: the **"every phrase has a test" check**. It reads every id in `phrases.ts` and fails if any id has no test in `tests/fast/emergency/phrases.test.ts` (FR-010).
   - Runs alongside: T016.
 - [ ] T018 [US1] Create `src/lib/emergency/detect.ts`: `detectEmergency(rawText)` returns matched phrase ids and groups (`medical`, `self_harm`, or both).
-  - Tests: `tests/fast/emergency/phrases.test.ts`: **one test per phrase id (16)**, using the main phrase and one variant; capitals, inside a long sentence, and a typo version (US1 scenario 4); US1 scenarios 1–3 with the spec's exact questions.
+  - Tests: `tests/fast/emergency/phrases.test.ts`: **one test per phrase id (16)**, using the main phrase and one variant; capitals, inside a long sentence, and a typo version (US1 scenario 4); US1 scenarios 1–3 with the spec's exact questions. `tests/fast/emergency/false-alarms.test.ts`: "paint", "saint", "painting", and "painted" in otherwise normal questions **do** return `fainting` (spec PC-6); the returned ids are exactly the ones that matched.
   - Runs alongside: T019, T020. Needs: T016, T017.
 - [ ] T019 [P] [US1] Create `src/lib/emergency/classify.ts`: sort a medical match into `happening_now`, `informational`, or `unclear`, checking in that order (contract section 4). Happening-now words are whole words only: `i`, `i'm`, `im`, `me`, `my`, `we`, `now`, `today`, `having`, `right now`. Informational needs an exactly spelled drug name (`emgality`, `reyvow`, `galcanezumab`, `lasmiditan`) and a question word at the start or a `?` at the end.
   - Tests: `tests/fast/emergency/classify.test.ts`: each happening-now word; "Is" does not count as "I"; "worst headache of my life" → happening now; each of the 4 drug names → informational; "Does Reyvo cause chest pain?" → unclear; "reyvow chest pain" → unclear.
@@ -142,11 +200,14 @@ this phase.
   - Tests: `tests/fast/emergency/scenarios.test.ts`: **US1 scenarios 5–17, one test each, with the spec's exact questions**; 911 is always before 988; any self-harm match → no label text.
   - Needs: T018, T019, T020.
 - [ ] T022 [US1] Make the emergency check **step 1** in `src/lib/pipeline/ask.ts`, before basic checks, scrubbing, and everything else (FR-004). It runs on the full raw text in memory. A match returns the emergency reply immediately.
-  - Tests: `tests/fast/pipeline/emergency-first.test.ts`: the fake AI is called **0 times** for all 16 phrases and all 17 scenarios; an emergency phrase at character 1,200 of a 1,500-character question is still caught; emergency + dosing question → emergency wins; emergency reply returns in under 1 second (SC-013).
+  - Tests: `tests/fast/pipeline/emergency-first.test.ts`: the fake AI is called **0 times** for all 16 phrases and all 17 scenarios; an emergency phrase at character 1,200 of a 1,500-character question is still caught; emergency + dosing question → emergency wins; a Spanish question containing "chest pain" still shows `MSG_911`; emergency reply returns in under 1 second (SC-013).
   - Runs alongside: T023. Needs: T013, T021.
 - [ ] T023 [P] [US1] Create `src/components/EmergencyReply.tsx` and use it in `src/app/page.tsx`: emergency messages at the very top, 911 above 988, then any label sentences with section name and label date, or "The label doesn't cover this."
   - Tests: `tests/fast/ui/emergency-reply.test.tsx`: messages render before anything else; 911 above 988; excerpts show section and date.
   - Runs alongside: T022. Needs: T014, T021.
+- [ ] T076 [P] [US1] Add a few AI-tier emergency entries in `tests/ai/questions/emergency.json` (category `emergency`): one medical informational, one happening now, one self-harm, one mixed. The AI runner sends them through the real pipeline with the real clients set up and checks that **no AI client is called** and the right messages show. Owner signs off (T066).
+  - Tests: these entries are AI-tier tests.
+  - Runs alongside: T023. Needs: T022, T073.
 
 **Checkpoint**: US1 works and is fully tested on its own. This is the MVP.
 
@@ -160,25 +221,21 @@ never a guess.
 **Independent Test**: Ask dosing, comparison, other-drug, and not-covered questions and
 confirm each gets the right refusal.
 
-- [ ] T024 [P] [US2] Build the drug name lists **from openFDA data, not from memory**. Write `scripts/build-drug-names.ts`, which queries the openFDA drug label endpoint: (a) brand and generic names of labels whose `indications_and_usage` mentions migraine (`count=openfda.brand_name.exact` and `count=openfda.generic_name.exact`), and (b) the most common brand and generic names overall (same count fields). Save the result to `src/lib/refusals/other-drugs.json`, removing our 4 names (`emgality`, `reyvow`, `galcanezumab`, `lasmiditan`). Put our names and the loader in `src/lib/refusals/drug-names.ts`. Add **research.md R20** recording the exact query URLs, the download date, and the number of names.
+- [ ] T024 [P] [US2] Build the drug name lists **from openFDA data, not from memory**. Write `scripts/build-drug-names.ts`, which queries the openFDA drug label endpoint: (a) brand and generic names of labels whose `indications_and_usage` mentions migraine (`count=openfda.brand_name.exact` and `count=openfda.generic_name.exact`), and (b) the most common brand and generic names overall (same count fields). Save the result to `src/lib/refusals/other-drugs.json`, removing our 4 names (`emgality`, `reyvow`, `galcanezumab`, `lasmiditan`). Put our names and the loader in `src/lib/refusals/drug-names.ts`. Fill in **research.md R20** with the exact query URLs, the download date, and the number of names.
   - Tests: `tests/fast/refusals/drug-names.test.ts`: our 4 names are never on the other list; Imitrex (sumatriptan) and Ubrelvy (ubrogepant) are on it; the JSON file records its source URL and date.
-  - Runs alongside: T025.
-- [ ] T025 [P] [US2] Create the AI-tier answer-key loader `tests/ai/questions/load.ts` with a `zod` shape matching data-model.md "Test questions and answer key". `category` in `normal`, `refusal_dosing`, `refusal_compare`, `refusal_other_drug`, `not_covered`, `three_ways`, `privacy`. `checked_by / checked_on` "**Required.** The loader refuses any entry without them" (FR-044, constitution VIII).
-  - Tests: `tests/fast/ai-key/loader.test.ts`: an entry without `checked_by` is refused; a bad category is refused; a good entry loads.
-  - Runs alongside: T024.
-- [ ] T026 [US2] Create refusal rules in `src/lib/refusals/rules.ts` (no AI, research R14): other drug named → `other_drug`; comparison words ("better than", "vs", "compared to", "instead of", "or") with two drug names → `comparison`; personal-dosing patterns ("how much should I", "my weight", "I weigh", "for my age") → `personal_dosing`; no drug named → `ask_which_drug`; both our drugs named without comparison words → pass through with `drug = both`.
-  - Tests: `tests/fast/refusals/rules.test.ts`: US2 scenarios 1–3 with the spec's exact questions; "Does it cause nausea?" → ask which drug; "How are Emgality and Reyvow given?" → not refused, `both`.
+- [ ] T026 [US2] Create refusal rules in `src/lib/refusals/rules.ts` (no AI, research R14): other drug named → `other_drug`; comparison words ("better than", "vs", "compared to", "instead of") with two drug names → `comparison`; the word **"or" counts only inside comparison phrasing** (with "which", "better", "best", "worse", "stronger", "safer", "choose", or "should I take/use … or …"); personal-dosing patterns ("how much should I", "my weight", "I weigh", "for my age") → `personal_dosing`; no drug named → `ask_which_drug`; both our drugs named without comparison phrasing → pass through with `drug = both`.
+  - Tests: `tests/fast/refusals/rules.test.ts`: US2 scenarios 1–3 with the spec's exact questions; "Does it cause nausea?" → ask which drug; "How are Emgality and Reyvow given?" → not refused, `both`; **"How are Emgality or Reyvow given?" → not refused, `both`**; "Which is better, Emgality or Reyvow?" → `comparison`; "Should I take Emgality or Reyvow?" → `comparison`.
   - Needs: T024.
 - [ ] T027 [US2] Create `src/lib/refusals/respond.ts` and add refusals as **step 4** in `src/lib/pipeline/ask.ts`. Comparison and other-drug replies are rule-based text with "talk to your doctor or pharmacist" and no AI call. `ask_which_drug` → "Do you mean Emgality or Reyvow?". **Personal dosing**: "Ask your doctor or pharmacist" plus a plain-language summary of the label's "Dosage and Administration" section written by the answer AI from that section only, with `sections[]` and `label_date` (contracts/api.md `refusal` shape). Uses the fake AI until T039 exists. Once T038/T044 exist, the summary also passes the word-count, reading-level, and citation checks (wired in T040).
   - Tests: `tests/fast/pipeline/refusals.test.ts`: each refusal kind returns the right `reason` and wording; fake AI called 0 times for comparison, other drug, and which drug; dosing reply has "Ask your doctor or pharmacist", a section, and a label date.
   - Needs: T013, T026.
-- [ ] T028 [US2] Create the dosing **number check** in `src/lib/checks/dosing-numbers.ts` and use it in the dosing reply. Every number and unit pair in the AI's dosing summary (e.g. `120 mg`, `1 mL`, `once monthly`, `2 doses`) must appear **exactly** in that drug's saved "Dosage and Administration" section text. The only allowed difference is spacing (`120 mg` = `120mg`). If **any** number or unit doesn't match, or the AI is down, fall back to showing the section text **word for word** with section name and label date, plus "Ask your doctor or pharmacist".
+- [ ] T028 [US2] Create the dosing **number check** in `src/lib/checks/dosing-numbers.ts` and use it in the dosing reply. Every number and unit pair in the AI's dosing summary (e.g. `120 mg`, `1 mL`, `once monthly`, `2 doses`) must appear **exactly** in that drug's saved "Dosage and Administration" section text. The only allowed difference is spacing (`120 mg` = `120mg`). If **any** number or unit doesn't match, the summary fails the answer checks, or the AI is down, fall back to showing the section text **word for word** with section name and label date, plus "Ask your doctor or pharmacist". This word-for-word fallback is on purpose (spec PC-7: Safe over Fair and Equitable).
   - Tests: `tests/fast/checks/dosing-numbers.test.ts`: summary with numbers that match the label → AI summary shown; summary with a wrong number (`240 mg` when the label says `120 mg`) → word-for-word fallback; a wrong unit (`mL` vs `mg`) → fallback; a number not in the label at all → fallback; AI down → fallback; the fallback text exactly equals the stored section text.
   - Needs: T027.
-- [ ] T029 [US2] Add "not covered" and the AI safety net to `src/lib/pipeline/ask.ts`: if the AI marks its answer `not_covered` → reply `kind: "not_covered"`, `text: "The label doesn't cover this."` with drug and label date; if the AI marks it `refusal` → refusal reply. Never show a guess (FR-014).
+- [ ] T029 [US2] Add "not covered" and the AI safety net to `src/lib/pipeline/ask.ts`: if the AI marks its answer `not_covered` → reply `kind: "not_covered"`, `text: "The label doesn't cover this."` with drug and label date; if the AI marks it `refusal` → refusal reply. Never show a guess (FR-014). ("Not covered" is used only when the AI says the label doesn't answer. Failed checks use the label pointer instead, T040.)
   - Tests: `tests/fast/pipeline/not-covered.test.ts`: fake AI says `not_covered` → exact text; fake AI says `refusal` → refusal reply with doctor or pharmacist wording.
   - Needs: T028.
-- [ ] T030 [P] [US2] Add AI-tier refusal questions in `tests/ai/questions/refusals.json`: personal dosing for each drug (including "How much Emgality should I take? I weigh 200 pounds"), "Is Reyvow better than Emgality?", "Is Reyvow better than Imitrex?", "What are the side effects of Ubrelvy?", and not-covered for each drug (including "Can I take Reyvow on a plane?"). Leave `checked_by` / `checked_on` empty for the owner (T065).
+- [ ] T030 [P] [US2] Add AI-tier refusal questions in `tests/ai/questions/refusals.json`: personal dosing for each drug (including "How much Emgality should I take? I weigh 200 pounds"), "Is Reyvow better than Emgality?", "Is Reyvow better than Imitrex?", "What are the side effects of Ubrelvy?", and not-covered for each drug (including "Can I take Reyvow on a plane?"). Owner signs off `checked_by` / `checked_on` in the same PR (T066).
   - Tests: these entries are AI-tier tests.
   - Runs alongside: T026–T029. Needs: T025.
 
@@ -203,29 +260,73 @@ All personal details in tests are made up (FR-022).
 - [ ] T031 [P] [US5] Create `src/lib/scrub/email.ts` (standard email pattern → `[EMAIL]`) and `src/lib/scrub/phone.ts` (US and international formats → `[PHONE]`).
   - Tests: `tests/fast/scrub/email-phone.test.ts`: `jane@example.com`; `555-123-4567`; `(555) 123 4567`; `+44 20 7946 0958`; a dose like `120 mg` is **not** masked.
   - Runs alongside: T032.
-- [ ] T032 [P] [US5] Create `src/lib/scrub/names.ts` with three layers (research R10): intro phrases ("I'm X", "my name is X", "this is X", "thanks, X"); `compromise` name finding; any capitalized word that isn't at the start of a sentence and isn't on the known-word list (drug names, section names, common English words) → `[NAME]`. When unsure, mask.
-  - Tests: `tests/fast/scrub/names.test.ts`: "Hi, I'm Jane Doe"; "my name is Sam Lee"; "thanks, Pat"; an unknown capitalized word mid-sentence → masked; "Emgality", "Reyvow", and "Warnings and Precautions" are not masked.
-  - Runs alongside: T031.
-- [ ] T033 [US5] Create `src/lib/scrub/index.ts` (`scrub(raw)` returns a **`ScrubbedText`** branded type, so other code can tell scrubbed text apart from raw text) and add scrubbing as **step 3** in `src/lib/pipeline/ask.ts`, right after the emergency check and basic checks, before refusals and any AI. Blank and non-English questions stop at step 2 and are never scrubbed.
-  - Tests: `tests/fast/privacy/scrub-pipeline.test.ts`: US5 scenario 1 → the fake AI receives `[NAME]`, `[EMAIL]`, `[PHONE]` and none of the raw details; a spy on `console.*` and on the error reporter never sees the raw text, including when the AI throws.
+- [ ] T032 [P] [US5] Create `src/lib/scrub/names.ts` with three layers (research R10): intro phrases ("I'm X", "my name is X", "this is X", "thanks, X"); `compromise` name finding; any capitalized word that isn't at the start of a sentence and isn't on the known-word list → `[NAME]`. The known-word list holds our 4 drug names, **every name in `src/lib/refusals/other-drugs.json`** (loaded through T024's `drug-names.ts`), label section names, and common English words. A known word is never masked, even if `compromise` flags it. When unsure about any other word, mask.
+  - Tests: `tests/fast/scrub/names.test.ts`: "Hi, I'm Jane Doe"; "my name is Sam Lee"; "thanks, Pat"; an unknown capitalized word mid-sentence → masked; "Emgality", "Reyvow", and "Warnings and Precautions" are not masked; **"Imitrex", "Ubrelvy", and "sumatriptan" mid-sentence are not masked**.
+  - Runs alongside: T031. Needs: T024.
+- [ ] T033 [US5] Create `src/lib/scrub/index.ts` (`scrub(raw)` returns a **`ScrubbedText`** (the branded type from T012), so other code can tell scrubbed text apart from raw text) and add scrubbing as **step 3** in `src/lib/pipeline/ask.ts`, right after the emergency check and basic checks, before refusals and any AI. Blank and non-English questions stop at step 2 and are never scrubbed.
+  - Tests: `tests/fast/privacy/scrub-pipeline.test.ts`: US5 scenario 1 → the fake AI receives `[NAME]`, `[EMAIL]`, `[PHONE]` and none of the raw details; a spy on `console.*` and on the server logger (T078) never sees the raw text, including when the AI throws.
   - Needs: T013, T031, T032.
+- [ ] T077 [US5] Run the refusal rules on **scrubbed** text. Create `tests/fast/refusals/rules-after-scrub.test.ts`: every question in `tests/fast/refusals/rules.test.ts` is passed through `scrub()` first and must get the same result. Includes "Is Reyvow better than Imitrex?" → `comparison` and "What are the side effects of Ubrelvy?" → `other_drug`, plus a version with a made-up name and phone number added.
+  - Tests: this file.
+  - Needs: T026, T033.
+- [ ] T078 [P] [US5] Create the only server logger `src/lib/log/server-log.ts` (research R18): writes to Netlify's function logs; accepts question text only as `ScrubbedText`; takes **no** question text for blank and non-English questions; logs errors by type and message only, never the request body. There is no outside error-reporting service.
+  - Tests: `tests/fast/log/server-log.test.ts`: a plain string can't be passed as the question (type test); an error with the raw question in its message is logged without it; blank and non-English calls write no question text.
+  - Runs alongside: T077. Needs: T012.
 - [ ] T034 [US5] Create `tests/fast/privacy/raw-search.test.ts`: run every privacy question (and one emergency question that contains made-up personal details) through the pipeline, then search **every text and JSON column in every table** of the local database for each raw string and each raw personal detail (SC-006).
   - Tests: this file; it must find 0 matches. It becomes a stronger check once US6 writes log rows (re-run in T047).
   - Needs: T033.
-- [ ] T035 [P] [US5] Add AI-tier privacy questions in `tests/ai/questions/privacy.json` (made-up details only, e.g. US5 scenario 1). Leave `checked_by` / `checked_on` for the owner.
+- [ ] T035 [P] [US5] Add AI-tier privacy questions in `tests/ai/questions/privacy.json` (made-up details only, e.g. US5 scenario 1). Owner signs off in the same PR (T066).
   - Tests: these entries are AI-tier tests.
   - Runs alongside: T033, T034. Needs: T025.
 
-**Checkpoint**: Scrubbing is in place before any real AI is connected.
+**Checkpoint**: Scrubbing is in place before any real AI is connected. Drug names survive
+scrubbing, so refusals still work.
 
 ---
 
-## Phase 6: User Story 3 — Plain-language answers (Priority: P1)
+## Phase 6: Grading test answers (before the first AI-written answer)
 
-**Goal**: Normal questions get a short, easy answer drawn only from the label.
+**Purpose**: The constitution says the second-AI grader must grade **every** test answer,
+and changes with flagged answers can't merge until the owner records a decision. The first
+AI-written test answers arrive in US3 (T042), so the owner's login, the grader tables, and
+the flag-decision pages must exist first. These tasks come from US8 and US9 and keep their
+IDs.
+
+- [ ] T051 [US8] Migration `supabase/migrations/0003_reviewers.sql`: `reviewers` (`role` "`reviewer` or `owner`", `active`) and `review_decisions` (`decision` `approve` or `flag`; `reviewer_id` "Required (FR-031)"; `reason` "**Required when `flag`** (FR-032)"; `decided_at` required). Access rules: active reviewers and the owner can read `log_entries`; patients and the public can't. Turn off public sign-up in `supabase/config.toml`.
+  - Tests: `tests/fast/db/review-rls.test.ts`: the anonymous client can't read `log_entries`; an inactive reviewer can't; an active reviewer can; a `flag` row with no reason is rejected.
+- [ ] T079 **Owner task**: after T051 is applied online (T082), create your own login in the online Supabase project and add your `reviewers` row with `role = owner`, `active = yes`.
+  - Needs: T051.
+- [ ] T052 [US8] Create `src/lib/auth/session.ts` (`@supabase/ssr`; `requireReviewer()` and `requireOwner()`, where owner counts as reviewer, FR-033) and the login page `src/app/login/page.tsx` (email and password).
+  - Tests: `tests/fast/review/session.test.ts`: signed out → 401; inactive → 403; owner passes `requireReviewer`.
+  - Needs: T051.
+- [ ] T055 [US9] Migration `supabase/migrations/0004_grader.sql`: `grader_results` (`grade` `pass` or `fail`; `source` `real` or `test`; `needs_owner_decision` "Yes when `grade = fail` (FR-037)") and `owner_flag_decisions` ("One decision per flag", unique on `grader_result_id`; `owner_id` "Must have role `owner`"; `reason` "Required (FR-038)"). Only the owner can insert decisions.
+  - Tests: `tests/fast/db/grader-schema.test.ts`: a second decision on the same flag is rejected; a reviewer (not owner) can't insert; a decision with no reason is rejected.
+  - Needs: T051.
+- [ ] T059 [US9] Extend the AI-tier recorder (`tests/ai/setup.ts`, T073): grade **every** AI-written answer right away with the T056 client (FR-035), save results to `grader_results` with `source = test`. A failed **grade** does not fail the test (FR-037). Emergency and rule-based replies have no AI answer, so they aren't graded.
+  - Tests: `tests/fast/grading/test-run-recorder.test.ts` (fake AI and fake grader): every AI-written answer gets a grade; a failed grade leaves the run `passed` and creates a flag; an emergency entry gets no grade.
+  - Needs: T055, T056, T073.
+- [ ] T060 [US9] Create owner routes `src/app/api/owner/flags/route.ts` (GET, filter `source`), `src/app/api/owner/flags/[grader_result_id]/decision/route.ts` (POST; reason required; second decision → 409), and `src/app/api/owner/grader-summary/route.ts` (total, disagreements, rate, `by_month`).
+  - Tests: `tests/fast/owner/api.test.ts`: reviewer → 403; no reason → 400; second decision → 409; 6 disagreements out of 40 → rate 0.15 with the right month counts; 0 decisions → rate 0 with no error.
+  - Needs: T052, T055.
+- [ ] T061 [P] [US9] Create owner pages `src/app/owner/flags/page.tsx` and `src/app/owner/grader-summary/page.tsx` (shows `grading_gave_up` entries and the disagreement rate).
+  - Tests: `tests/fast/ui/owner-pages.test.tsx`: a non-owner is blocked; the rate is displayed.
+  - Runs alongside: T062. Needs: T060.
+- [ ] T062 [P] [US9] Extend `src/lib/ci/gate.ts` and `scripts/ai-gate.ts` with **part 2**: every `grader_results` row with `needs_owner_decision = yes` from the PR's run must have an `owner_flag_decisions` row. Fail message: "N grader flags need your decision". The release check (T074) uses the same code.
+  - Tests: extend `tests/fast/ci/ai-gate.test.ts`: a passed run with 3 undecided flags → fail with "3 grader flags need your decision"; all decided → pass. Extend `tests/fast/ci/release-check.test.ts` the same way.
+  - Runs alongside: T061. Needs: T015, T055, T074.
+
+**Checkpoint**: Every AI-written test answer will be graded, and the owner can decide flags
+before anything merges.
+
+---
+
+## Phase 7: User Story 3 — Plain-language answers (Priority: P1)
+
+**Goal**: Normal questions get a short, easy answer drawn only from the label, within 9
+seconds.
 
 **Independent Test**: Ask side-effect, how-it's-given, and storage questions. Each answer is
-120 words or fewer and grade 9 or lower.
+120 words or fewer and grade 9 or lower, or points to the label section if it can't be.
 
 - [ ] T036 [P] [US3] Create `src/lib/labels/synonyms.ts` (everyday words → label words: "shot" → "injection", "throw up" → "vomiting", "side effects" → "adverse reactions", and more) and `src/lib/labels/retrieve.ts` (keyword scoring with synonyms and T016 typo matching; top 3 sections, up to about 4,000 tokens; research R12).
   - Tests: `tests/fast/labels/retrieve.test.ts`: "shot" finds the injection section; "throw up" finds vomiting; "side efects" (typo) finds Adverse Reactions; the medical, everyday, and typo versions of one question pick the same top section; never more than 3 sections.
@@ -236,24 +337,35 @@ All personal details in tests are made up (FR-022).
 - [ ] T038 [P] [US3] Create `src/lib/checks/word-count.ts` (120 or fewer, FR-015) and `src/lib/checks/reading-level.ts` (Flesch-Kincaid grade using `syllable`; drug names and section names are left out of the score; pass at grade 9 or lower, FR-016).
   - Tests: `tests/fast/checks/answer-checks.test.ts`: 120 words passes, 121 fails; a known grade-6 sample passes; a known grade-14 sample fails; a sentence repeating "galcanezumab" isn't pushed over by the drug name.
   - Runs alongside: T036, T037.
-- [ ] T039 [US3] Create the real answer AI client `src/lib/ai/anthropic.ts` using `@anthropic-ai/sdk`, model from `src/config/models.ts`, structured output with T037's shape, 8-second timeout. Its input type **accepts only `ScrubbedText`** (from T033), so code that passes raw text won't compile.
-  - Tests: `tests/fast/ai/anthropic-client.test.ts` (mocked SDK, no real call): timeout → error the pipeline turns into `try_again`; the model name comes from config; a type test (`// @ts-expect-error`) proves passing a plain string fails to compile.
+- [ ] T039 [US3] Create the real answer AI client `src/lib/ai/anthropic.ts` using `@anthropic-ai/sdk`, model from `src/config/models.ts`, structured output with T037's shape. It takes a **deadline** from the pipeline and sets its timeout to the time left minus 0.5 seconds (research R13). Its input type **accepts only `ScrubbedText`** (from T033), so code that passes raw text won't compile.
+  - Tests: `tests/fast/ai/anthropic-client.test.ts` (mocked SDK, no real call): timeout → error the pipeline turns into `try_again`; the timeout follows the deadline; the model name comes from config; a type test (`// @ts-expect-error`) proves passing a plain string fails to compile.
   - Needs: T033, T037.
-- [ ] T040 [US3] Add the normal answer path to `src/lib/pipeline/ask.ts`: section search → answer AI → word-count and reading-level checks → one retry if a check fails → otherwise "The label doesn't cover this." Both drugs named without comparing → one answer per drug. AI down or slow → `kind: "try_again"`, nothing made up. Personal-dosing summaries (T027) go through the same checks before the T028 number check.
-  - Tests: `tests/fast/pipeline/answer.test.ts` (fake AI): a too-long first answer, then a good one → good one shown; bad twice → not covered; AI throws → `try_again`; both drugs → two `answers` items.
+- [ ] T040 [US3] Add the normal answer path to `src/lib/pipeline/ask.ts` (research R13, FR-052, FR-053):
+  - A **9-second limit** for the whole reply, starting when the request arrives.
+  - Section search → answer AI → word-count and reading-level checks.
+  - **One retry only if at least 3 seconds are left.**
+  - If the checks fail twice, or fail once with no time to retry → **label pointer**: "I couldn't put this into plain language reliably. The answer is in the [section name] section of the label (dated [date])." with `link: /label/[drug]#[field_key]`. The section is the first one the AI cited that exists in the saved label, else the top section from the search. **Never** "The label doesn't cover this" here.
+  - First AI call runs out of time or the AI is down → `kind: "try_again"`, nothing made up.
+  - Both drugs named without comparing → both drug answers run **at the same time** with the same deadline, one `answers` item each.
+  - Personal-dosing summaries (T027) go through the same checks before the T028 number check, and use T028's fallback, not the pointer.
+  - Tests: `tests/fast/pipeline/answer.test.ts` (fake AI with controllable delays): a too-long first answer, then a good one → good one shown as `type: "ai"`; bad twice → `label_pointer` with the cited section, date, and link, and the text never contains "doesn't cover"; bad once with only 2 seconds left → `label_pointer` with no second AI call; AI cites only a made-up section → pointer names the top search section; first call times out → `try_again`; both drugs → two items, and the two fake AI calls overlap in time (total time ≈ the slower one, not the sum); every reply is sent before 9 seconds.
   - Needs: T036, T038, T039.
-- [ ] T041 [P] [US3] Create `src/components/AnswerReply.tsx` and use it in `src/app/page.tsx` for `answer`, `refusal`, `not_covered`, `ask_which_drug`, `try_again`, `prompt_for_question`, `english_only`.
-  - Tests: `tests/fast/ui/answer-reply.test.tsx`: each reply kind renders its text, with the banner still visible.
-  - Runs alongside: T042. Needs: T040.
-- [ ] T042 [P] [US3] Add AI-tier questions `tests/ai/questions/normal.json` (side effects, how it's given, storage, for both drugs) and `tests/ai/questions/three-ways.json` (at least one `three_ways_group` per drug: medical words, everyday words, typos; FR-043). Create the AI test runner `tests/ai/answers.test.ts`: real pipeline, real answer AI; checks 120 words or fewer, grade 9 or lower, expected facts present, and that the three versions in a group give the same facts. Leave `checked_by` / `checked_on` for the owner.
+- [ ] T080 [P] [US3] Create the label page `src/app/label/[drug]/page.tsx` (contracts/api.md "GET /label/{drug}"): shows the **saved** current label for `emgality` or `reyvow`, its label date, and every section with its display name and an anchor `id` equal to its `field_key`. Unknown drug → 404. Uses the shared layout, so the banner shows.
+  - Tests: `tests/fast/ui/label-page.test.tsx`: each section has the right anchor; the label date shows; the banner shows; `/label/advil` → not found.
+  - Runs alongside: T041. Needs: T011, T014.
+- [ ] T041 [P] [US3] Create `src/components/AnswerReply.tsx` and use it in `src/app/page.tsx` for `answer` (including `label_pointer` items, with their link), `refusal`, `not_covered`, `ask_which_drug`, `try_again`, `prompt_for_question`, `english_only`.
+  - Tests: `tests/fast/ui/answer-reply.test.tsx`: each reply kind renders its text, with the banner still visible; a `label_pointer` item shows the section name, date, and a working link.
+  - Runs alongside: T042, T080. Needs: T040.
+- [ ] T042 [P] [US3] Add AI-tier questions `tests/ai/questions/normal.json` (side effects, how it's given, storage, for both drugs, plus "How are Emgality or Reyvow given?") and `tests/ai/questions/three-ways.json` (at least one `three_ways_group` per drug: medical words, everyday words, typos; FR-043). Create the AI test runner `tests/ai/answers.test.ts`: real pipeline, real answer AI; checks AI-written answers are 120 words or fewer and grade 9 or lower, expected facts present, and that the three versions in a group give the same facts. Every AI-written answer is graded (T059). Owner signs off in the same PR (T066).
   - Tests: this runner and these entries are the AI-tier tests.
-  - Runs alongside: T041. Needs: T025, T040.
+  - Runs alongside: T041. Needs: T025, T040, T059.
 
-**Checkpoint**: The main job works. A real AI is connected, and it only ever sees scrubbed text.
+**Checkpoint**: The main job works. A real AI is connected, it only ever sees scrubbed text,
+and every test answer it writes is graded.
 
 ---
 
-## Phase 7: User Story 4 — Show where the answer came from (Priority: P1)
+## Phase 8: User Story 4 — Show where the answer came from (Priority: P1)
 
 **Goal**: Every label-based answer names at least one real section and shows the label date.
 
@@ -262,8 +374,8 @@ the saved label and shows the label date.
 
 - [ ] T043 [US4] Create `src/lib/checks/citations.ts`: every cited section exists (present and not empty) in the saved label for that drug (FR-018); at least one section is cited and `label_date` is present (FR-017).
   - Tests: `tests/fast/checks/citations.test.ts`: real section passes; made-up section fails; no section fails; missing date fails; a section that exists only in the *other* drug's label fails.
-- [ ] T044 [US4] Add the citation check to the answer checks in `src/lib/pipeline/ask.ts` (same one-retry rule as T040). Every `answers` item and every dosing refusal carries `sections[]` and `label_date`.
-  - Tests: extend `tests/fast/pipeline/answer.test.ts`: every normal answer has at least 1 real section and a date; fake AI citing a made-up section twice → not covered.
+- [ ] T044 [US4] Add the citation check to the answer checks in `src/lib/pipeline/ask.ts` (same retry and label-pointer rules as T040). Every `answers` item and every dosing refusal carries `sections[]` and `label_date`.
+  - Tests: extend `tests/fast/pipeline/answer.test.ts`: every normal answer has at least 1 real section and a date; fake AI citing a made-up section twice → `label_pointer` naming the top search section (not "not covered").
   - Runs alongside: T045. Needs: T040, T043.
 - [ ] T045 [P] [US4] Show section names and label date in `src/components/AnswerReply.tsx`. In `tests/ai/answers.test.ts`, check that `expected_sections` are cited and that every cited section exists.
   - Tests: extend `tests/fast/ui/answer-reply.test.tsx` (section and date visible); the AI-tier check above.
@@ -273,23 +385,25 @@ the saved label and shows the label date.
 
 ---
 
-## Phase 8: User Story 6 — Log every answer (Priority: P2)
+## Phase 9: User Story 6 — Log every answer (Priority: P2)
 
 **Goal**: Every reply creates one complete log row, with no raw question.
 
 **Independent Test**: Ask a question. One log row exists with all required fields.
 
-- [ ] T046 [US6] Create `src/lib/db/log.ts`: `writeLogEntry()` with a `zod` shape matching data-model.md `log_entries`. It takes the question only as `ScrubbedText` (or nothing). For `prompt_for_question` and `english_only` rows, store **only** `id`, `created_at`, `answer_type`, `answer`, `source`, `review_status`, with no question text at all, because the scrubber is English-only. `grading_status` is `not_applicable` for emergencies, rule-based refusals, `prompt_for_question`, and `english_only`.
-  - Tests: `tests/fast/log/log-writer.test.ts`: rejects a bad `answer_type`; a `english_only` row with question text is rejected; a plain string can't be passed as the question (type test).
-- [ ] T047 [US6] Write exactly one log row at **every** exit of `src/lib/pipeline/ask.ts`. Emergency rows: scrub the question after the emergency check and before saving; `answer_type = emergency`, `ai_skipped = true`, `model_name` empty, `emergency_group`, `emergency_case`, `label_text_shown`, and when shown, `sections_used` and `label_date` (FR-025). AI answers record `model_name` and `prompt_version`.
-  - Tests: `tests/fast/log/every-reply.test.ts`: normal, refusal (each kind), not covered, emergency (informational, happening now, unclear, self-harm, mixed), ask which drug, try again, **blank, and non-English** each → exactly 1 row with the right fields; blank and non-English rows have an empty question field and only reply type and time filled in. Re-run `tests/fast/privacy/raw-search.test.ts` (T034), which now searches real log rows and must still find 0.
+- [ ] T046 [US6] Create `src/lib/db/log.ts`: `writeLogEntry()` with a `zod` shape matching data-model.md `log_entries`. It takes the question only as `ScrubbedText` (or nothing). **Rows with no question** (blank, non-English, and non-English emergency; FR-055) store **only** `id`, `created_at`, and `answer_type`. Every other field is left empty. `grading_status` is `not_applicable` for emergencies, rule-based refusals, and `label_pointer` rows.
+  - Tests: `tests/fast/log/log-writer.test.ts`: rejects a bad `answer_type`; an `english_only` row with question text, `answer`, or `source` is rejected; a plain string can't be passed as the question (type test).
+- [ ] T047 [US6] Write exactly one log row at **every** exit of `src/lib/pipeline/ask.ts`.
+  - **Emergency rows**: after the emergency reply is built and **before saving**, run the language check (`src/lib/pipeline/language.ts`). Not English → save only `id`, `created_at`, `answer_type = emergency` (FR-055). English → scrub the question, then save `answer_type = emergency`, `ai_skipped = true`, `model_name` empty, `emergency_group`, `emergency_phrase_ids` (FR-054), `emergency_case`, `label_text_shown`, and when shown, `sections_used` and `label_date` (FR-025).
+  - AI answers record `model_name` and `prompt_version`. `label_pointer` replies record the pointed-to section and date.
+  - Tests: `tests/fast/log/every-reply.test.ts`: normal, label pointer, refusal (each kind), not covered, emergency (informational, happening now, unclear, self-harm, mixed), ask which drug, try again, **blank, and non-English** each → exactly 1 row with the right fields; blank and non-English rows hold only `id`, `created_at`, `answer_type`; English emergency rows hold the right `emergency_phrase_ids` (for example "Can I go painting after Reyvow?" → `["fainting"]`). `tests/fast/log/non-english-emergency.test.ts`: a Spanish question containing "chest pain" → the reply shows `MSG_911` first, and its row holds only `id`, `created_at`, `answer_type = emergency`, with no question text and no phrase ids. Re-run `tests/fast/privacy/raw-search.test.ts` (T034), which now searches real log rows and must still find 0.
   - Needs: T046.
 
 **Checkpoint**: Every reply is recorded for review, with no raw question.
 
 ---
 
-## Phase 9: User Story 7 — Keep label data current without extra downloads (Priority: P2)
+## Phase 10: User Story 7 — Keep label data current without extra downloads (Priority: P2)
 
 **Goal**: Labels are downloaded once and again only when openFDA has a newer date.
 
@@ -298,7 +412,7 @@ date → new label saved and used.
 
 - [ ] T048 [US7] Add fixtures `tests/fixtures/openfda/no-matches.json` and `tests/fixtures/openfda/reyvow-newer.json` (the Reyvow fixture with a later `effective_time`).
   - Tests: —
-- [ ] T049 [US7] Create `src/lib/labels/openfda.ts` (research R6): `fetchInitial(drug)` uses the brand-name + Eli Lilly search and saves the record, `set_id`, and `effective_time`; `checkForNewer(drug)` asks only for the same `set_id` with `effective_time` after the saved date. A newer label → new `drug_labels` row; the old row's `is_current` becomes no. No match → nothing downloaded or saved. openFDA unreachable → keep the saved label and log the failed check (no question text involved). Fetch is passed in, so tests never call openFDA.
+- [ ] T049 [US7] Create `src/lib/labels/openfda.ts` (research R6): `fetchInitial(drug)` uses the brand-name + Eli Lilly search and saves the record, `set_id`, and `effective_time`; `checkForNewer(drug)` asks only for the same `set_id` with `effective_time` after the saved date. A newer label → new `drug_labels` row; the old row's `is_current` becomes no. No match → nothing downloaded or saved. openFDA unreachable → keep the saved label and log the failed check through the server logger (no question text involved). Fetch is passed in, so tests never call openFDA.
   - Tests: `tests/fast/labels/freshness.test.ts`: no saved label → downloads and saves; same date → no full download and the `drug_labels` row count doesn't change (SC-008); newer → new row is current, old row kept, and a new answer shows the new date; network error → saved label still used.
   - Needs: T048.
 - [ ] T050 [US7] Create `scripts/labels-fetch.ts` (`npm run labels:fetch`), `scripts/labels-check.ts` (`npm run labels:check`), and `netlify/functions/label-check.ts` (daily schedule) that all call T049's code.
@@ -309,76 +423,51 @@ date → new label saved and used.
 
 ---
 
-## Phase 10: User Story 8 — Human review of answers (Priority: P3)
+## Phase 11: User Story 8 — Human review of answers (Priority: P3)
 
 **Goal**: Reviewers sign in with their own login and approve or flag logged answers.
+(Logins and the `reviewers` table were built in Phase 6.)
 
 **Independent Test**: Sign in as a reviewer, approve one answer, flag another with a reason,
 and confirm both are saved with name and time. Signed-out users are blocked.
 
-- [ ] T051 [US8] Migration `supabase/migrations/0003_reviewers.sql`: `reviewers` (`role` "`reviewer` or `owner`", `active`) and `review_decisions` (`decision` `approve` or `flag`; `reviewer_id` "Required (FR-031)"; `reason` "**Required when `flag`** (FR-032)"; `decided_at` required). Access rules: active reviewers and the owner can read `log_entries`; patients and the public can't. Turn off public sign-up in `supabase/config.toml`.
-  - Tests: `tests/fast/db/review-rls.test.ts`: the anonymous client can't read `log_entries`; an inactive reviewer can't; an active reviewer can; a `flag` row with no reason is rejected.
-- [ ] T052 [US8] Create `src/lib/auth/session.ts` (`@supabase/ssr`; `requireReviewer()` and `requireOwner()`, where owner counts as reviewer, FR-033) and the login page `src/app/login/page.tsx` (email and password).
-  - Tests: `tests/fast/review/session.test.ts`: signed out → 401; inactive → 403; owner passes `requireReviewer`.
-  - Needs: T051.
 - [ ] T053 [US8] Create `src/app/api/review/entries/route.ts` (GET; filters `status`, `type`, `page`; newest first) and `src/app/api/review/entries/[id]/decision/route.ts` (POST; saves reviewer and time; updates `review_status`; flag without reason → 400).
   - Tests: `tests/fast/review/api.test.ts`: signed out → 401; inactive → 403; approve saves reviewer id and time and sets `approved`; flag without reason → 400; flag with reason → `flagged`; a later review changes the status and both decisions are kept.
   - Runs alongside: T054. Needs: T052.
-- [ ] T054 [P] [US8] Create the review page `src/app/review/page.tsx` (list entries, approve, flag with a required reason box).
-  - Tests: `tests/fast/ui/review-page.test.tsx`: signed out → sent to login; the flag button is disabled until a reason is typed.
+- [ ] T054 [P] [US8] Create the review page `src/app/review/page.tsx` (list entries, approve, flag with a required reason box). Emergency entries show their matched phrase ids, so false alarms are easy to spot and flag (FR-054).
+  - Tests: `tests/fast/ui/review-page.test.tsx`: signed out → sent to login; the flag button is disabled until a reason is typed; an emergency entry shows its phrase ids.
   - Runs alongside: T053.
 
 **Checkpoint**: People can check answers.
 
 ---
 
-## Phase 11: User Story 9 — Second-AI grader (Priority: P3)
+## Phase 12: User Story 9 — Second-AI grader for real answers (Priority: P3)
 
-**Goal**: An OpenAI grader checks every test answer and a random 10% of real answers.
-Failed grades go to the owner, who records a decision. The disagreement rate is visible.
+**Goal**: The grader also checks a random 10% of real answers. (The grader client, test-answer
+grading, flag decisions, and the disagreement rate were built in Phases 2 and 6.)
 
-**Independent Test**: Run the AI tests; every answer is graded. Send many real answers; about
-10% are graded. Force a failed grade; it's flagged for the owner.
+**Independent Test**: Send many real answers; about 10% are graded. Force a failed grade;
+it's flagged for the owner.
 
-- [ ] T055 [US9] Migration `supabase/migrations/0004_grader.sql`: `grader_results` (`grade` `pass` or `fail`; `source` `real` or `test`; `needs_owner_decision` "Yes when `grade = fail` (FR-037)") and `owner_flag_decisions` ("One decision per flag", unique on `grader_result_id`; `owner_id` "Must have role `owner`"; `reason` "Required (FR-038)"). Only the owner can insert decisions.
-  - Tests: `tests/fast/db/grader-schema.test.ts`: a second decision on the same flag is rejected; a reviewer (not owner) can't insert; a decision with no reason is rejected.
-- [ ] T056 [P] [US9] Create the grader prompt `src/lib/prompts/grader-v1.ts` and client `src/lib/ai/grader.ts` (`openai` SDK; model from `GRADER_MODEL`). The client refuses to start if the grader's company equals the answer model's company (FR-034). Input: the scrubbed question (`ScrubbedText` only), the sections given to the answer AI, and the answer. Output: `pass` or `fail` plus a short reason.
-  - Tests: `tests/fast/ai/grader-client.test.ts` (mocked SDK): same-company config throws; the request contains no raw personal details; reply shape is checked.
-  - Runs alongside: T057. Needs: T055.
-- [ ] T057 [P] [US9] Create `src/lib/grading/sample.ts`: for real AI answers, a secure random number below 0.10 → `grading_status = waiting`, else `not_sampled` (FR-036). Emergencies, rule-based refusals, `prompt_for_question`, and `english_only` → `not_applicable`. Call it from the log step.
-  - Tests: `tests/fast/grading/sample.test.ts`: injected 0.09 → waiting, 0.10 → not sampled; emergency → not applicable; 10,000 real draws land between 8% and 12% (SC-010).
-  - Runs alongside: T056. Needs: T047.
+- [ ] T057 [P] [US9] Create `src/lib/grading/sample.ts`: for real AI-written answers, a secure random number below 0.10 → `grading_status = waiting`, else `not_sampled` (FR-036). Emergencies, rule-based refusals, and `label_pointer` replies → `not_applicable`. Blank and non-English rows have no grading status. Call it from the log step.
+  - Tests: `tests/fast/grading/sample.test.ts`: injected 0.09 → waiting, 0.10 → not sampled; emergency → not applicable; label pointer → not applicable; 10,000 real draws land between 8% and 12% (SC-010).
+  - Needs: T047.
 - [ ] T058 [US9] Create `src/lib/grading/worker.ts` and `netlify/functions/grading-worker.ts` (every 10 minutes): grade `waiting` and `not_graded_yet` entries; save a `grader_results` row; fail → `needs_owner_decision = yes`; grader down → `not_graded_yet` and `grading_attempts + 1`; after 5 tries → `grading_gave_up`.
   - Tests: `tests/fast/grading/worker.test.ts` (fake grader): pass saved; fail flags for the owner; grader down → not graded yet; 5th failure → gave up; a failed grade never throws.
   - Needs: T056, T057.
-- [ ] T059 [US9] Create `tests/ai/setup.ts`: each AI-tier run creates a `test_runs` row (commit, branch, answer model), grades **every** answer right away (FR-035), saves results with `source = test`, and finishes the row with passed/failed/total. A failed **grade** does not fail the test (FR-037).
-  - Tests: `tests/fast/grading/test-run-recorder.test.ts` (fake AI and fake grader): every answer gets a grade; a failed grade leaves the run `passed`.
-  - Needs: T058.
-- [ ] T060 [US9] Create owner routes `src/app/api/owner/flags/route.ts` (GET, filter `source`), `src/app/api/owner/flags/[grader_result_id]/decision/route.ts` (POST; reason required; second decision → 409), and `src/app/api/owner/grader-summary/route.ts` (total, disagreements, rate, `by_month`).
-  - Tests: `tests/fast/owner/api.test.ts`: reviewer → 403; no reason → 400; second decision → 409; 6 disagreements out of 40 → rate 0.15 with the right month counts; 0 decisions → rate 0 with no error.
-  - Needs: T052, T055.
-- [ ] T061 [P] [US9] Create owner pages `src/app/owner/flags/page.tsx` and `src/app/owner/grader-summary/page.tsx` (shows `grading_gave_up` entries and the disagreement rate).
-  - Tests: `tests/fast/ui/owner-pages.test.tsx`: a non-owner is blocked; the rate is displayed.
-  - Runs alongside: T062. Needs: T060.
-- [ ] T062 [P] [US9] Extend `src/lib/ci/gate.ts` and `scripts/ai-gate.ts` with **part 2**: every `grader_results` row with `needs_owner_decision = yes` from the PR's run must have an `owner_flag_decisions` row. Fail message: "N grader flags need your decision".
-  - Tests: extend `tests/fast/ci/ai-gate.test.ts`: a passed run with 3 undecided flags → fail with "3 grader flags need your decision"; all decided → pass.
-  - Runs alongside: T061. Needs: T055.
-- [ ] T063 [US9] Create the grader calibration set `tests/ai/grader/calibration.json` (10 hand-made answers: 5 that stick to the label, 5 with a known mistake such as an added fact or a wrong section) and `tests/ai/grader/calibrate.test.ts`. Pick the smallest OpenAI model that catches all 5 bad answers and passes at least 4 of the 5 good ones. Record the model ID and results in research.md R4 (research R4).
-  - Tests: the calibration set itself (AI tier).
-  - Needs: T056.
 
 **Checkpoint**: All stories are done.
 
 ---
 
-## Phase 12: Polish & Cross-Cutting Concerns
+## Phase 13: Polish & Cross-Cutting Concerns
 
-- [ ] T064 [P] Write `README.md`: how the app works (the ordered steps), where the data comes from (openFDA only), and what it can't do (no personal advice, no comparisons, English only, not a doctor) (constitution VI).
-- [ ] T065 [P] Create `tests/fast/meta/question-count.test.ts`: at least 20 AI-tier questions in total (FR-040); every category in FR-041 has at least one; each drug has a `three_ways_group` (FR-043).
-- [ ] T066 **Owner task**: check every answer-key entry in `tests/ai/questions/*.json` against the real label and fill in `checked_by` and `checked_on` (FR-044, constitution VIII). The loader (T025) refuses unchecked entries until this is done.
-- [ ] T067 Run the first full AI test run, then the Haiku 5.5 vs Sonnet 5.5 comparison on the same commit (quickstart section 5). Fill in the table in research.md R3 and apply its decision rule (constitution VII). Needs: T066.
-- [ ] T068 **Owner task**: in GitHub branch protection for `main`, add `fast-tests` and `ai-gate` as required checks (research R17, stage 2).
-- [ ] T069 Run [quickstart.md](quickstart.md) end to end, including all hands-on checks and the speed targets (SC-013: answers under 10 seconds for 95%, emergencies under 1 second).
+- [ ] T064 [P] Write `README.md`: how the app works (the ordered steps and the 9-second limit), where the data comes from (openFDA only), what it can't do (no personal advice, no comparisons, English only, not a doctor), and how releases work (owner's `v*` tag, passing AI test run) (constitution VI).
+- [ ] T065 [P] Create `tests/fast/meta/question-count.test.ts`: reads the **raw JSON files** in `tests/ai/questions/` directly (not through the T025 loader, so unsigned entries are still counted): at least 20 AI-tier questions in total (FR-040); every category in FR-041 has at least one; each drug has a `three_ways_group` (FR-043).
+- [ ] T067 Run the first full AI test run, then the Haiku 5.5 vs Sonnet 5.5 comparison on the same commit (quickstart section 5). Fill in the table in research.md R3 and apply its decision rule (constitution VII). Needs: every answer-key entry signed off (T066).
+- [ ] T069 Run [quickstart.md](quickstart.md) end to end, including all hands-on checks and the speed targets (SC-013: answers under 10 seconds for 95%, emergencies under 1 second; FR-053: every reply under 9 seconds).
+- [ ] T081 **Owner task**: after the first release (T074 workflow on a `v*` tag), check in Netlify that the scheduled functions `label-check` (daily) and `grading-worker` (every 10 minutes) are running, and that their logs show no question text.
 
 ---
 
@@ -386,30 +475,36 @@ Failed grades go to the owner, who records a decision. The disagreement rate is 
 
 ### Phase dependencies
 
-- **Setup (Phase 1)**: no dependencies.
-- **Foundational (Phase 2)**: needs Setup. Blocks all stories.
-- **US1 (Phase 3)**: needs Foundational.
+- **Setup (Phase 1)**: no dependencies. T070 right after T006.
+- **Foundational (Phase 2)**: needs Setup. Blocks all stories. Owner tasks T071 and T072
+  come early, because the AI tier (T073) saves results online. T083 (path-list PR) right
+  after T073. T068 right after T015.
+- **US1 (Phase 3)**: needs Foundational, **including T083**.
 - **US2 (Phase 4)**: needs Foundational. Uses T016 (text matching) from US1 for drug-name typo handling.
-- **US5 (Phase 5)**: needs Foundational. Can be built alongside US1 and US2, but **must be finished before T039**.
-- **US3 (Phase 6)**: needs US5 (T033's `ScrubbedText`) and T016.
-- **US4 (Phase 7)**: needs US3 (T040).
-- **US6 (Phase 8)**: needs US1, US2, US3, US5 (it logs every reply type).
-- **US7 (Phase 9)**: needs Foundational only. Can run alongside US3–US6.
-- **US8 (Phase 10)**: needs US6.
-- **US9 (Phase 11)**: needs US6 and US8 (owner login).
-- **Polish (Phase 12)**: needs all stories.
+- **US5 (Phase 5)**: needs Foundational and T024 (other-drug list, for T032). **Must be
+  finished before T039.**
+- **Grading test answers (Phase 6)**: needs Foundational. **Must be finished before T042.**
+- **US3 (Phase 7)**: needs US5 (T033's `ScrubbedText`), Phase 6 (T059), and T016.
+- **US4 (Phase 8)**: needs US3 (T040).
+- **US6 (Phase 9)**: needs US1, US2, US3, US5 (it logs every reply type).
+- **US7 (Phase 10)**: needs Foundational only. Can run alongside US3–US6.
+- **US8 rest (Phase 11)**: needs Phase 6 (T052) and US6.
+- **US9 rest (Phase 12)**: needs Phase 6 and US6.
+- **Polish (Phase 13)**: needs all stories.
 
 ### Story order
 
 ```text
-Setup → Foundation → US1 → US2 → US5 → US3 → US4 → US6 → US8 → US9 → Polish
-                                         └──────── US7 (any time after Foundation) ────────┘
+Setup → Foundation (+ AI tier, ai-gate, release) → US1 → US2 → US5 → Grading test answers
+      → US3 → US4 → US6 → US8 rest → US9 rest → Polish
+                    └──────── US7 (any time after Foundation) ────────┘
 ```
 
 ### Within each story
 
 - Each task builds its tests in the same task. The task is done only when they pass.
 - Data and rules before the pipeline step that uses them; pipeline before the page.
+- Any PR that adds AI-tier entries also carries the owner's sign-off (T066).
 
 ---
 
@@ -417,25 +512,25 @@ Setup → Foundation → US1 → US2 → US5 → US3 → US4 → US6 → US8 →
 
 ```text
 # Setup: after T001
-T002, T003, T004, T005
+T002, T003, T004            then  T006 → T070 (owner)
 
 # Foundation
-T009, T010, T012          then  T013, T014, T015
+T009, T010, T012            then  T013, T014;  T025 + T056  then  T063 → T073 → T083, T015 → T068 (owner), T074 → T075 (owner)
 
 # US1 Emergencies
-T016 + T017               then  T018 + T019 + T020   then  T021   then  T022 + T023
+T016 + T017               then  T018 + T019 + T020   then  T021   then  T022 + T023 + T076
 
 # US2 Refusals
-T024 + T025               then  T026 → T027 → T028 → T029  (T030 alongside, after T025)
+T024                      then  T026 → T027 → T028 → T029  (T030 alongside)
 
 # US5 Scrubbing
-T031 + T032               then  T033 → T034  (T035 alongside)
+T031 + T032               then  T033 → T077, T034  (T078, T035 alongside)
+
+# Grading test answers
+T051 → T052, T055         then  T059, T060   then  T061 + T062
 
 # US3 Answers
-T036 + T037 + T038        then  T039 → T040   then  T041 + T042
-
-# US9 Grader
-T056 + T057               then  T058 → T059;   T061 + T062 after T060 / T055
+T036 + T037 + T038        then  T039 → T040   then  T041 + T042 + T080
 ```
 
 ---
@@ -452,18 +547,21 @@ T056 + T057               then  T058 → T059;   T061 + T062 after T060 / T055
 
 1. US1 → US2: nothing unsafe gets through the rules.
 2. US5: scrubbing is ready **before** any real AI is connected.
-3. US3 → US4: real answers, with sources.
-4. US6 → US7: logging and fresh labels.
-5. US8 → US9: human review and the grader.
+3. Grading test answers: every AI-written test answer will be graded.
+4. US3 → US4: real answers, with sources.
+5. US6 → US7: logging and fresh labels.
+6. US8 → US9: review pages and grading of real answers.
 
-**Do not let the public use the app** until US1–US7 are done, T066 is signed off, and the
-risk review (outside this feature) is approved.
+**Do not let the public use the app** until US1–US7 are done, every answer-key entry is
+signed off (T066), the risk review (outside this feature) is approved, and the owner
+releases a `v*` tag that passes the release workflow (T074).
 
 ---
 
 ## Notes
 
 - Every task is done on a branch and merged by PR after owner review (constitution I).
-- PRs that touch AI-related files need a passing AI test run (`ai-gate`).
+- PRs that touch a file on `.github/ai-related-paths.txt` need a passing AI test run (`ai-gate`).
+- Releases are `v*` tags pushed only by the owner, with a passing AI test run (`release`).
 - Never use real patient data, including in tests (constitution V).
-- Secrets stay in `.env`, Netlify, or GitHub Actions secrets, never in committed files.
+- Secrets stay in `.env` (local only), Netlify, or GitHub environments, never in committed files.

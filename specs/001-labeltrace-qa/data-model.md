@@ -6,6 +6,10 @@ Most data lives in Supabase (a Postgres database). A **table** is like a spreads
 Each **row** is one record. Some data lives in the repo instead, so every change goes
 through a PR. Those items are marked **(repo)**.
 
+The same tables exist in the **local** database (fast tests) and the **online** database
+(the live app, plus AI test results). The owner applies each new migration to the online
+database after its PR merges.
+
 **Rule for every table**: No field may hold the raw question. Only the scrubbed question
 is ever stored (FR-021). A fast test searches every table for raw text (SC-006).
 
@@ -56,6 +60,9 @@ One named part of a label (FR-018).
 
 - **Rule**: Every `id` must have its own test. A fast test fails if any phrase lacks one
   (FR-010).
+- The starting list has 16 ids: 10 medical and 6 self-harm.
+- **No skip list**: there is no list of words that are ignored. Known false alarms
+  ("paint", "painting", "saint") are kept on purpose (spec PC-6).
 
 ## log_entries
 
@@ -65,8 +72,8 @@ One row per answered question (FR-023).
 |---|---|---|
 | id | id | Primary key |
 | created_at | time | |
-| scrubbed_question | text | After masking. Never raw. **Empty** for `prompt_for_question` and `english_only` rows (see below). |
-| answer_type | text | `normal`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only` |
+| scrubbed_question | text | After masking. Never raw. **Empty** for blank and non-English rows, including non-English emergencies (see below). |
+| answer_type | text | `normal`, `label_pointer`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only` |
 | answer | text | Exactly what the patient saw |
 | drug | text | `emgality`, `reyvow`, `both`, or empty |
 | model_name | text | Empty when the AI was skipped (emergencies, rule-based refusals) |
@@ -75,6 +82,7 @@ One row per answered question (FR-023).
 | label_id | → drug_labels | Gives the label date. Empty when no label was used. |
 | label_date | date | Copied in, for easy reading |
 | emergency_group | text | `medical`, `self_harm`, `both`, or empty |
+| emergency_phrase_ids | list of text | Emergency phrase ids that matched, for example `fainting` (FR-054). Ids only, never the words the person typed. Empty for non-emergency rows and non-English emergency rows. |
 | emergency_case | text | `informational`, `happening_now`, `unclear`, or empty (FR-025) |
 | label_text_shown | yes/no | Emergencies only |
 | ai_skipped | yes/no | Yes for all emergencies |
@@ -86,12 +94,19 @@ One row per answered question (FR-023).
 
 - **Who can read it**: signed-in reviewers and the owner only. Patients and the public
   can't.
-- **Blank and non-English questions**: rows with `answer_type` of `prompt_for_question`
-  or `english_only` hold **only** `id`, `created_at`, `answer_type`, `answer`, `source`,
-  and `review_status`. No question text is stored, not even scrubbed text, because the
-  scrubber only works on English. `grading_status` is `not_applicable`. (The emergency
-  check still runs first on every question. If it finds a phrase, the row is an
-  `emergency` row instead.)
+- **Blank and non-English questions** (FR-055, constitution V): these rows hold **only**
+  `id` (the row's number), `created_at` (the time), and `answer_type` (the reply type).
+  Every other field is empty. No question text is stored, not even scrubbed text, because
+  the scrubber only works on English.
+  - This covers `prompt_for_question` rows, `english_only` rows, and **`emergency` rows
+    for non-English questions**. The emergency check runs first on every question and
+    the emergency message still shows, but the language check runs before saving
+    (R19).
+  - **Database rule**: a row whose `scrubbed_question` is empty must have every field
+    except `id`, `created_at`, and `answer_type` empty. Every other kind of row must have
+    a `scrubbed_question`.
+  - The AI test tier never sends blank or non-English questions, so these rows are
+    always real ones (R15).
 - **review_status changes**: `not_reviewed` → `approved` or `flagged` (by a reviewer). A
   later review can change it again. Every decision is kept in `review_decisions`.
 - **grading_status changes**:
@@ -99,7 +114,9 @@ One row per answered question (FR-023).
   - `waiting` → `passed` or `failed`.
   - `waiting` → `not_graded_yet` (the grader is down) → back to `waiting` on the next
     try. After 5 tries it becomes `grading_gave_up`, which shows up on the owner's page.
-  - Emergencies and rule-based refusals: `not_applicable`. There's no AI answer to grade.
+  - Emergencies, rule-based refusals, and `label_pointer` rows: `not_applicable`. No AI
+    answer was shown, so there's nothing to grade.
+  - Blank and non-English rows: empty (see above), treated as `not_applicable`.
 
 ## reviewers
 
@@ -164,9 +181,13 @@ One run of the AI test tier.
 | passed / failed / total | numbers | |
 | status | text | `running`, `passed`, `failed` |
 
-- The `ai-gate` check looks up the PR's latest commit here. It passes only if a run has
-  `status = passed` **and** every `grader_results` row with `needs_owner_decision = yes`
-  from that run has an `owner_flag_decisions` row.
+- Stored in the **online** database. Written only by the `ai-tests` workflow, which uses
+  the `ai-tests` GitHub environment (owner-approved runs, R16).
+- A run is `passed` only if at least one checked entry ran and every one passed (R15).
+- The `ai-gate` check looks up the PR's latest commit here. The release workflow looks up
+  the tagged commit (R21). Each passes only if a run has `status = passed` **and** every
+  `grader_results` row with `needs_owner_decision = yes` from that run has an
+  `owner_flag_decisions` row.
 
 ## Test questions and answer key (repo)
 
@@ -175,17 +196,21 @@ One run of the AI test tier.
 | Field | Rules |
 |---|---|
 | id | Unique |
-| category | `normal`, `refusal_dosing`, `refusal_compare`, `refusal_other_drug`, `not_covered`, `three_ways`, `privacy` |
+| category | `normal`, `refusal_dosing`, `refusal_compare`, `refusal_other_drug`, `not_covered`, `three_ways`, `privacy`, `emergency`. Blank and non-English questions aren't allowed in the AI tier (R15). |
 | drug | `emgality`, `reyvow`, `both`, or none |
 | question | Only made-up personal details (FR-022) |
 | expected_behavior | For example "refuse with doctor or pharmacist wording" |
 | expected_facts | Facts the answer must contain, taken from the label |
 | expected_sections | |
-| checked_by / checked_on | **Required.** The loader refuses any entry without them (FR-044, constitution VIII). |
+| checked_by / checked_on | **Required.** The owner fills them in as each story adds entries. The loader refuses any entry without them (FR-044, constitution VIII). |
 | three_ways_group | Links the medical, everyday, and typo versions of one question |
 
-- **Rule**: at least 20 questions in total (FR-040). Emergency tests live in the fast tier
-  and are counted separately.
+- **Rule**: at least 20 questions in total (FR-040). The full emergency tests live in the
+  fast tier and are counted separately. A few `emergency` entries in the AI tier only
+  check that the real pipeline never calls an AI for them.
+- **Grader calibration set (repo)**: `tests/ai/grader/calibration.json`, 10 hand-made
+  answers (5 good, 5 with a known mistake). It is the AI tier's first checked set, from
+  Phase 2. Each entry also needs `checked_by` / `checked_on`.
 
 ## Relationships
 
