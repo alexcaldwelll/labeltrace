@@ -44,8 +44,9 @@ in memory, before scrubbing or anything else.
 | `end_my_life` | end my life | ending my life |
 | `overdose_on_purpose` | overdose on purpose | overdose intentionally |
 
-The product owner can add phrases. **Every id needs its own fast test** (FR-010). A
-meta-test fails if any id has none.
+The owner can add phrases. **Every id needs its own fast test** (FR-010). A
+meta-test fails if any id has none. The starting list has **16 ids**: 10 medical and 6
+self-harm.
 
 ## 3. Matching (FR-009)
 
@@ -59,6 +60,11 @@ meta-test fails if any id has none.
    - 8 or more letters: off by at most 2 changes
 4. The result is the set of matched phrase ids and their groups. Medical, self-harm, or
    both.
+5. **No skip list.** Real words that fall inside the typo allowance still match. Known
+   examples: "paint" and "saint" match the variant "faint" (1 change), "painting" matches
+   "fainting" (1 change), "painted" matches "fainted" (1 change). These false alarms are
+   kept on purpose, because a real word can also be a typo hiding a real emergency (spec
+   PC-6). The matched ids are logged (section 7), so false alarms can be counted.
 
 ## 4. Sorting into a case (FR-047)
 
@@ -100,10 +106,16 @@ The emergency messages always appear at the top of the screen, before anything e
 
 ## 7. What is logged (FR-025)
 
-`answer_type = emergency`, `ai_skipped = true`, `model_name` empty, `emergency_group`,
-`emergency_case` (medical only), `label_text_shown`, and, when shown, `sections_used` and
-`label_date`. The question is stored **scrubbed**. Scrubbing happens after the emergency
-check, but before saving.
+1. **Language check first.** After the emergency reply is built, and before anything is
+   saved, run the language check (the same one as the basic checks).
+2. **Not English** → save a row with **only** `id`, `created_at`, and
+   `answer_type = emergency`. No question text, no phrase ids, no other fields (FR-055,
+   spec PC-8). The emergency message is shown exactly the same way.
+3. **English** → save: `answer_type = emergency`, `ai_skipped = true`, `model_name`
+   empty, `emergency_group`, `emergency_phrase_ids` (every matched id, FR-054),
+   `emergency_case` (medical only), `label_text_shown`, and, when shown, `sections_used`
+   and `label_date`. The question is stored **scrubbed**. Scrubbing happens after the
+   emergency check, but before saving.
 
 ## 8. Required tests (fast tier)
 
@@ -111,3 +123,8 @@ check, but before saving.
 - Capitals, inside a long sentence, and a typo version (spec Story 1, scenario 4).
 - Spec Story 1 scenarios 1–17, one test each, using the exact questions in the spec.
 - A test that a mocked AI client is **never called** for any emergency.
+- Known false alarms ("paint", "saint", "painting", "painted") **do** trigger `MSG_911`
+  (section 3, rule 5).
+- A non-English question with an emergency phrase shows the emergency message, and its
+  log row holds only `id`, `created_at`, and `answer_type` (section 7).
+- English emergency log rows hold the right `emergency_phrase_ids`.

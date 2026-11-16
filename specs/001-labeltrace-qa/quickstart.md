@@ -18,6 +18,8 @@ the code is built. Details live in [data-model.md](data-model.md),
   commit it.
 - For AI tests only: Anthropic and OpenAI API keys, plus `GRADER_MODEL` set
   ([R4](research.md#r4-second-ai-grader))
+- Your local `.env` points at the **local** database only. The online database's admin
+  key is never put in a local file ([R16](research.md#r16-github-actions-automatic-checks-on-github)).
 
 ## 2. Set up
 
@@ -38,20 +40,31 @@ is visible.
 npm run test:fast
 ```
 
-**Expected**: All pass. The summary shows one emergency test per phrase id, plus the
-Story 1 scenarios 1–17. The "AI was never called" checks pass.
+**Expected**: All pass. The summary shows one emergency test per phrase id (16), plus the
+Story 1 scenarios 1–17. The "AI was never called" checks pass. These also pass:
 
-## 4. AI tests (on demand and before release)
+- The **false-alarm** tests (`tests/fast/emergency/false-alarms.test.ts`): "paint",
+  "saint", "painting", and "painted" **do** trigger the 911 message. That's on purpose
+  (spec PC-6).
+- The **label-pointer** tests (`tests/fast/pipeline/answer.test.ts`): an answer that fails
+  the checks twice, or once with under 3 seconds left, gets "I couldn't put this into
+  plain language reliably…" with a link, and never "The label doesn't cover this."
+- The **non-English emergency** test (`tests/fast/log/non-english-emergency.test.ts`): the
+  911 message shows, and the log row holds only the row ID, time, and reply type.
 
-On your computer: `npm run test:ai`. Or on GitHub: **Actions → ai-tests → Run workflow**,
-then pick the branch and model.
+## 4. AI tests (when AI-related files change, and before every release)
+
+On GitHub: **Actions → ai-tests → Run workflow**, then pick the branch and model. The run
+waits for **your approval**, because it uses the locked `ai-tests` environment. Results are
+saved to the online database.
 
 **Expected**:
 
-- At least 20 test questions run (FR-040). All pass.
-- Every answer has a grader result. Failed grades show up at `/owner/flags`, and they
-  don't fail the run (FR-037).
-- A `test_runs` row exists for the commit.
+- Every checked answer-key entry runs and passes. By the end of the build that's at least
+  20 questions (FR-040). A run with no checked entries counts as **failed**.
+- Every AI-written answer has a grader result. Failed grades show up at `/owner/flags`, and
+  they don't fail the run (FR-037).
+- A `test_runs` row exists for the commit in the online database.
 
 ## 5. Model comparison (Haiku 5.5 vs Sonnet 5.5)
 
@@ -78,6 +91,17 @@ Type each question at `http://localhost:3000` and compare.
 | 9 | Can I take Reyvow on a plane? | "The label doesn't cover this." |
 | 10 | Does it cause nausea? | "Do you mean Emgality or Reyvow?" |
 | 11 | Hi, I'm Jane Doe, jane@example.com, 555-123-4567. Does Emgality cause injection site pain? | A normal answer. The log shows `[NAME]`, `[EMAIL]`, `[PHONE]`, and no raw text. |
+| 12 | Can I go painting after taking Reyvow? | **Known false alarm**: "Call 911 or see a doctor now." The log row's `emergency_phrase_ids` is `["fainting"]` (spec PC-6). |
+| 13 | Hola, tengo una pregunta sobre Reyvow y el chest pain que siento después de tomarlo. (Spanish, long enough for the language check to be sure) | "Call 911 or see a doctor now." The log row holds only the row ID, time, and `answer_type = emergency`, with no question text (FR-055). |
+| 14 | How are Emgality or Reyvow given? | Two answers, one per drug, each with its own section and date. **Not** refused as a comparison. |
+| 15 | Is Reyvow better than Imitrex? | Refuses to compare. The log shows "Imitrex" was **not** masked as `[NAME]`. |
+
+**Label-section pointer**: you can't make the real AI fail the checks on purpose, so the
+fast tests prove the pointer reply (section 3). By hand, open
+`http://localhost:3000/label/emgality#adverse_reactions` and check that:
+
+- the page shows the "AI, not a doctor" banner and the label date, and
+- it jumps to the Adverse Reactions section. Pointer links use this same form.
 
 ## 7. Label freshness
 
@@ -105,7 +129,31 @@ with saved sample replies.
 2. Open a test PR that changes `src/lib/prompts/`. **Expected**: `ai-gate` fails with
    "Run the ai-tests workflow on this commit". After a passing run (and decisions on any
    flags), re-running `ai-gate` passes.
-3. Try to merge without the owner's approval. **Expected**: GitHub blocks it, even for
+3. Open a test PR that changes only `.github/ai-related-paths.txt`. **Expected**: `ai-gate`
+   fails the same way. The list counts as AI-related itself.
+4. Try to merge without the owner's approval. **Expected**: GitHub blocks it, even for
    admins.
-4. Check the settings match
+5. Check the settings match
    [research.md R17](research.md#r17-branch-protection-and-the-bot-account).
+6. **Read-only gate login**: connect with the `AI_GATE_DATABASE_URL` login (from a safe
+   place, never a committed file). **Expected**: it can read `test_runs`,
+   `grader_results`, and `owner_flag_decisions`. Trying to insert a `test_runs` row, or to
+   read `log_entries`, is **refused**.
+
+## 10. Releases
+
+A release is a `v*` tag pushed by the owner, with a passing AI test run for that commit
+([R21](research.md#r21-releases)).
+
+1. As the **bot**, try to push a tag `v0.0.1-test`. **Expected**: GitHub refuses (tag
+   ruleset).
+2. As the **owner**, push a `v*` tag on a commit with **no** passing AI test run.
+   **Expected**: the `release` workflow fails with "Run the ai-tests workflow on this
+   commit before releasing". Nothing is published.
+3. Run **ai-tests** on that commit, decide any grader flags, then push a new `v*` tag on
+   it. Approve the `release` environment when asked. **Expected**: the workflow passes and
+   Netlify's live site shows that commit.
+4. Merge any PR to `main`. **Expected**: the live site does **not** change (auto-publish is
+   off). Deploy previews for PRs still work.
+5. After the first release, in Netlify, check that `label-check` and `grading-worker` are
+   running and that their logs show no question text (task T081).
