@@ -112,7 +112,7 @@ Checked against constitution **v3.0.0** (ratified and last amended 2026-11-15).
 | VII. Sustainable | Haiku 5.5 first, with a measured comparison before any change. openFDA update check downloads nothing unless the date is newer ([R6](research.md#r6-getting-the-label-from-openfda-and-checking-for-updates)). AI tests only run when the rules need them. | ✅ | ✅ |
 | VIII. Enhanced | Model is told to use only the given text. The answer key has `checked_by` and `checked_on` fields. The owner signs off entries as each story adds them, and the test loader refuses unchecked entries. | ✅ | ✅ |
 | When Principles Conflict | Each decision is in the spec's Clarifications section, "Principle conflict decisions" (PC-1 to PC-9), naming the principles, the winner, and why. | ✅ | ✅ |
-| Release safeguards | Grader on every AI-written test answer (from the first one) and 10% of real answers. Flags need owner decisions, and `ai-gate` and the release workflow block until they have them. Disagreement rate shown. Risk review is a separate task (spec Assumptions). | ✅ | ✅ |
+| Release safeguards | Grader on every test answer (from the first one), including emergency and rule-based replies, and 10% of real answers. Flags need owner decisions, and `ai-gate` and the release workflow block until they have them. Disagreement rate shown. Risk review is a separate task (spec Assumptions). | ✅ | ✅ |
 
 **Gate result**: PASS.
 
@@ -205,24 +205,31 @@ scheduled functions live in `netlify/functions/`. The `ai-gate` check reads
   3. **Right after the `ai-gate` workflow first runs** (tasks T015 → T068): make
      `ai-gate` a required check. The small AI test tier in Phase 2 (runner, test-run
      recorder, grader calibration) exists by then, so AI-related PRs can pass it.
+     **The owner approves no `ai-tests` run until this step is done.** So the first
+     passing AI test run, which ends the startup exception, always happens after
+     `ai-gate` is required, and there is never a gap with no automatic check.
+  4. `ai-gate` and the release check accept a test run only if its answer model and
+     grader model both match `src/config/models.ts` at that commit (FR-045).
 - **Path list**: the workflow and gate files were added to `.github/ai-related-paths.txt`
   in PR #13 (task T083, done). That PR merged without a passing AI test run, which is a
   recorded rule break with a late check (`docs/rule-incidents.md`).
 - **Releases** ([R21](research.md#r21-releases)): a tag ruleset lets only the owner
   create or delete `v*` tags. `release.yml` checks for a passing AI test run (with every
   grader flag decided) for the tagged commit, then publishes to Netlify with the
-  `NETLIFY_AUTH_TOKEN` GitHub secret. Netlify doesn't auto-publish `main`.
+  `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` GitHub secrets. Netlify doesn't auto-publish `main`.
 - **Online setup** (owner tasks): the online Supabase project, Netlify site, secret keys,
   and scheduled functions. Secrets live only in Netlify and in GitHub environments, never
   in files.
 - **Build order (tests built with each story, FR-042)**: CI workflows and the small AI test
   tier first → US1 emergencies (US-04) → US2 refusals (US-03) → **US5 scrubbing
-  (US-05)** → grading of test answers (owner login, grader tables, flag decisions) → US3
+  (US-05)** → grading of test answers (owner login, grader tables, flag decisions), then
+  the AI-tier entries for US1, US2, and US5 → US3
   answers (US-01, first real AI call) → US4 citations (US-02) → US6 log (US-06) → US7
   label freshness (US-10) → US8 review pages (US-07) → US9 real-answer grading (US-08).
   Story labels match spec.md and tasks.md; the owner's original IDs are in brackets. Scrubbing comes before the real answer AI is connected, so no
-  real AI call ever gets unscrubbed text. Grading comes before the first AI-written test
-  answer, so every test answer is graded (constitution, Release Safeguards).
+  real AI call ever gets unscrubbed text. Grading comes before the first test answer from
+  a story, so every test answer is graded (constitution, Release Safeguards). Grading
+  needs the scrubber, because the test question is scrubbed before the grader sees it.
 
 ## Complexity Tracking
 

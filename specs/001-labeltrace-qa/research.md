@@ -70,8 +70,9 @@ Words that may be new are explained the first time they appear.
 ## R4. Second-AI grader
 
 - **Decision**: An **OpenAI** model (a different company from the answer AI, per FR-034).
-  The exact model is set in `src/config/models.ts` and the `GRADER_MODEL` environment
-  variable. We pick it with a **calibration test**: 10 hand-made answers (5 that stick to
+  The exact model is set **only** in `src/config/models.ts`, which is on the AI-related
+  list. There is no setting that can change it, so a model change always needs a PR and
+  a passing AI test run (constitution I and III). We pick it with a **calibration test**: 10 hand-made answers (5 that stick to
   the label, 5 with a known mistake, such as an added fact or a wrong section). Choose the
   smallest OpenAI model that catches all 5 bad answers and passes at least 4 of the 5 good
   ones. Record the chosen model ID and the calibration result in this file.
@@ -265,7 +266,9 @@ Words that may be new are explained the first time they appear.
   Supabase database started inside GitHub Actions. That lets the "search all stored data
   for the raw question" test (SC-006) run for real.
 - **AI tier** runs the test question set through the real pipeline and real AI clients.
-  The grader grades every AI-written answer. Results are saved to the **online**
+  The grader grades every test answer, including emergency replies and rule-based
+  refusals. It checks the finished reply after the pipeline has made it, so the reply
+  itself never calls an AI for an emergency. Results are saved to the **online**
   Supabase database, tagged with the commit ID, so `ai-gate`, the release workflow, and
   the owner's flag page can all see them.
 - **The AI tier starts small, in Phase 2** (before any story): the runner, the test-run
@@ -274,7 +277,11 @@ Words that may be new are explained the first time they appear.
   `checked_on`) in the same PR. By the end it has at least 20 questions (FR-040).
 - **A run passes only when** at least one checked entry ran and all of them passed. A run
   with no entries fails, so a pass always means something was tested. If the grader is
-  down for any AI-written answer, the run is `incomplete`, which never counts as passing.
+  down for any test answer, the run is `incomplete`, which never counts as passing.
+- **Model match**: each run records its answer model and grader model. `ai-gate` and the
+  release check accept a run only if both match `src/config/models.ts` at that commit.
+  So a hand-started run with a different model (for example, the Sonnet comparison in
+  R3) can never let a PR merge or a release go out.
 - **The first passing run** must include the signed-off calibration entries. They count
   as human-checked entries for ending the startup exception (constitution III v3.0.0;
   spec Clarifications 2026-11-16).
@@ -294,7 +301,7 @@ Words that may be new are explained the first time they appear.
   | Workflow | Runs when | What it does | Check name |
   |---|---|---|---|
   | `fast-tests.yml` | Every PR, every push to `main` | Install, type-check, lint, start local Supabase, run fast tests | `fast-tests` |
-  | `ai-tests.yml` | Every PR (the PR's latest commit) and by hand (choose branch and model). Each run waits for the owner's approval in the `ai-tests` environment. | Run the AI test tier, grade every AI-written answer, save results for that commit to the online database | `ai-tests` |
+  | `ai-tests.yml` | Every PR (the PR's latest commit) and by hand (choose branch and model). Each run waits for the owner's approval in the `ai-tests` environment. | Run the AI test tier, grade every test answer, save results for that commit (including which answer model and grader model were used) to the online database | `ai-tests` |
   | `ai-gate.yml` | Every PR | (1) If the PR changes a file on `.github/ai-related-paths.txt`, require a passing AI test run for the PR's latest commit. (2) For every PR, require that all grader flags from that run have an owner decision. | `ai-gate` |
   | `release.yml` | A `v*` tag is pushed | Check the tag was pushed by the owner, require a passing AI test run with all flags decided for the tagged commit, then publish to Netlify (R21) | `release` |
 
@@ -405,6 +412,16 @@ Words that may be new are explained the first time they appear.
   `src/lib/pipeline/language.ts`) runs after an emergency match and **before the log row
   is saved**. The emergency message shows either way. If the question isn't English, the
   row holds only the reply type (`emergency`) and the time (FR-055, spec PC-8).
+- **Short questions**: language detection often gets very short text wrong. A question
+  under 30 characters counts as English only if every word is an English word, a drug
+  name, or a number (FR-055). So "chest pain?" is English, but "¿Reyvow causa náuseas?"
+  is not, and a short non-English question is never cleaned by the English-only scrubber
+  or logged with text (constitution V).
+  - **English word list**: comes from a **published** word list, never written from
+    memory. Built by `scripts/build-english-words.ts` (task T013) and saved to
+    `src/lib/pipeline/english-words.json` with its source URL, download date, and count.
+- _Added by task T013: the word list's source, exact URL, download date, and number of
+  words._
 
 ## R20. Other-drug name list
 
@@ -424,8 +441,8 @@ _Added by task T024 (query URLs, download date, and number of names)._
     change the public site. Deploy previews for PRs still work.
 - **Secrets (names only)**: `NETLIFY_AUTH_TOKEN` (lets the workflow publish) and
   `NETLIFY_SITE_ID` are GitHub secrets in the `release` environment. They're never put in
-  a file. `.env.example` lists `NETLIFY_AUTH_TOKEN` as a name with no value, so people
-  know it exists.
+  a file. `.env.example` lists `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` as names with
+  no values, so people know they exist.
 - **Why**: Netlify publishes `main` on every merge by default, which would make every
   merge a release. A tag pushed by the owner keeps releases rare, deliberate, and always
   tested (constitution III).
