@@ -51,6 +51,19 @@ principles.
   includes itself, so changing it also needs AI tests. Changes to it MUST be approved by
   the project owner through CODEOWNERS.
 - A required automated check MUST block a merge when one of these rules is not met.
+- **One-time startup exception.** The AI tests can't run until the AI test system is built.
+  Until then:
+  - A pull request that changes AI-related code MAY merge without an AI test run if its
+    fast tests pass and the project owner reviews and approves it.
+  - This exception ends automatically, for good, as soon as both of these are true:
+    1. The AI test runner (task T073 in feature `001-labeltrace-qa`) is merged into
+       `main`, and
+    2. one AI test run passes with at least one human-checked answer-key entry. "Passes"
+       means its `test_runs` row has `status = passed`.
+  - After that, every pull request that changes AI-related code needs a passing AI test
+    run, with no exceptions. This exception MUST NOT be extended, renewed, or used again.
+  - Every pull request merged under this exception MUST be listed in the feature spec's
+    Clarifications section, with its number, what it changed, and the date it merged.
 
 **Why:** People can check the answer against the label for themselves.
 
@@ -142,7 +155,8 @@ still makes the final call.
 1. Do all work on a separate branch.
 2. Open a pull request.
 3. All required automated tests pass (fast tests always; AI tests too when AI-related code
-   changed), and every grader flag has a recorded decision.
+   changed, except under the one-time startup exception in III), and every grader flag has
+   a recorded decision.
 4. The project owner reviews and approves.
 5. Only then is the work merged into `main`.
 
@@ -160,4 +174,4 @@ still makes the final call.
 - Every pull request review MUST check that the change follows this constitution.
 - Day-to-day rules for AI agents are in `CLAUDE.md`.
 
-**Version**: 2.0.0 | **Ratified**: 2026-11-15 | **Last Amended**: 2026-11-15
+**Version**: 3.0.0 | **Ratified**: 2026-11-15 | **Last Amended**: 2026-11-15

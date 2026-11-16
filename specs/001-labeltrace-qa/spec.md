@@ -44,6 +44,14 @@ The constitution ("When Principles Conflict") says each decision where two princ
 | PC-7 | When the AI's dosing summary has any number or unit that isn't exactly in the label, the "Dosage and Administration" section is shown word for word instead. | Safe (II) vs. Fair and Equitable (IV) | Safe | A wrong dose number could hurt someone. Exact label text is safer than a plain-language rewrite that can't be trusted. |
 | PC-8 | Non-English questions get "I can only answer in English right now," and their log rows hold no question text. | Privacy (V) vs. Fair and Equitable (IV) | Privacy | The scrubber only works on English. It can't safely remove names, emails, and phone numbers from other languages before the AI or the log sees them. |
 
+### PRs merged under the startup exception (constitution III, v3.0.0)
+
+**Status: active.** Ends when T073 is merged and one AI test run passes with at least 1 checked entry. It can't be extended. When it ends, this line changes to: **Status: ended on [date]** by the passing `test_runs` row **[test_runs ID]**.
+
+| PR | What it changed | Merged on |
+|---|---|---|
+| (none yet) | | |
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### How testing works in this feature
