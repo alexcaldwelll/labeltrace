@@ -26,8 +26,15 @@
 - Q: What do log rows for blank and non-English questions hold? → A: Only the reply type and the time, plus the row's ID number (FR-055).
 - Q: When does the word "or" count as a comparison? → A: Only inside comparison phrasing, such as "which is better, Emgality or Reyvow?" or "should I take Emgality or Reyvow?". "How are Emgality or Reyvow given?" is answered for each drug separately.
 - Q: Should real words that look like emergency typos (for example "paint", "painting", "saint" next to "faint", "fainting") be skipped? → A: No. They still trigger the emergency message (PC-6 below). Every emergency log row records which phrase matched (FR-054), so the owner can see how often false alarms happen. A skip list would need a constitution amendment, backed by that evidence.
-- Q: Are changes to the workflow and gate files (`.github/workflows/**`, `scripts/ai-gate.ts`, `src/lib/ci/**`) protected by the AI test rule? → A: Not yet. **Temporary bootstrap gap:** adding them to `.github/ai-related-paths.txt` is a change to an AI-related file, so it needs a passing AI test run, and the AI test tier doesn't exist until task T073. Until the separate path-list PR merges (task T083), changes to those files are protected **only by the owner's review**. Phase 3 can't start until T083 is merged.
+- Q: Are changes to the workflow and gate files (`.github/workflows/**`, `scripts/ai-gate.ts`, `src/lib/ci/**`) protected by the AI test rule? → A: Yes. They were added to `.github/ai-related-paths.txt` in PR #13 (task T083), so there is no gap anymore. PR #13 merged without a passing AI test run while constitution v2.0.0 was in force. That was a rule break, recorded in `docs/rule-incidents.md`, with a late AI test run on its commit once T073 exists.
 - Q: What counts as a release? → A: A `v*` tag (for example `v1.0.0`) pushed by the owner, with a passing AI test run for that commit. Only the owner can create or delete `v*` tags. Netlify publishes the public site only from a release.
+
+### Session 2026-11-16 (fixes after the second `/speckit-analyze`)
+
+- Q: Do the grader calibration entries (`tests/ai/grader/calibration.json`) count as "human-checked answer-key entries" for ending the startup exception (constitution III)? → A: Yes, once the owner signs them off (`checked_by`, `checked_on`, task T066). The first passing AI test run (task T073) must include them.
+- Q: What happens when a normal (non-emergency) question misspells a drug name, for example "Does Reyvo cause nausea?" → A: The app matches it to the right drug using the same typo rules as the emergency check (FR-009), and says so: "Answering about Reyvow (you typed 'Reyvo')." (FR-056). Other drugs' names are matched with typos too, so "Is Imitrx safe?" is refused as another drug (FR-013). This doesn't change emergency questions: there, only exact drug names count (PC-1).
+- Q: The scrubber runs before the refusal rules, so a misspelled drug name like "Imitrx" or "Reyvo" would be masked as `[NAME]` and the refusal rules would never see it. What wins? → A: A word that is a near-miss typo of a known drug name is not masked, **unless** it is also a common first name on a public name list (research R22). See PC-9.
+- Q: What happens when the grader is down during an AI test run? → A: The run is `incomplete`, not `passed`, so `ai-gate` and the release check block until a complete run passes.
 
 ### Principle conflict decisions
 
@@ -43,6 +50,7 @@ The constitution ("When Principles Conflict") says each decision where two princ
 | PC-6 | Typo matching causes some false alarms (for example "paint", "painting", "saint" match "faint" or "fainting"). There is no skip list. | Safe (II) vs. Fair and Equitable (IV) | Safe | A real word can also be a typo that hides a real emergency. Matched phrases are logged (FR-054) so false alarms can be measured. |
 | PC-7 | When the AI's dosing summary has any number or unit that isn't exactly in the label, the "Dosage and Administration" section is shown word for word instead. | Safe (II) vs. Fair and Equitable (IV) | Safe | A wrong dose number could hurt someone. Exact label text is safer than a plain-language rewrite that can't be trusted. |
 | PC-8 | Non-English questions get "I can only answer in English right now," and their log rows hold no question text. | Privacy (V) vs. Fair and Equitable (IV) | Privacy | The scrubber only works on English. It can't safely remove names, emails, and phone numbers from other languages before the AI or the log sees them. |
+| PC-9 | A word that is a near-miss typo of a known drug name (for example "Imitrx" or "Reyvo") is **not** masked by the scrubber, so the refusal rules and drug matching can see it. | Safe (II) vs. Privacy (V) | Safe | If a misspelled drug name were masked, a comparison or other-drug question could slip past the refusal rules. The privacy cost is small: a near-miss word that is also a common first name on a public name list (research R22) is still masked, so only an unusual name that is one or two letters off a drug name could stay visible. |
 
 ### PRs merged under the startup exception (constitution III, v3.0.0)
 
@@ -184,7 +192,7 @@ A quality reviewer needs a record of every answer so they can check it later.
 
 1. **Given** any answered question, **When** the log is checked, **Then** there is one entry with: the time, the scrubbed question, the model name, the prompt version, the label sections used, the label date, the answer, and the review status (starting as "not reviewed").
 2. **Given** an emergency question, **When** the log is checked, **Then** the entry shows that the emergency message was shown and the AI was skipped (no model name is recorded). It also shows which emergency phrases matched, the emergency case (informational, happening now, or unclear), and whether label text was shown.
-3. **Given** a blank or non-English question, **When** the log is checked, **Then** the entry holds only the reply type and the time.
+3. **Given** a blank or non-English question, **When** the log is checked, **Then** the entry holds only the reply type and the time, plus the row's ID number (FR-055).
 4. **Given** a non-English question that has an emergency phrase, **When** it is sent, **Then** the emergency message shows first, and the log entry holds only the reply type (`emergency`) and the time.
 
 ---
@@ -261,6 +269,8 @@ An AI from a different company than the one that writes answers checks whether a
 - An AI answer fails the answer checks twice, or there's no time left for a second try: the app points to the label section instead (FR-052).
 - A question names both drugs and uses "or" without comparing them (for example "How are Emgality or Reyvow given?"): it's answered for each drug separately, not refused.
 - The grader AI is down: the answer is still shown, and the grade is marked "not graded yet" to try again later.
+- The grader AI is down during an AI test run: the run is marked `incomplete`, not `passed`, so it can't be used to merge or release. A complete run is needed.
+- A normal question misspells a drug name (for example "Does Reyvo cause nausea?"): the app answers about the matched drug and says so (FR-056). In an emergency question, a misspelled drug name still counts as "unclear" (PC-1).
 - A label is missing a section the question needs: "The label doesn't cover this."
 - A personal detail is hard to spot (for example, a name that is also a common word): the scrubber masks it when unsure.
 
@@ -299,7 +309,7 @@ An AI from a different company than the one that writes answers checks whether a
 
 - **FR-011**: Personal dosing questions MUST NOT get personal advice. They MUST get "Ask your doctor or pharmacist" plus what the label says about dosing in general.
 - **FR-012**: Questions comparing any drugs (including Emgality versus Reyvow) MUST be refused with "talk to your doctor or pharmacist."
-- **FR-013**: Questions about drugs other than Emgality and Reyvow MUST be refused with "talk to your doctor or pharmacist."
+- **FR-013**: Questions about drugs other than Emgality and Reyvow MUST be refused with "talk to your doctor or pharmacist." Other drugs' names MUST be caught even with common typos (for example "Imitrx"), using the same typo rules as FR-009.
 - **FR-014**: When the label does not answer the question, the app MUST say "The label doesn't cover this" and MUST NOT guess.
 
 **Answer quality (US-01, US-02)**
@@ -311,6 +321,7 @@ An AI from a different company than the one that writes answers checks whether a
 - **FR-017**: Every answer that uses the label MUST name at least one label section and show the label's date.
 - **FR-018**: Every section an answer names MUST really exist in the stored label for that drug.
 - **FR-019**: If a question doesn't say which drug, the app MUST ask which one before answering.
+- **FR-056**: In a normal (non-emergency) question, a misspelled Emgality or Reyvow name (brand or generic) MUST be matched to that drug using the same typo rules as FR-009, and the reply MUST say so, for example: "Answering about Reyvow (you typed 'Reyvo')." This does not apply to emergency questions, where only exact drug names count (FR-047, PC-1).
 
 **Privacy (US-05)**
 
@@ -322,7 +333,7 @@ An AI from a different company than the one that writes answers checks whether a
 
 - **FR-023**: Every answered question MUST create one log entry.
 - **FR-024**: Each log entry MUST hold: time, scrubbed question, model name, prompt version, label sections used, label date, answer, and review status. The only exceptions are in FR-055.
-- **FR-025**: Emergency entries MUST record that the emergency message was shown, that the AI was skipped, the emergency case (informational, happening now, or unclear), and whether label text was shown (with its sections and label date if so).
+- **FR-025**: Emergency entries MUST record that the emergency message was shown, that the AI was skipped, the emergency case (informational, happening now, or unclear), and whether label text was shown (with its sections and label date if so). For English questions, the entry's answer MUST hold the emergency messages that were shown and any label sentences shown below them. (Non-English emergency entries follow FR-055.)
 - **FR-054**: Every emergency entry MUST record the IDs of the emergency phrases that matched (for example `fainting`), so the owner can see how often false alarms happen (PC-6). The only exception is in FR-055.
 - **FR-055**: Entries for blank questions and non-English questions MUST hold only the reply type and the time, plus the row's ID number. This includes a non-English question that has an emergency phrase: the emergency message still shows first, but no question text, phrase IDs, or other details are logged (constitution V, PC-8). The language check MUST run before the entry is saved on every path, including the emergency path.
 
@@ -389,7 +400,7 @@ An AI from a different company than the one that writes answers checks whether a
 - **SC-010**: 100% of test answers and about 10% (within 2 percentage points over 500 or more answers) of real answers are graded by the second AI.
 - **SC-011**: The owner's disagreement rate with the grader can be seen at any time.
 - **SC-012**: The AI-tier test suite has at least 20 questions. Fast tests pass before every merge. AI tests pass before every merge that changes an AI-related file and before every release.
-- **SC-013**: A patient sees an answer in under 10 seconds for at least 95% of questions, and sees emergency messages in under 1 second.
+- **SC-013**: A patient sees an answer in under 10 seconds for at least 95% of questions, and sees emergency messages in under 1 second. (FR-053's 9-second limit for **every** reply is the real, enforced limit. This is a looser goal that the AI test runner reports on.)
 - **SC-014**: 100% of emergency-case tests (FR-050) show the right output: label text only for informational medical questions, and never for self-harm. 100% of mixed-phrase tests (FR-051) show both messages with the 911 message first and no label text. 0 of them reach the AI.
 
 ## Assumptions

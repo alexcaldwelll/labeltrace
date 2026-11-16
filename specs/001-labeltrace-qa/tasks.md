@@ -30,6 +30,11 @@ don't change. Some tasks moved to an earlier phase. They kept their IDs.
   (different files, no waiting on each other)
 - **[Story]**: Which user story the task serves (US1 to US9, from spec.md)
 - **Owner task**: done by the owner (`alexcaldwelll`), not by Claude
+- **Startup exception**: the task's PR changes an AI-related file before the AI test tier
+  can run, so it merges under constitution III's one-time startup exception (passing fast
+  tests and owner approval). Its PR must get a row in the spec's exception table (T085).
+  "If still open" means: only if T084 hasn't closed the exception by the time it merges;
+  otherwise it needs a passing AI test run like any AI-related PR.
 - Under each task: **Tests** = the tests built in that task; **Runs alongside** = tasks that
   can be done at the same time; **Needs** = tasks that must be finished first
 
@@ -63,6 +68,13 @@ US9 (rest) → Polish.
 - [ ] T082 **Owner task**: after a PR with a new file in `supabase/migrations/` merges,
   apply it to the online database (`supabase db push` with your own login). The bot never
   holds the online database's admin key (research R16).
+- [ ] T085 **Owner task** (Claude drafts the row): every PR merged under the startup
+  exception (constitution III, v3.0.0) adds a row to the spec's table "PRs merged under
+  the startup exception": PR number, what it changed, and the date it merged. Add the row
+  in the same PR when possible; if the number or date isn't known until it merges, add it
+  in the very next PR. Tasks that use the exception are tagged **Startup exception**
+  below: T006, T009, T011, T012, T013, T056, and T073, plus T015, T062, and T074 if the
+  exception is still open when they merge. This stops for good when T084 merges.
 
 ---
 
@@ -83,7 +95,7 @@ US9 (rest) → Polish.
   - Tests: —
   - Runs alongside: T002, T003.
 - [x] T005 Create `.github/CODEOWNERS` with `* @alexcaldwelll`. (Done. It also names the owner for `/.github/ai-related-paths.txt`.)
-- [ ] T006 Create `.github/workflows/fast-tests.yml` (check name `fast-tests`): runs on every PR and every push to `main`. Install, type-check, lint, start local Supabase, run `npm run test:fast` (research R16).
+- [ ] T006 **Startup exception.** Create `.github/workflows/fast-tests.yml` (check name `fast-tests`): runs on every PR and every push to `main`. Install, type-check, lint, start local Supabase, run `npm run test:fast` (research R16).
   - Tests: the workflow runs `tests/fast/smoke.test.ts` on the PR and passes.
   - Needs: T001–T003.
 - [ ] T070 **Owner task**: right after `fast-tests` first runs on T006's PR, add `fast-tests` as a required check in branch protection for `main` (research R17).
@@ -104,22 +116,22 @@ tier, `ai-gate`, and the release workflow.
 - [ ] T007 Set up local Supabase (`supabase/config.toml`) and migration `supabase/migrations/0001_labels.sql` creating `drug_labels` and `label_sections` per data-model.md. Rules: `drug` is "`emgality` or `reyvow`"; `is_current` "Exactly one current label per drug" (partial unique index on `drug` where `is_current`); `label_sections.text` "Not empty. Empty openFDA fields aren't saved." (check constraint). Lock both tables to the server (service role) only.
   - Tests: `tests/fast/db/labels-schema.test.ts`: a second current label for the same drug is rejected; empty section text is rejected; `drug = 'advil'` is rejected.
   - Needs: T006.
-- [ ] T008 Migration `supabase/migrations/0002_log_and_runs.sql` creating `log_entries` and `test_runs` per data-model.md. Enforce: `answer_type` in `normal`, `label_pointer`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only`; `drug` in `emgality`, `reyvow`, `both`, or empty; `emergency_group` in `medical`, `self_harm`, `both`, or empty; `emergency_phrase_ids` (list of text); `emergency_case` in `informational`, `happening_now`, `unclear`, or empty; `review_status` "Starts `not_reviewed`"; `grading_attempts` "0 to 5"; `source` `real` or `test`; `test_runs.status` `running`, `passed`, `failed`. **Rule for rows with no question** (FR-055): a row whose `scrubbed_question` is empty must have every field except `id`, `created_at`, and `answer_type` empty; every other row must have a `scrubbed_question`. **No column may hold the raw question.** Server-only access for now (T051 adds reviewer read access).
-  - Tests: `tests/fast/db/log-schema.test.ts`: bad `answer_type` rejected; `grading_attempts = 6` rejected; new rows with a question default to `not_reviewed`; a row with no question but a `source` or `answer` filled in is rejected; a row with only `id`, `created_at`, `answer_type` is accepted.
+- [ ] T008 Migration `supabase/migrations/0002_log_and_runs.sql` creating `log_entries` and `test_runs` per data-model.md. Enforce: `answer_type` in `normal`, `label_pointer`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only`; `drug` in `emgality`, `reyvow`, `both`, or empty; `emergency_group` in `medical`, `self_harm`, `both`, or empty; `emergency_phrase_ids` (list of text); `emergency_case` in `informational`, `happening_now`, `unclear`, or empty; `review_status` "Starts `not_reviewed`"; `grading_attempts` "0 to 5"; `source` `real` or `test`; `test_runs.status` `running`, `passed`, `failed`, `incomplete` (the grader was down for at least one answer, T059). **No column defaults** on `log_entries`: the log writer (T046) fills in every field, including `review_status`, so a blank or non-English row stays truly empty (FR-055). **Rule for rows with no question** (FR-055): a row whose `scrubbed_question` is empty must have every field except `id`, `created_at`, and `answer_type` empty; every other row must have a `scrubbed_question`. **No column may hold the raw question.** Server-only access for now (T051 adds reviewer read access).
+  - Tests: `tests/fast/db/log-schema.test.ts`: bad `answer_type` rejected; `grading_attempts = 6` rejected; a row with a question but no `review_status` is rejected (no default); `test_runs.status = 'incomplete'` is accepted; a row with no question but a `source` or `answer` filled in is rejected; a row with only `id`, `created_at`, `answer_type` is accepted.
   - Needs: T007.
-- [ ] T009 [P] Create `src/config/models.ts` (answer model `claude-haiku-5-5`, its company `anthropic`, grader model from `GRADER_MODEL`, its company `openai`) and `src/lib/db/client.ts` (server-only Supabase client using the service role key; import guard so it can never load in the browser).
+- [ ] T009 [P] **Startup exception.** Create `src/config/models.ts` (answer model `claude-haiku-5-5`, its company `anthropic`, grader model from `GRADER_MODEL`, its company `openai`) and `src/lib/db/client.ts` (server-only Supabase client using the service role key; import guard so it can never load in the browser).
   - Tests: —
   - Runs alongside: T010, T012. Needs: T001.
 - [ ] T010 [P] Save real openFDA label replies as fixtures: `tests/fixtures/openfda/emgality.json`, `tests/fixtures/openfda/reyvow.json` (public label data, not patient data). Add `scripts/seed-labels.ts` (`npm run db:seed`) that loads them into the local database as the current labels.
   - Tests: —
   - Runs alongside: T009, T012. Needs: T007.
-- [ ] T011 Create `src/lib/labels/sections.ts` (fixed map from openFDA field to display name, research R7, e.g. `warnings_and_cautions` → "Warnings and Precautions"; skips empty fields) and `src/lib/labels/store.ts` (`getCurrentLabel(drug)` returns label date and sections).
+- [ ] T011 **Startup exception.** Create `src/lib/labels/sections.ts` (fixed map from openFDA field to display name, research R7, e.g. `warnings_and_cautions` → "Warnings and Precautions"; skips empty fields) and `src/lib/labels/store.ts` (`getCurrentLabel(drug)` returns label date and sections).
   - Tests: `tests/fast/labels/sections.test.ts`: known fields get the right names; empty fields are skipped; `getCurrentLabel` returns the seeded label and date.
   - Runs alongside: T012. Needs: T009, T010.
-- [ ] T012 [P] Create the AI client interface `src/lib/ai/types.ts` (answer client and grader client shapes), the **`ScrubbedText`** branded type in `src/lib/scrub/types.ts` (a type that plain strings can't pass as; only `scrub()` in T033 makes real ones), and `tests/helpers/fake-ai.ts` (returns fixed replies and records every call, so tests can prove the AI was or wasn't called).
+- [ ] T012 [P] **Startup exception.** Create the AI client interface `src/lib/ai/types.ts` (answer client and grader client shapes), the **`ScrubbedText`** branded type in `src/lib/scrub/types.ts` (a type that plain strings can't pass as; only `scrub()` in T033 makes real ones), and `tests/helpers/fake-ai.ts` (returns fixed replies and records every call, so tests can prove the AI was or wasn't called).
   - Tests: a type test (`// @ts-expect-error`) proves a plain string can't be used as `ScrubbedText`.
   - Runs alongside: T009, T010, T011.
-- [ ] T013 Create the ordered question steps `src/lib/pipeline/ask.ts` (empty slots for: emergency, basic checks, scrub, refusals, section search, answer AI, answer checks, log, grading sample), the language check `src/lib/pipeline/language.ts` (`franc-min`; shared with the emergency path in T047), and `src/app/api/ask/route.ts` per contracts/api.md: `zod` request check; every reply has `"disclaimer": "LabelTrace is an AI, not a doctor."`; blank → `kind: "prompt_for_question"`; over 1,000 characters → cut, `truncated: true`; non-English → `kind: "english_only"` with "I can only answer in English right now." The route never logs, stores, or echoes the raw question.
+- [ ] T013 **Startup exception.** Create the ordered question steps `src/lib/pipeline/ask.ts` (empty slots for: emergency, basic checks, scrub, refusals, section search, answer AI, answer checks, log, grading sample), the language check `src/lib/pipeline/language.ts` (`franc-min`; shared with the emergency path in T047), and `src/app/api/ask/route.ts` per contracts/api.md: `zod` request check; every reply has `"disclaimer": "LabelTrace is an AI, not a doctor."`; blank → `kind: "prompt_for_question"`; over 1,000 characters → cut, `truncated: true`; non-English → `kind: "english_only"` with "I can only answer in English right now." The route never logs, stores, or echoes the raw question.
   - Tests: `tests/fast/pipeline/basic-checks.test.ts`: blank, 1,001-character, and Spanish questions; disclaimer on every reply kind.
   - Runs alongside: T014. Needs: T012.
 - [ ] T014 [P] Create the shared layout `src/app/layout.tsx` with a visible "LabelTrace is an AI, not a doctor." banner on every page (FR-003), and a simple question page `src/app/page.tsx` that posts to `/api/ask`.
@@ -136,27 +148,26 @@ tier, `ai-gate`, and the release workflow.
 - [ ] T025 [P] Create the AI-tier answer-key loader `tests/ai/questions/load.ts` with a `zod` shape matching data-model.md "Test questions and answer key". `category` in `normal`, `refusal_dosing`, `refusal_compare`, `refusal_other_drug`, `not_covered`, `three_ways`, `privacy`, `emergency`. Blank and non-English questions are refused (research R15). `checked_by / checked_on` "**Required.** The loader refuses any entry without them" (FR-044, constitution VIII). *(Moved here from US2.)*
   - Tests: `tests/fast/ai-key/loader.test.ts`: an entry without `checked_by` is refused; a bad category is refused; a blank question is refused; a good entry loads.
   - Runs alongside: T056. Needs: T001.
-- [ ] T056 [P] [US9] Create the grader prompt `src/lib/prompts/grader-v1.ts` and client `src/lib/ai/grader.ts` (`openai` SDK; model from `GRADER_MODEL`). The client refuses to start if the grader's company equals the answer model's company (FR-034). Input: the scrubbed question (`ScrubbedText` only), the sections given to the answer AI, and the answer. Output: `pass` or `fail` plus a short reason. *(Moved here from US9.)*
+- [ ] T056 [P] [US9] **Startup exception.** Create the grader prompt `src/lib/prompts/grader-v1.ts` and client `src/lib/ai/grader.ts` (`openai` SDK; model from `GRADER_MODEL`). The client refuses to start if the grader's company equals the answer model's company (FR-034). Input: the scrubbed question (`ScrubbedText` only), the sections given to the answer AI, and the answer. Output: `pass` or `fail` plus a short reason. *(Moved here from US9.)*
   - Tests: `tests/fast/ai/grader-client.test.ts` (mocked SDK): same-company config throws; the request contains no raw personal details; reply shape is checked.
   - Runs alongside: T025. Needs: T009, T012.
 - [ ] T063 [US9] Create the grader calibration set `tests/ai/grader/calibration.json` (10 hand-made answers: 5 that stick to the label, 5 with a known mistake such as an added fact or a wrong section) and `tests/ai/grader/calibrate.test.ts`. Pick the smallest OpenAI model that catches all 5 bad answers and passes at least 4 of the 5 good ones. Record the model ID and results in research.md R4. These are the AI tier's **first checked entries**: the owner signs them off (T066). *(Moved here from US9.)*
   - Tests: the calibration set itself (AI tier).
   - Needs: T025, T056.
-- [ ] T073 Create the AI-tier runner and test-run recorder: `tests/ai/setup.ts` and `.github/workflows/ai-tests.yml` (started by hand; inputs: branch, `model`; uses the `ai-tests` environment). Each run creates a `test_runs` row in the **online** database (commit, branch, answer model), runs every checked entry (calibration set now; each story adds more), and finishes the row with passed/failed/total. A run is `passed` only if **at least one** checked entry ran and all passed (research R15). Put the pass rule in a pure function so it can be tested.
-  - Tests: `tests/fast/ai/test-run-recorder.test.ts` (fake AI, fake database): 0 entries → `failed`; all pass → `passed`; one fails → `failed`; the row records commit and model.
+- [ ] T073 **Startup exception.** Create the AI-tier runner and test-run recorder: `tests/ai/setup.ts` and `.github/workflows/ai-tests.yml`. It runs **on pull requests** (the PR's latest commit) **and by hand** (inputs: branch, `model`). Every run uses the `ai-tests` environment, so it waits for the owner's approval before it can read any secret key (research R16). Each run creates a `test_runs` row in the **online** database (commit, branch, answer model), runs every checked entry (calibration set now; each story adds more), and finishes the row with passed/failed/total. A run is `passed` only if **at least one** checked entry ran and all passed (research R15). Put the pass rule in a pure function so it can be tested. **The first passing run must include the signed-off calibration entries (T063)**; they count as human-checked entries for ending the startup exception (spec Clarifications 2026-11-16, T084).
+  - Tests: `tests/fast/ai/test-run-recorder.test.ts` (fake AI, fake database): 0 entries → `failed`; all pass → `passed`; one fails → `failed`; a run with only the signed-off calibration entries, all passing → `passed`; an unsigned calibration entry is refused by the loader, so it isn't counted; the row records commit and model. A check on `ai-tests.yml` confirms it has both a `pull_request` and a `workflow_dispatch` trigger and that its job uses `environment: ai-tests`.
   - Needs: T008, T025, T063, T071.
 - [ ] T084 Close the startup exception (constitution III, v3.0.0). As soon as T073 is merged **and** one AI test run passes with at least 1 checked entry, open a PR that changes the Status line in spec.md, "PRs merged under the startup exception", to: **Status: ended on [date]** by the passing `test_runs` row **[test_runs ID]**. Use the date and ID of the first passing run after T073 merged. The owner confirms the ID in the online database. From then on, every AI-related PR needs a passing AI test run.
   - Tests: — (the passing `test_runs` row is the proof)
   - Needs: T073 and its first passing AI test run.
-- [ ] T083 Merge the separate **path-list PR**, which adds `.github/workflows/**`, `scripts/ai-gate.ts`, and `src/lib/ci/**` to `.github/ai-related-paths.txt` (owner-approved 2026-11-15). The list counts as AI-related, so the PR needs a passing AI test run before it merges (constitution III). Run `ai-tests` (T073) on the PR's latest commit, then the owner reviews and merges. Until this merges, changes to workflow and gate files are protected only by the owner's review (spec Clarifications, temporary bootstrap gap). **Phase 3 can't start until this is merged.**
-  - Tests: the passing `test_runs` row for the PR's commit. After T015 exists, its every-pattern test also covers the new lines.
-  - Needs: T073.
-- [ ] T015 Create `.github/workflows/ai-gate.yml` (check name `ai-gate`, every PR) with `scripts/ai-gate.ts`, **part 1**: read **`.github/ai-related-paths.txt`** each run (never a copied list; skip `#` comments and blank lines; `**` means everything in that folder); if any changed file matches, require a `test_runs` row for the PR's latest commit with `status = passed`. Reads results with `AI_GATE_DATABASE_URL` (read-only). Put the decision in a pure function `src/lib/ci/gate.ts` so it can be tested.
-  - Tests: `tests/fast/ci/ai-gate.test.ts`: README-only change → pass; for **every** pattern in the real `.github/ai-related-paths.txt`, a matching file with no run → fail with "Run the ai-tests workflow on this commit" (so adding a line to the list automatically adds a test); a change to `.github/ai-related-paths.txt` itself with no run → fail; prompt change with a passed run → pass; comment lines are ignored.
+- [x] T083 Add `.github/workflows/**`, `scripts/ai-gate.ts`, and `src/lib/ci/**` to `.github/ai-related-paths.txt`. (Done in PR #13, 2026-11-15.) PR #13 merged **without** a passing AI test run while constitution v2.0.0 was in force. That is a rule break, recorded in `docs/rule-incidents.md`. **Late check:** once T073 is merged, run `ai-tests` on commit `ac46453` and record the `test_runs` ID, status, and date in that incident row.
+  - Tests: the late-check `test_runs` row. After T015 exists, its every-pattern test also covers the new lines.
+- [ ] T015 **Startup exception, if still open.** Create `.github/workflows/ai-gate.yml` (check name `ai-gate`, every PR) with `scripts/ai-gate.ts`, **part 1**: read **`.github/ai-related-paths.txt`** each run (never a copied list; skip `#` comments and blank lines; `**` means everything in that folder); if any changed file matches, require a `test_runs` row for the PR's latest commit with `status = passed`. Reads results with `AI_GATE_DATABASE_URL` (read-only). Put the decision in a pure function `src/lib/ci/gate.ts` so it can be tested.
+  - Tests: `tests/fast/ci/ai-gate.test.ts`: README-only change → pass; for **every** pattern in the real `.github/ai-related-paths.txt`, a matching file with no run → fail with "Run the ai-tests workflow on this commit" (so adding a line to the list automatically adds a test); a change to `.github/ai-related-paths.txt` itself with no run → fail; prompt change with a passed run → pass; **prompt change whose only run is `incomplete` (grader was down) → fail** with "The AI test run is incomplete. Run the ai-tests workflow again"; comment lines are ignored.
   - Needs: T008, T073.
 - [ ] T068 **Owner task**: right after `ai-gate` first runs on T015's PR, add `ai-gate` as a required check in branch protection for `main` (research R17). *(Moved here from Polish.)*
   - Needs: T015.
-- [ ] T074 Create `.github/workflows/release.yml` (runs on `v*` tags; uses the `release` environment) and `scripts/release-check.ts`: (1) fail with "Only the owner can release" unless the tag was pushed by `alexcaldwelll`; (2) use `src/lib/ci/gate.ts` to require a passing `test_runs` row for the tagged commit with every grader flag decided; (3) publish that commit to Netlify's live site using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets (research R21).
+- [ ] T074 **Startup exception, if still open.** Create `.github/workflows/release.yml` (runs on `v*` tags; uses the `release` environment) and `scripts/release-check.ts`: (1) fail with "Only the owner can release" unless the tag was pushed by `alexcaldwelll`; (2) use `src/lib/ci/gate.ts` to require a passing `test_runs` row for the tagged commit with every grader flag decided; (3) publish that commit to Netlify's live site using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets (research R21).
   - Tests: `tests/fast/ci/release-check.test.ts`: tag by the bot → fail; no run → fail with "Run the ai-tests workflow on this commit before releasing"; failed run → fail; passed run with undecided flags → fail; passed run, all decided, owner tag → pass.
   - Needs: T015.
 - [ ] T075 **Owner task**: lock down releases (research R17, R21).
@@ -165,8 +176,8 @@ tier, `ai-gate`, and the release workflow.
   - Needs: T072, T074.
 
 **Checkpoint**: Foundation ready. `fast-tests` and `ai-gate` are required checks, the AI
-tier runs and saves results online, the path-list PR is merged (T083), and only the owner
-can release. Story work can begin.
+tier runs and saves results online, and only the owner can release. Story work can begin.
+(T083 is done in PR #13; its late check can be recorded any time after T073.)
 
 ---
 
@@ -181,8 +192,6 @@ informational medical questions.
 
 All rules: [contracts/emergency-rules.md](contracts/emergency-rules.md). No AI anywhere in
 this phase.
-
-**⚠️ Blocked until T083 is merged** (the path-list PR).
 
 - [ ] T016 [P] [US1] Create text matching in `src/lib/text/match.ts`: normalize (lowercase, `’` → `'`, other punctuation → space, squash spaces), split into words, edit distance, and phrase matching with the typo allowance: "1–3 letters: exact only; 4–7 letters: off by at most 1 change; 8 or more letters: off by at most 2 changes". Words must appear next to each other, in order.
   - Tests: `tests/fast/emergency/match.test.ts`: capitals; curly apostrophe; phrase inside a long sentence; a 3-letter word with one typo does **not** match; a 5-letter word off by 1 matches, off by 2 doesn't; a 9-letter word off by 2 matches.
@@ -226,9 +235,9 @@ confirm each gets the right refusal.
 
 - [ ] T024 [P] [US2] Build the drug name lists **from openFDA data, not from memory**. Write `scripts/build-drug-names.ts`, which queries the openFDA drug label endpoint: (a) brand and generic names of labels whose `indications_and_usage` mentions migraine (`count=openfda.brand_name.exact` and `count=openfda.generic_name.exact`), and (b) the most common brand and generic names overall (same count fields). Save the result to `src/lib/refusals/other-drugs.json`, removing our 4 names (`emgality`, `reyvow`, `galcanezumab`, `lasmiditan`). Put our names and the loader in `src/lib/refusals/drug-names.ts`. Fill in **research.md R20** with the exact query URLs, the download date, and the number of names.
   - Tests: `tests/fast/refusals/drug-names.test.ts`: our 4 names are never on the other list; Imitrex (sumatriptan) and Ubrelvy (ubrogepant) are on it; the JSON file records its source URL and date.
-- [ ] T026 [US2] Create refusal rules in `src/lib/refusals/rules.ts` (no AI, research R14): other drug named → `other_drug`; comparison words ("better than", "vs", "compared to", "instead of") with two drug names → `comparison`; the word **"or" counts only inside comparison phrasing** (with "which", "better", "best", "worse", "stronger", "safer", "choose", or "should I take/use … or …"); personal-dosing patterns ("how much should I", "my weight", "I weigh", "for my age") → `personal_dosing`; no drug named → `ask_which_drug`; both our drugs named without comparison phrasing → pass through with `drug = both`.
-  - Tests: `tests/fast/refusals/rules.test.ts`: US2 scenarios 1–3 with the spec's exact questions; "Does it cause nausea?" → ask which drug; "How are Emgality and Reyvow given?" → not refused, `both`; **"How are Emgality or Reyvow given?" → not refused, `both`**; "Which is better, Emgality or Reyvow?" → `comparison`; "Should I take Emgality or Reyvow?" → `comparison`.
-  - Needs: T024.
+- [ ] T026 [US2] Create refusal rules in `src/lib/refusals/rules.ts` (no AI, research R14). **Drug names are matched with T016's typo rules** (FR-013, FR-056): a word that is a near-miss of an other-drug name counts as that drug; a word that is a near-miss of one of our 4 names counts as that drug, and the reply carries `typed_as` (the word as typed) so the page shows "Answering about Reyvow (you typed 'Reyvo')." An exact match always wins over a typo match. This applies only to normal questions; the emergency path still uses exact names (PC-1). Rules: other drug named → `other_drug`; comparison words ("better than", "vs", "compared to", "instead of") with two drug names → `comparison`; the word **"or" counts only inside comparison phrasing** (with "which", "better", "best", "worse", "stronger", "safer", "choose", or "should I take/use … or …"); personal-dosing patterns ("how much should I", "my weight", "I weigh", "for my age") → `personal_dosing`; no drug named → `ask_which_drug`; both our drugs named without comparison phrasing → pass through with `drug = both`.
+  - Tests: `tests/fast/refusals/rules.test.ts`: US2 scenarios 1–3 with the spec's exact questions; "Does it cause nausea?" → ask which drug; "How are Emgality and Reyvow given?" → not refused, `both`; **"How are Emgality or Reyvow given?" → not refused, `both`**; "Which is better, Emgality or Reyvow?" → `comparison`; "Should I take Emgality or Reyvow?" → `comparison`; **"Is Imitrx safe?" → `other_drug`**; **"Is Reyvow better than Imitrx?" → `comparison`**; **"Does Reyvo cause nausea?" → not refused, `drug = reyvow`, `typed_as = "Reyvo"`**; "Does lasmiditen cause nausea?" → `drug = reyvow`, `typed_as = "lasmiditen"`; "Does Reyvow cause nausea?" → no `typed_as`.
+  - Needs: T016, T024.
 - [ ] T027 [US2] Create `src/lib/refusals/respond.ts` and add refusals as **step 4** in `src/lib/pipeline/ask.ts`. Comparison and other-drug replies are rule-based text with "talk to your doctor or pharmacist" and no AI call. `ask_which_drug` → "Do you mean Emgality or Reyvow?". **Personal dosing**: "Ask your doctor or pharmacist" plus a plain-language summary of the label's "Dosage and Administration" section written by the answer AI from that section only, with `sections[]` and `label_date` (contracts/api.md `refusal` shape). Uses the fake AI until T039 exists. Once T038/T044 exist, the summary also passes the word-count, reading-level, and citation checks (wired in T040).
   - Tests: `tests/fast/pipeline/refusals.test.ts`: each refusal kind returns the right `reason` and wording; fake AI called 0 times for comparison, other drug, and which drug; dosing reply has "Ask your doctor or pharmacist", a section, and a label date.
   - Needs: T013, T026.
@@ -263,9 +272,10 @@ All personal details in tests are made up (FR-022).
 - [ ] T031 [P] [US5] Create `src/lib/scrub/email.ts` (standard email pattern → `[EMAIL]`) and `src/lib/scrub/phone.ts` (US and international formats → `[PHONE]`).
   - Tests: `tests/fast/scrub/email-phone.test.ts`: `jane@example.com`; `555-123-4567`; `(555) 123 4567`; `+44 20 7946 0958`; a dose like `120 mg` is **not** masked.
   - Runs alongside: T032.
-- [ ] T032 [P] [US5] Create `src/lib/scrub/names.ts` with three layers (research R10): intro phrases ("I'm X", "my name is X", "this is X", "thanks, X"); `compromise` name finding; any capitalized word that isn't at the start of a sentence and isn't on the known-word list → `[NAME]`. The known-word list holds our 4 drug names, **every name in `src/lib/refusals/other-drugs.json`** (loaded through T024's `drug-names.ts`), label section names, and common English words. A known word is never masked, even if `compromise` flags it. When unsure about any other word, mask.
-  - Tests: `tests/fast/scrub/names.test.ts`: "Hi, I'm Jane Doe"; "my name is Sam Lee"; "thanks, Pat"; an unknown capitalized word mid-sentence → masked; "Emgality", "Reyvow", and "Warnings and Precautions" are not masked; **"Imitrex", "Ubrelvy", and "sumatriptan" mid-sentence are not masked**.
-  - Runs alongside: T031. Needs: T024.
+- [ ] T032 [P] [US5] Create `src/lib/scrub/names.ts` with three layers (research R10): intro phrases ("I'm X", "my name is X", "this is X", "thanks, X"); `compromise` name finding; any capitalized word that isn't at the start of a sentence and isn't on the known-word list → `[NAME]`. The known-word list holds our 4 drug names, **every name in `src/lib/refusals/other-drugs.json`** (loaded through T024's `drug-names.ts`), label section names, and common English words. A known word is never masked, even if `compromise` flags it. **Near-miss drug names (spec PC-9):** a word that is a near-miss typo of a drug name on the known-word list (T016's typo rules) is also not masked, **unless** it is on the common first-name list, in which case it is always masked. When unsure about any other word, mask.
+  - **Common first-name list**: write `scripts/build-first-names.ts`, which downloads the U.S. Social Security Administration's national baby-name data (research R22) and saves every name with at least 1,000 recorded births in total to `src/lib/scrub/common-first-names.json`, with the source URL, download date, and count. The list comes from that data, **never written from memory**. Fill in research.md R22 with the exact URL, the download date, and the number of names.
+  - Tests: `tests/fast/scrub/names.test.ts`: "Hi, I'm Jane Doe"; "my name is Sam Lee"; "thanks, Pat"; an unknown capitalized word mid-sentence → masked; "Emgality", "Reyvow", and "Warnings and Precautions" are not masked; **"Imitrex", "Ubrelvy", and "sumatriptan" mid-sentence are not masked**; **"Imitrx" and "Reyvo" mid-sentence stay visible**; **a common first name one letter off a drug name stays masked**. That test searches the real `common-first-names.json` for names within one change of a drug name on the known-word list and checks each one is masked. If the real lists have no such pair, it uses a small made-up fixture pair instead, so the test always checks something. Also: `common-first-names.json` records its source URL and date.
+  - Runs alongside: T031. Needs: T016, T024.
 - [ ] T033 [US5] Create `src/lib/scrub/index.ts` (`scrub(raw)` returns a **`ScrubbedText`** (the branded type from T012), so other code can tell scrubbed text apart from raw text) and add scrubbing as **step 3** in `src/lib/pipeline/ask.ts`, right after the emergency check and basic checks, before refusals and any AI. Blank and non-English questions stop at step 2 and are never scrubbed.
   - Tests: `tests/fast/privacy/scrub-pipeline.test.ts`: US5 scenario 1 → the fake AI receives `[NAME]`, `[EMAIL]`, `[PHONE]` and none of the raw details; a spy on `console.*` and on the server logger (T078) never sees the raw text, including when the AI throws.
   - Needs: T013, T031, T032.
@@ -305,8 +315,8 @@ IDs.
 - [ ] T055 [US9] Migration `supabase/migrations/0004_grader.sql`: `grader_results` (`grade` `pass` or `fail`; `source` `real` or `test`; `needs_owner_decision` "Yes when `grade = fail` (FR-037)") and `owner_flag_decisions` ("One decision per flag", unique on `grader_result_id`; `owner_id` "Must have role `owner`"; `reason` "Required (FR-038)"). Only the owner can insert decisions.
   - Tests: `tests/fast/db/grader-schema.test.ts`: a second decision on the same flag is rejected; a reviewer (not owner) can't insert; a decision with no reason is rejected.
   - Needs: T051.
-- [ ] T059 [US9] Extend the AI-tier recorder (`tests/ai/setup.ts`, T073): grade **every** AI-written answer right away with the T056 client (FR-035), save results to `grader_results` with `source = test`. A failed **grade** does not fail the test (FR-037). Emergency and rule-based replies have no AI answer, so they aren't graded.
-  - Tests: `tests/fast/grading/test-run-recorder.test.ts` (fake AI and fake grader): every AI-written answer gets a grade; a failed grade leaves the run `passed` and creates a flag; an emergency entry gets no grade.
+- [ ] T059 [US9] Extend the AI-tier recorder (`tests/ai/setup.ts`, T073): grade **every** AI-written answer right away with the T056 client (FR-035), save results to `grader_results` with `source = test`. A failed **grade** does not fail the test (FR-037). Emergency and rule-based replies have no AI answer, so they aren't graded. **If the grader is down for any AI-written answer, the run ends as `incomplete`** (not `passed`), so `ai-gate` and the release check block it until a complete run passes.
+  - Tests: `tests/fast/grading/test-run-recorder.test.ts` (fake AI and fake grader): every AI-written answer gets a grade; a failed grade leaves the run `passed` and creates a flag; an emergency entry gets no grade; **the grader throwing on one answer → run `incomplete`**, even if every answer passed its checks.
   - Needs: T055, T056, T073.
 - [ ] T060 [US9] Create owner routes `src/app/api/owner/flags/route.ts` (GET, filter `source`), `src/app/api/owner/flags/[grader_result_id]/decision/route.ts` (POST; reason required; second decision → 409), and `src/app/api/owner/grader-summary/route.ts` (total, disagreements, rate, `by_month`).
   - Tests: `tests/fast/owner/api.test.ts`: reviewer → 403; no reason → 400; second decision → 409; 6 disagreements out of 40 → rate 0.15 with the right month counts; 0 decisions → rate 0 with no error.
@@ -314,7 +324,7 @@ IDs.
 - [ ] T061 [P] [US9] Create owner pages `src/app/owner/flags/page.tsx` and `src/app/owner/grader-summary/page.tsx` (shows `grading_gave_up` entries and the disagreement rate).
   - Tests: `tests/fast/ui/owner-pages.test.tsx`: a non-owner is blocked; the rate is displayed.
   - Runs alongside: T062. Needs: T060.
-- [ ] T062 [P] [US9] Extend `src/lib/ci/gate.ts` and `scripts/ai-gate.ts` with **part 2**: every `grader_results` row with `needs_owner_decision = yes` from the PR's run must have an `owner_flag_decisions` row. Fail message: "N grader flags need your decision". The release check (T074) uses the same code.
+- [ ] T062 [P] [US9] **Startup exception, if still open.** Extend `src/lib/ci/gate.ts` and `scripts/ai-gate.ts` with **part 2**: every `grader_results` row with `needs_owner_decision = yes` from the PR's run must have an `owner_flag_decisions` row. Fail message: "N grader flags need your decision". The release check (T074) uses the same code.
   - Tests: extend `tests/fast/ci/ai-gate.test.ts`: a passed run with 3 undecided flags → fail with "3 grader flags need your decision"; all decided → pass. Extend `tests/fast/ci/release-check.test.ts` the same way.
   - Runs alongside: T061. Needs: T015, T055, T074.
 
@@ -351,16 +361,21 @@ seconds.
   - First AI call runs out of time or the AI is down → `kind: "try_again"`, nothing made up.
   - Both drugs named without comparing → both drug answers run **at the same time** with the same deadline, one `answers` item each.
   - Personal-dosing summaries (T027) go through the same checks before the T028 number check, and use T028's fallback, not the pointer.
+  - When T026 matched a misspelled drug name, the answer item carries `typed_as` (FR-056).
   - Tests: `tests/fast/pipeline/answer.test.ts` (fake AI with controllable delays): a too-long first answer, then a good one → good one shown as `type: "ai"`; bad twice → `label_pointer` with the cited section, date, and link, and the text never contains "doesn't cover"; bad once with only 2 seconds left → `label_pointer` with no second AI call; AI cites only a made-up section → pointer names the top search section; first call times out → `try_again`; both drugs → two items, and the two fake AI calls overlap in time (total time ≈ the slower one, not the sum); every reply is sent before 9 seconds.
   - Needs: T036, T038, T039.
 - [ ] T080 [P] [US3] Create the label page `src/app/label/[drug]/page.tsx` (contracts/api.md "GET /label/{drug}"): shows the **saved** current label for `emgality` or `reyvow`, its label date, and every section with its display name and an anchor `id` equal to its `field_key`. Unknown drug → 404. Uses the shared layout, so the banner shows.
   - Tests: `tests/fast/ui/label-page.test.tsx`: each section has the right anchor; the label date shows; the banner shows; `/label/advil` → not found.
   - Runs alongside: T041. Needs: T011, T014.
 - [ ] T041 [P] [US3] Create `src/components/AnswerReply.tsx` and use it in `src/app/page.tsx` for `answer` (including `label_pointer` items, with their link), `refusal`, `not_covered`, `ask_which_drug`, `try_again`, `prompt_for_question`, `english_only`.
-  - Tests: `tests/fast/ui/answer-reply.test.tsx`: each reply kind renders its text, with the banner still visible; a `label_pointer` item shows the section name, date, and a working link.
+  - Also show the long-question notice when the reply has `truncated: true`, and the "Answering about Reyvow (you typed 'Reyvo')." note when an answer item has `typed_as` (FR-056).
+  - Tests: `tests/fast/ui/answer-reply.test.tsx`: each reply kind renders its text, with the banner still visible; a `label_pointer` item shows the section name, date, and a working link; **a reply with `truncated: true` shows the notice that the question was cut off**, and one without it doesn't; **an item with `typed_as: "Reyvo"` shows "Answering about Reyvow (you typed 'Reyvo')."**, and one without `typed_as` shows no note.
   - Runs alongside: T042, T080. Needs: T040.
 - [ ] T042 [P] [US3] Add AI-tier questions `tests/ai/questions/normal.json` (side effects, how it's given, storage, for both drugs, plus "How are Emgality or Reyvow given?") and `tests/ai/questions/three-ways.json` (at least one `three_ways_group` per drug: medical words, everyday words, typos; FR-043). Create the AI test runner `tests/ai/answers.test.ts`: real pipeline, real answer AI; checks AI-written answers are 120 words or fewer and grade 9 or lower, expected facts present, and that the three versions in a group give the same facts. Every AI-written answer is graded (T059). Owner signs off in the same PR (T066).
-  - Tests: this runner and these entries are the AI-tier tests.
+  - **Run report** (saved with the `test_runs` row and printed in the workflow summary):
+    - **Pointer rate** (SC-004): the share of label answers that came back as `label_pointer` instead of an AI-written answer. Above 5% → a clear warning for the owner. It doesn't fail the run by itself.
+    - **Answer times** (SC-013): each answer's time from request to reply is recorded. The report shows the slowest 5% (the 95th percentile) next to the 10-second goal, and lists any answer over 9 seconds (FR-053).
+  - Tests: this runner and these entries are the AI-tier tests. `tests/fast/ai/run-report.test.ts` (made-up results): 1 pointer in 20 → 5%, no warning; 2 in 20 → 10%, warning; the 95th-percentile time is worked out correctly for a known list of times.
   - Runs alongside: T041. Needs: T025, T040, T059.
 
 **Checkpoint**: The main job works. A real AI is connected, it only ever sees scrubbed text,
@@ -394,12 +409,12 @@ the saved label and shows the label date.
 
 **Independent Test**: Ask a question. One log row exists with all required fields.
 
-- [ ] T046 [US6] Create `src/lib/db/log.ts`: `writeLogEntry()` with a `zod` shape matching data-model.md `log_entries`. It takes the question only as `ScrubbedText` (or nothing). **Rows with no question** (blank, non-English, and non-English emergency; FR-055) store **only** `id`, `created_at`, and `answer_type`. Every other field is left empty. `grading_status` is `not_applicable` for emergencies, rule-based refusals, and `label_pointer` rows.
-  - Tests: `tests/fast/log/log-writer.test.ts`: rejects a bad `answer_type`; an `english_only` row with question text, `answer`, or `source` is rejected; a plain string can't be passed as the question (type test).
+- [ ] T046 [US6] Create `src/lib/db/log.ts`: `writeLogEntry()` with a `zod` shape matching data-model.md `log_entries`. It takes the question only as `ScrubbedText` (or nothing). **Rows with no question** (blank, non-English, and non-English emergency; FR-055) store **only** `id`, `created_at`, and `answer_type`. Every other field is left empty. `grading_status` is `not_applicable` for emergencies, rule-based refusals, and `label_pointer` rows. **The writer fills in every field itself** (the database has no defaults, T008): rows with a question get `review_status = not_reviewed`. **A `try_again` reply is logged as `answer_type = error`.**
+  - Tests: `tests/fast/log/log-writer.test.ts`: rejects a bad `answer_type`; an `english_only` row with question text, `answer`, or `source` is rejected; a plain string can't be passed as the question (type test); a row with a question gets `review_status = not_reviewed` from the writer; a blank row gets no `review_status`; a `try_again` reply → `answer_type = error`.
 - [ ] T047 [US6] Write exactly one log row at **every** exit of `src/lib/pipeline/ask.ts`.
-  - **Emergency rows**: after the emergency reply is built and **before saving**, run the language check (`src/lib/pipeline/language.ts`). Not English → save only `id`, `created_at`, `answer_type = emergency` (FR-055). English → scrub the question, then save `answer_type = emergency`, `ai_skipped = true`, `model_name` empty, `emergency_group`, `emergency_phrase_ids` (FR-054), `emergency_case`, `label_text_shown`, and when shown, `sections_used` and `label_date` (FR-025).
+  - **Emergency rows**: after the emergency reply is built and **before saving**, run the language check (`src/lib/pipeline/language.ts`). Not English → save only `id`, `created_at`, `answer_type = emergency` (FR-055). English → scrub the question, then save `answer_type = emergency`, **`answer` = the emergency messages that were shown, in order, plus any label sentences shown below them (or "The label doesn't cover this.")**, `ai_skipped = true`, `model_name` empty, `emergency_group`, `emergency_phrase_ids` (FR-054), `emergency_case`, `label_text_shown`, and when shown, `sections_used` and `label_date` (FR-025).
   - AI answers record `model_name` and `prompt_version`. `label_pointer` replies record the pointed-to section and date.
-  - Tests: `tests/fast/log/every-reply.test.ts`: normal, label pointer, refusal (each kind), not covered, emergency (informational, happening now, unclear, self-harm, mixed), ask which drug, try again, **blank, and non-English** each → exactly 1 row with the right fields; blank and non-English rows hold only `id`, `created_at`, `answer_type`; English emergency rows hold the right `emergency_phrase_ids` (for example "Can I go painting after Reyvow?" → `["fainting"]`). `tests/fast/log/non-english-emergency.test.ts`: a Spanish question containing "chest pain" → the reply shows `MSG_911` first, and its row holds only `id`, `created_at`, `answer_type = emergency`, with no question text and no phrase ids. Re-run `tests/fast/privacy/raw-search.test.ts` (T034), which now searches real log rows and must still find 0.
+  - Tests: `tests/fast/log/every-reply.test.ts`: normal, label pointer, refusal (each kind), not covered, emergency (informational, happening now, unclear, self-harm, mixed), ask which drug, try again, **blank, and non-English** each → exactly 1 row with the right fields; blank and non-English rows hold only `id`, `created_at`, `answer_type`; English emergency rows hold the right `emergency_phrase_ids` (for example "Can I go painting after Reyvow?" → `["fainting"]`); an English informational emergency row's `answer` holds `MSG_911` and the exact label sentences; a mixed row's `answer` holds `MSG_911` then `MSG_988`; try again → `answer_type = error`. `tests/fast/log/non-english-emergency.test.ts`: a Spanish question containing "chest pain" → the reply shows `MSG_911` first, and its row holds only `id`, `created_at`, `answer_type = emergency`, with no question text and no phrase ids. Re-run `tests/fast/privacy/raw-search.test.ts` (T034), which now searches real log rows and must still find 0.
   - Needs: T046.
 
 **Checkpoint**: Every reply is recorded for review, with no raw question.
@@ -480,12 +495,14 @@ it's flagged for the owner.
 
 - **Setup (Phase 1)**: no dependencies. T070 right after T006.
 - **Foundational (Phase 2)**: needs Setup. Blocks all stories. Owner tasks T071 and T072
-  come early, because the AI tier (T073) saves results online. T083 (path-list PR) right
-  after T073. T068 right after T015.
-- **US1 (Phase 3)**: needs Foundational, **including T083**.
-- **US2 (Phase 4)**: needs Foundational. Uses T016 (text matching) from US1 for drug-name typo handling.
-- **US5 (Phase 5)**: needs Foundational and T024 (other-drug list, for T032). **Must be
-  finished before T039.**
+  come early, because the AI tier (T073) saves results online. T083 is done (PR #13); its
+  late check runs right after T073. T084 right after the first passing AI run. T068 right
+  after T015. T085 applies to every PR merged under the startup exception until T084.
+- **US1 (Phase 3)**: needs Foundational.
+- **US2 (Phase 4)**: needs Foundational. T026 uses T016 (text matching) from US1 for
+  drug-name typo matching (FR-013, FR-056).
+- **US5 (Phase 5)**: needs Foundational, T016 and T024 (typo rules and the other-drug list,
+  for T032). **Must be finished before T039.**
 - **Grading test answers (Phase 6)**: needs Foundational. **Must be finished before T042.**
 - **US3 (Phase 7)**: needs US5 (T033's `ScrubbedText`), Phase 6 (T059), and T016.
 - **US4 (Phase 8)**: needs US3 (T040).
@@ -518,7 +535,7 @@ Setup → Foundation (+ AI tier, ai-gate, release) → US1 → US2 → US5 → G
 T002, T003, T004            then  T006 → T070 (owner)
 
 # Foundation
-T009, T010, T012            then  T013, T014;  T025 + T056  then  T063 → T073 → T083, T015 → T068 (owner), T074 → T075 (owner)
+T009, T010, T012            then  T013, T014;  T025 + T056  then  T063 → T073 → T084 + T083 late check, T015 → T068 (owner), T074 → T075 (owner)
 
 # US1 Emergencies
 T016 + T017               then  T018 + T019 + T020   then  T021   then  T022 + T023 + T076

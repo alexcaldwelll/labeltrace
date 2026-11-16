@@ -171,6 +171,12 @@ Words that may be new are explained the first time they appear.
     refusals could never see them. Drug names aren't personal details, so keeping them
     is safe. The scrubber also never masks a word on the known-word list, even when the
     name finder (layer 2) flags it.
+  - **Misspelled drug names (spec PC-9)**: a word that is a near-miss typo of a drug name
+    on the known-word list (same typo rules as R8) is also left visible, so "Imitrx" and
+    "Reyvo" still reach the refusal rules and drug matching. **Safeguard**: if that word is
+    also on the common first-name list (R22), it is masked anyway. This keeps the privacy
+    cost small: only an unusual name one or two letters off a drug name could stay
+    visible.
 - **Alternatives**: Sending text to an AI to find names. Rejected: the raw text would
   reach an AI before being scrubbed.
 
@@ -235,6 +241,10 @@ Words that may be new are explained the first time they appear.
      or Reyvow given?" is answered for each drug.
      Personal-dosing patterns ("how much should I", "my weight", "I weigh", "for my age")
      catch dosing questions. No drug named → ask "Do you mean Emgality or Reyvow?"
+     **Drug names are matched with the R8 typo rules** (an exact match wins): "Imitrx"
+     counts as Imitrex (FR-013), and "Reyvo" counts as Reyvow, with the reply saying
+     "Answering about Reyvow (you typed 'Reyvo')." (FR-056). The emergency path doesn't
+     use this; there, only exact names count (PC-1).
   2. **AI backstop**: The prompt tells the AI to label its answer type as `refusal` when
      a question slips past the rules.
 - Personal-dosing questions still get the general dosing text from the label, with "Ask
@@ -247,7 +257,7 @@ Words that may be new are explained the first time they appear.
   | Tier | Folder | Calls an AI? | When it runs |
   |---|---|---|---|
   | **Fast** | `tests/fast/` | No. AI calls are replaced by a fake that gives fixed replies. | Every PR, automatically |
-  | **AI** | `tests/ai/` | Yes: Haiku 5.5 plus the OpenAI grader | By hand (GitHub Actions "Run workflow" button). Required before merging PRs that change a file on `.github/ai-related-paths.txt`, and before every release (constitution v2.0.0, III). |
+  | **AI** | `tests/ai/` | Yes: Haiku 5.5 plus the OpenAI grader | On pull requests and by hand (GitHub Actions "Run workflow" button). Every run waits for the owner's approval in the `ai-tests` environment. Required before merging PRs that change a file on `.github/ai-related-paths.txt`, and before every release (constitution v3.0.0, III). |
 
 - **Fast tier** covers every emergency phrase and case (FR-010, FR-050, FR-051), the
   scrubber, refusal rules, answer checks (R13), label caching (with saved openFDA sample
@@ -263,7 +273,13 @@ Words that may be new are explained the first time they appear.
   then adds its own AI-tier questions, and the owner signs them off (`checked_by`,
   `checked_on`) in the same PR. By the end it has at least 20 questions (FR-040).
 - **A run passes only when** at least one checked entry ran and all of them passed. A run
-  with no entries fails, so a pass always means something was tested.
+  with no entries fails, so a pass always means something was tested. If the grader is
+  down for any AI-written answer, the run is `incomplete`, which never counts as passing.
+- **The first passing run** must include the signed-off calibration entries. They count
+  as human-checked entries for ending the startup exception (constitution III v3.0.0;
+  spec Clarifications 2026-11-16).
+- **Run report**: each run reports the label-pointer rate (warning above 5%, SC-004) and
+  each answer's time, with the slowest 5% compared to the 10-second goal (SC-013).
 - **The AI tier never sends blank or non-English questions.** Those make no AI calls and
   are fully covered by fast tests. This keeps every AI-tier log row marked
   `source = test`, while blank and non-English rows hold only reply type and time
@@ -278,18 +294,18 @@ Words that may be new are explained the first time they appear.
   | Workflow | Runs when | What it does | Check name |
   |---|---|---|---|
   | `fast-tests.yml` | Every PR, every push to `main` | Install, type-check, lint, start local Supabase, run fast tests | `fast-tests` |
-  | `ai-tests.yml` | By hand (choose branch and model) | Run the AI test tier, grade every AI-written answer, save results for that commit to the online database | `ai-tests` |
+  | `ai-tests.yml` | Every PR (the PR's latest commit) and by hand (choose branch and model). Each run waits for the owner's approval in the `ai-tests` environment. | Run the AI test tier, grade every AI-written answer, save results for that commit to the online database | `ai-tests` |
   | `ai-gate.yml` | Every PR | (1) If the PR changes a file on `.github/ai-related-paths.txt`, require a passing AI test run for the PR's latest commit. (2) For every PR, require that all grader flags from that run have an owner decision. | `ai-gate` |
   | `release.yml` | A `v*` tag is pushed | Check the tag was pushed by the owner, require a passing AI test run with all flags decided for the tagged commit, then publish to Netlify (R21) | `release` |
 
 - **AI-related files**: `ai-gate` reads the official list, **`.github/ai-related-paths.txt`**,
-  every time it runs (constitution v2.0.0, III). It never keeps its own copy, so a change
+  every time it runs (constitution v3.0.0, III). It never keeps its own copy, so a change
   to the list takes effect right away. The list includes itself, so changing the list
   also needs a passing AI test run. CODEOWNERS names the owner for that file.
-- **Pending additions**: `.github/workflows/**`, `scripts/ai-gate.ts`, and `src/lib/ci/**`
-  are being added in a separate PR (task T083). It can merge only after the AI test tier
-  exists and passes for it. Until then, those files are protected only by the owner's
-  review (spec Clarifications, temporary bootstrap gap).
+- **Workflow and gate files**: `.github/workflows/**`, `scripts/ai-gate.ts`, and
+  `src/lib/ci/**` were added to the list in PR #13 (task T083). That PR merged without a
+  passing AI test run, which broke constitution III (v2.0.0). It is recorded in
+  `docs/rule-incidents.md`, with a late AI test run on its commit once T073 exists.
 - **Pattern rules**: one pattern per line. `**` means "everything inside this folder."
   Lines starting with `#` and blank lines are skipped. A line with no `*` matches that
   exact file.
@@ -416,6 +432,27 @@ _Added by task T024 (query URLs, download date, and number of names)._
 - **Alternatives**: Every merge is a release (AI tests on every PR, more cost). A manual
   publish button in Netlify (no automated check). Both rejected by the owner on
   2026-11-15.
+
+## R22. Common first-name list (scrubber safeguard)
+
+- **Decision**: The scrubber leaves near-miss typos of drug names visible (spec PC-9), but
+  always masks a word that is also a common first name. The list of common first names
+  comes from public government data, **not from memory**:
+  - **Source**: the U.S. Social Security Administration's national baby-name data (every
+    first name given to at least 5 babies in a year, by year, from 1880 on), downloaded as
+    `names.zip` from the SSA's baby-names data page
+    (`https://www.ssa.gov/oact/babynames/limits.html`).
+  - **Which names count as "common"**: names with at least 1,000 recorded births in
+    total, across all years and both sexes.
+  - **Built by**: `scripts/build-first-names.ts` (task T032), saved to
+    `src/lib/scrub/common-first-names.json` with its source URL, download date, and count.
+- _Added by task T032: the exact download URL, the download date, and the number of
+  names._
+- **Why SSA data**: it's public, free, official, and covers U.S. first names going back
+  many decades. U.S. Census data mostly covers last names, so it fits this job less well.
+- **Alternatives**: A hand-written list (rejected: written from memory, and incomplete).
+  No safeguard (rejected: a real first name that happens to be close to a drug name
+  would be left visible).
 
 ---
 

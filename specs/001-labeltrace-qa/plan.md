@@ -34,9 +34,12 @@ order. The whole reply must fit in **9 seconds** (FR-053).
 Reviewers sign in to approve or flag answers. The owner records decisions on grader
 flags, and the app shows how often the owner disagrees with the grader.
 
-Tests come in two tiers, as constitution v2.0.0 requires. **Fast tests** (no AI) run on
+Tests come in two tiers, as constitution v3.0.0 requires. **Fast tests** (no AI) run on
 every PR. **AI tests** run before merging any PR that changes a file on
-`.github/ai-related-paths.txt`, and before every release. A release is a `v*` tag that
+`.github/ai-related-paths.txt`, and before every release. They run on PRs as well as by
+hand, and every run waits for the owner's approval in the `ai-tests` environment. Until
+the AI test tier exists, the constitution's one-time startup exception applies (see the
+Constitution Check). A release is a `v*` tag that
 only the owner can push. GitHub Actions, branch protection, and a tag ruleset enforce
 all of this.
 
@@ -61,7 +64,10 @@ Test questions and the emergency phrase list live in the repo, so every change g
 through a PR.
 
 **Testing**: Vitest with two projects. `fast` (no AI; local Supabase in CI) and `ai` (real
-models; results saved to the online database). See
+models; results saved to the online database; runs on PRs and by hand, each run approved
+by the owner). If the grader is down during an AI run, the run is `incomplete` and can't
+be used to merge. The AI runner also reports how often answers fall back to the label
+pointer (warning above 5%) and the slowest 5% of answer times. See
 [research.md R15](research.md#r15-two-tiers-of-tests).
 
 **Target Platform**: Netlify (Next.js runtime, server functions, scheduled functions). Works
@@ -92,19 +98,20 @@ traffic at first. 500 or more real answers is enough to check the 10% grading ra
 
 *GATE: Must pass before Phase 0 research. Re-checked after Phase 1 design.*
 
-Checked against constitution **v2.0.0** (ratified and last amended 2026-11-15).
+Checked against constitution **v3.0.0** (ratified and last amended 2026-11-15).
 
 | Principle | How this plan meets it | Pre-design | Post-design |
 |---|---|---|---|
 | I. Accountable | All work on branches with PRs. Branch protection needs the owner's approval and passing checks. Claude uses a bot account, so approval is real ([R17](research.md#r17-branch-protection-and-the-bot-account)). Only the owner can push `v*` release tags. | ✅ | ✅ |
 | II. Safe | Emergency check is plain code and runs first. Self-harm never shows label text. Rule-based plus AI refusals for dosing and comparisons. One fast test per emergency phrase ([emergency-rules](contracts/emergency-rules.md)). No skip list for false alarms (PC-6). | ✅ | ✅ |
-| III. Valid and Reliable | Only stored label text is sent to the AI. Code checks every cited section and the label date. "The label doesn't cover this" only when the label really doesn't. Two test tiers. `ai-gate` reads the official list `.github/ai-related-paths.txt`. Required checks `fast-tests` and `ai-gate` block merges. The release workflow blocks releases without a passing AI test run. | ✅ | ✅ |
-| IV. Fair and Equitable | Reading level is checked by code on every AI-written answer. If an answer can't pass, the app points to the label section instead of showing hard text. Synonym map and typo matching. "Three ways" tests for each drug in the AI tier. Places where Safe or Privacy win over this principle are written down (spec PC-1 to PC-8). | ✅ | ✅ |
-| V. Privacy | Scrubber runs before any AI. Raw question only in memory, with a test that searches all tables. Blank and non-English rows (including non-English emergencies) hold only reply type and time. Netlify logs get scrubbed text only. Made-up data in tests. Secrets in `.env`, Netlify, and GitHub secrets only. | ✅ | ✅ |
+| III. Valid and Reliable | Only stored label text is sent to the AI. Code checks every cited section and the label date. "The label doesn't cover this" only when the label really doesn't. Two test tiers. `ai-gate` reads the official list `.github/ai-related-paths.txt`. Required checks `fast-tests` and `ai-gate` block merges. The release workflow blocks releases without a passing AI test run. An `incomplete` run (grader down) never counts as passing. | ✅ | ✅ |
+| III. Startup exception (v3.0.0) | Until the AI tier exists, AI-related PRs may merge with passing fast tests and the owner's approval. Tasks that use it are tagged "Startup exception" in tasks.md. Every PR merged under it gets a row (PR number, what changed, merge date) in the spec's table (task T085). It ends for good when T073 is merged and one AI test run passes with at least one signed-off entry (the calibration entries count, spec Clarifications 2026-11-16). Task T084 then records the end date and `test_runs` ID. PR #13 merged **before** the exception existed, so it is a recorded rule break (`docs/rule-incidents.md`), with a late AI test run once T073 exists, not an exception row. | ✅ | ✅ |
+| IV. Fair and Equitable | Reading level is checked by code on every AI-written answer. If an answer can't pass, the app points to the label section instead of showing hard text. Synonym map and typo matching. "Three ways" tests for each drug in the AI tier. Places where Safe or Privacy win over this principle are written down (spec PC-1 to PC-8). Misspelled drug names in normal questions are matched and shown to the user (FR-056). | ✅ | ✅ |
+| V. Privacy | Scrubber runs before any AI. Near-miss typos of drug names stay visible, but common first names (public SSA list, research R22) are always masked (spec PC-9, where Safe wins over Privacy). Raw question only in memory, with a test that searches all tables. Blank and non-English rows (including non-English emergencies) hold only reply type and time. Netlify logs get scrubbed text only. Made-up data in tests. Secrets in `.env`, Netlify, and GitHub secrets only. | ✅ | ✅ |
 | VI. Transparent | "AI, not a doctor" banner in the shared page layout, so every screen has it, including the label page. README task included. | ✅ | ✅ |
 | VII. Sustainable | Haiku 5.5 first, with a measured comparison before any change. openFDA update check downloads nothing unless the date is newer ([R6](research.md#r6-getting-the-label-from-openfda-and-checking-for-updates)). AI tests only run when the rules need them. | ✅ | ✅ |
 | VIII. Enhanced | Model is told to use only the given text. The answer key has `checked_by` and `checked_on` fields. The owner signs off entries as each story adds them, and the test loader refuses unchecked entries. | ✅ | ✅ |
-| When Principles Conflict | Each decision is in the spec's Clarifications section, "Principle conflict decisions" (PC-1 to PC-8), naming the principles, the winner, and why. | ✅ | ✅ |
+| When Principles Conflict | Each decision is in the spec's Clarifications section, "Principle conflict decisions" (PC-1 to PC-9), naming the principles, the winner, and why. | ✅ | ✅ |
 | Release safeguards | Grader on every AI-written test answer (from the first one) and 10% of real answers. Flags need owner decisions, and `ai-gate` and the release workflow block until they have them. Disagreement rate shown. Risk review is a separate task (spec Assumptions). | ✅ | ✅ |
 
 **Gate result**: PASS.
@@ -198,6 +205,9 @@ scheduled functions live in `netlify/functions/`. The `ai-gate` check reads
   3. **Right after the `ai-gate` workflow first runs** (tasks T015 → T068): make
      `ai-gate` a required check. The small AI test tier in Phase 2 (runner, test-run
      recorder, grader calibration) exists by then, so AI-related PRs can pass it.
+- **Path list**: the workflow and gate files were added to `.github/ai-related-paths.txt`
+  in PR #13 (task T083, done). That PR merged without a passing AI test run, which is a
+  recorded rule break with a late check (`docs/rule-incidents.md`).
 - **Releases** ([R21](research.md#r21-releases)): a tag ruleset lets only the owner
   create or delete `v*` tags. `release.yml` checks for a passing AI test run (with every
   grader flag decided) for the tagged commit, then publishes to Netlify with the
@@ -206,15 +216,18 @@ scheduled functions live in `netlify/functions/`. The `ai-gate` check reads
   and scheduled functions. Secrets live only in Netlify and in GitHub environments, never
   in files.
 - **Build order (tests built with each story, FR-042)**: CI workflows and the small AI test
-  tier first → US-04 emergencies → US-03 refusals → **US-05 scrubbing** → grading of test
-  answers (owner login, grader tables, flag decisions) → US-01 answers (first real AI
-  call) → US-02 citations → US-06 log → US-10 label freshness → US-07 review pages →
-  US-08 real-answer grading. Scrubbing comes before the real answer AI is connected, so no
+  tier first → US1 emergencies (US-04) → US2 refusals (US-03) → **US5 scrubbing
+  (US-05)** → grading of test answers (owner login, grader tables, flag decisions) → US3
+  answers (US-01, first real AI call) → US4 citations (US-02) → US6 log (US-06) → US7
+  label freshness (US-10) → US8 review pages (US-07) → US9 real-answer grading (US-08).
+  Story labels match spec.md and tasks.md; the owner's original IDs are in brackets. Scrubbing comes before the real answer AI is connected, so no
   real AI call ever gets unscrubbed text. Grading comes before the first AI-written test
   answer, so every test answer is graded (constitution, Release Safeguards).
 
 ## Complexity Tracking
 
-No constitution violations to justify. The earlier conflict (AI tests not running on every
-PR) was settled by constitution v2.0.0. Places where one principle wins over another are
-written down in the spec (PC-1 to PC-8), as the constitution requires.
+No constitution violations to justify in this plan. The earlier conflict (AI tests not
+running on every PR) was settled by constitution v2.0.0, and the startup period by v3.0.0's
+one-time exception. One past merge (PR #13) broke rule III and is recorded in
+`docs/rule-incidents.md`. Places where one principle wins over another are written down
+in the spec (PC-1 to PC-9), as the constitution requires.
