@@ -8,6 +8,7 @@ Before creating or changing any file, explain:
 - what will go in it, and
 - why it is needed.
 Then wait for my approval before making the change.
+Approving a fix approves the outcome, not every file. Before editing, list every file the fix will touch and wait for approval of that list.
 
 ## 2. Follow the constitution
 The project constitution is at `.specify/memory/constitution.md`.
