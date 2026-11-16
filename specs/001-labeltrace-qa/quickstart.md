@@ -16,8 +16,8 @@ the code is built. Details live in [data-model.md](data-model.md),
 - The Supabase command-line tool (`supabase`)
 - A `.env` file copied from `.env.example`, with real keys. `.env` is git-ignored. Never
   commit it.
-- For AI tests only: Anthropic and OpenAI API keys, plus `GRADER_MODEL` set
-  ([R4](research.md#r4-second-ai-grader))
+- For AI tests only: Anthropic and OpenAI API keys. The grader model is set in
+  `src/config/models.ts`, not in `.env` ([R4](research.md#r4-second-ai-grader))
 - Your local `.env` points at the **local** database only. The online database's admin
   key is never put in a local file ([R16](research.md#r16-github-actions-automatic-checks-on-github)).
 
@@ -62,7 +62,7 @@ saved to the online database.
 
 - Every checked answer-key entry runs and passes. By the end of the build that's at least
   20 questions (FR-040). A run with no checked entries counts as **failed**.
-- Every AI-written answer has a grader result. Failed grades show up at `/owner/flags`, and
+- Every test answer (including emergency and rule-based replies) has a grader result. Failed grades show up at `/owner/flags`, and
   they don't fail the run (FR-037).
 - A `test_runs` row exists for the commit in the online database.
 

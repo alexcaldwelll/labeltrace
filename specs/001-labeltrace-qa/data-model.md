@@ -116,6 +116,8 @@ One row per answered question (FR-023).
   - `waiting` → `passed` or `failed`.
   - `waiting` → `not_graded_yet` (the grader is down) → back to `waiting` on the next
     try. After 5 tries it becomes `grading_gave_up`, which shows up on the owner's page.
+  - These states are for the 10% sample of **real** answers only. Test answers of every
+    kind are always graded by the test runner (T059).
   - Emergencies, rule-based refusals, and `label_pointer` rows: `not_applicable`. No AI
     answer was shown, so there's nothing to grade.
   - Blank and non-English rows: empty (see above), treated as `not_applicable`.
@@ -178,12 +180,13 @@ One run of the AI test tier.
 | id | id | |
 | commit_sha | text | The commit ID tested |
 | branch | text | |
-| answer_model | text | For example `claude-haiku-5-5` |
+| answer_model | text | For example `claude-haiku-5-5`. Required. |
+| grader_model | text | The grader model used. Required. |
 | started_at / finished_at | time | |
 | passed / failed / total | numbers | |
 | status | text | `running`, `passed`, `failed`, `incomplete` |
 
-- `incomplete`: the grader was down for at least one AI-written answer, so not every
+- `incomplete`: the grader was down for at least one test answer, so not every
   answer was graded. It never counts as passing; `ai-gate` and the release check block it.
 - Stored in the **online** database. Written only by the `ai-tests` workflow, which uses
   the `ai-tests` GitHub environment (owner-approved runs, R16).
@@ -191,7 +194,8 @@ One run of the AI test tier.
 - The `ai-gate` check looks up the PR's latest commit here. The release workflow looks up
   the tagged commit (R21). Each passes only if a run has `status = passed` **and** every
   `grader_results` row with `needs_owner_decision = yes` from that run has an
-  `owner_flag_decisions` row.
+  `owner_flag_decisions` row, **and** the run's `answer_model` and `grader_model` both
+  match `src/config/models.ts` at that commit (FR-045).
 
 ## Test questions and answer key (repo)
 

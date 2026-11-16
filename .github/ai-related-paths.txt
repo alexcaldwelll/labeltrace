@@ -17,6 +17,11 @@ src/config/models.ts
 # Label handling (getting, saving, and searching FDA labels)
 src/lib/labels/**
 
+# The daily label update check and the label download scripts (label handling)
+netlify/functions/label-check.ts
+scripts/labels-fetch.ts
+scripts/labels-check.ts
+
 # The personal-details scrubber (masks names, emails, phone numbers)
 src/lib/scrub/**
 
@@ -28,6 +33,11 @@ src/lib/text/match.ts
 
 # The order of the question steps (emergency first, scrub before any AI)
 src/lib/pipeline/ask.ts
+
+# The language check (decides if a question is cleaned and logged, or logged with no text)
+src/lib/pipeline/language.ts
+# The English word list the language check uses for short questions
+src/lib/pipeline/english-words.json
 
 # Answer checks (word count, reading level, citations, dosing numbers)
 src/lib/checks/**
@@ -44,6 +54,9 @@ scripts/ai-gate.ts
 
 # The code that decides if ai-gate and the release check pass or fail
 src/lib/ci/**
+
+# The release check (decides if a release is allowed)
+scripts/release-check.ts
 
 # This list itself
 .github/ai-related-paths.txt

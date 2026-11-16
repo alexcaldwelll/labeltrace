@@ -36,6 +36,14 @@
 - Q: The scrubber runs before the refusal rules, so a misspelled drug name like "Imitrx" or "Reyvo" would be masked as `[NAME]` and the refusal rules would never see it. What wins? → A: A word that is a near-miss typo of a known drug name is not masked, **unless** it is also a common first name on a public name list (research R22). See PC-9.
 - Q: What happens when the grader is down during an AI test run? → A: The run is `incomplete`, not `passed`, so `ai-gate` and the release check block until a complete run passes.
 
+### Session 2026-11-16 (fixes after the third `/speckit-analyze`)
+
+- Q: Constitution III says AI tests "call the answer AI and the second-AI grader." Before the answer AI exists (T039), AI test runs (for example, runs with only the grader calibration entries) can't call it. Do those runs count? → A: Yes. Until the answer AI exists (T039), AI test runs cover the AI components that exist, which fits rule III. The startup exception's end condition doesn't change.
+- Q: Which test answers does the grader grade? → A: Every test answer, including emergency replies and rule-based refusals, not only AI-written ones (constitution, Release Safeguards). The app's reply still never calls an AI for an emergency. The grader only checks the finished reply afterward, and only in the AI test tier (SC-001, SC-014).
+- Q: Where is the grader model chosen? → A: Only in `src/config/models.ts`, which is on the AI-related list. There is no setting that can change it, so a model change always needs a PR and a passing AI test run.
+- Q: Can an AI test run made with a different model (for example, a hand-started comparison run) let a PR merge or a release go out? → A: No. `ai-gate` and the release check accept a run only if its answer model and grader model both match `src/config/models.ts` at that commit (FR-045).
+- Q: How does the language check handle very short questions, which language detection often gets wrong? → A: A question under 30 characters counts as English only if every word is an English word, a drug name, or a number (FR-055). So "chest pain?" is English, but "¿Reyvow causa náuseas?" is not. The English word list comes from a published source recorded in research R19, never from memory.
+
 ### Principle conflict decisions
 
 The constitution ("When Principles Conflict") says each decision where two principles can't both be followed must be written down here: the principles, which one won, and why. Safe (II) comes first, then Privacy (V), then the others.
@@ -58,7 +66,7 @@ The constitution ("When Principles Conflict") says each decision where two princ
 
 | PR | What it changed | Merged on |
 |---|---|---|
-| (none yet) | | |
+| #16 | Adds 6 files to `.github/ai-related-paths.txt` (label update check, label download scripts, language check, English word list, release check) and fixes the third `/speckit-analyze` findings | Added in the next PR, after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -332,10 +340,13 @@ An AI from a different company than the one that writes answers checks whether a
 **Audit log (US-06)**
 
 - **FR-023**: Every answered question MUST create one log entry.
-- **FR-024**: Each log entry MUST hold: time, scrubbed question, model name, prompt version, label sections used, label date, answer, and review status. The only exceptions are in FR-055.
+- **FR-024**: Each log entry MUST hold: time, scrubbed question, answer type, answer, and review status. It MUST also hold the model name, prompt version, label sections used, and label date, except where the reply didn't use them:
+  - **Emergency replies**: model name and prompt version are empty, because the AI is skipped. Label sections and label date are empty unless label text was shown (FR-025).
+  - **Rule-based replies** (comparison, other drug, ask which drug): model name, prompt version, label sections, and label date are empty, because no AI and no label were used.
+  - **Blank and non-English questions**: follow FR-055.
 - **FR-025**: Emergency entries MUST record that the emergency message was shown, that the AI was skipped, the emergency case (informational, happening now, or unclear), and whether label text was shown (with its sections and label date if so). For English questions, the entry's answer MUST hold the emergency messages that were shown and any label sentences shown below them. (Non-English emergency entries follow FR-055.)
 - **FR-054**: Every emergency entry MUST record the IDs of the emergency phrases that matched (for example `fainting`), so the owner can see how often false alarms happen (PC-6). The only exception is in FR-055.
-- **FR-055**: Entries for blank questions and non-English questions MUST hold only the reply type and the time, plus the row's ID number. This includes a non-English question that has an emergency phrase: the emergency message still shows first, but no question text, phrase IDs, or other details are logged (constitution V, PC-8). The language check MUST run before the entry is saved on every path, including the emergency path.
+- **FR-055**: Entries for blank questions and non-English questions MUST hold only the reply type and the time, plus the row's ID number. This includes a non-English question that has an emergency phrase: the emergency message still shows first, but no question text, phrase IDs, or other details are logged (constitution V, PC-8). The language check MUST run before the entry is saved on every path, including the emergency path. A question under 30 characters counts as English only if every word is an English word (from the published word list in research R19), a drug name, or a number. For example, "chest pain?" is English, but "¿Reyvow causa náuseas?" is not.
 
 **Fresh data (US-10)**
 
@@ -371,7 +382,7 @@ An AI from a different company than the one that writes answers checks whether a
   - **Fast tests** (no AI calls) MUST run and pass on every pull request before it can merge.
   - **AI tests** (real answer AI and grader) MUST run and pass before merging any pull request that changes a file on `.github/ai-related-paths.txt`, and before every release. A release is a `v*` tag pushed by the owner.
   - A required automated check MUST block the merge or release when a rule above isn't met.
-
+  - A test run counts only if its answer model and grader model both match `src/config/models.ts` at the commit being merged or released.
 ### Key Entities
 
 - **Drug Label**: The saved FDA label for one drug (Emgality or Reyvow). Has the label date, the date it was downloaded, and its sections.
@@ -388,7 +399,7 @@ An AI from a different company than the one that writes answers checks whether a
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of emergency phrase tests (medical and self-harm) show the right message, and 0 of them reach the AI.
+- **SC-001**: 100% of emergency phrase tests (medical and self-harm) show the right message, and 0 of them reach the answer AI.
 - **SC-002**: 100% of personal-dosing, comparison, and other-drug tests get a refusal with "doctor or pharmacist" wording.
 - **SC-003**: 100% of "not covered" tests say "The label doesn't cover this."
 - **SC-004**: 100% of AI-written answers shown to patients are 120 words or fewer and score grade 9 or lower for reading level. Of the questions that get a label answer from the answer step, at least 95% get an AI-written answer, not the label-section pointer (FR-052).
@@ -401,7 +412,7 @@ An AI from a different company than the one that writes answers checks whether a
 - **SC-011**: The owner's disagreement rate with the grader can be seen at any time.
 - **SC-012**: The AI-tier test suite has at least 20 questions. Fast tests pass before every merge. AI tests pass before every merge that changes an AI-related file and before every release.
 - **SC-013**: A patient sees an answer in under 10 seconds for at least 95% of questions, and sees emergency messages in under 1 second. (FR-053's 9-second limit for **every** reply is the real, enforced limit. This is a looser goal that the AI test runner reports on.)
-- **SC-014**: 100% of emergency-case tests (FR-050) show the right output: label text only for informational medical questions, and never for self-harm. 100% of mixed-phrase tests (FR-051) show both messages with the 911 message first and no label text. 0 of them reach the AI.
+- **SC-014**: 100% of emergency-case tests (FR-050) show the right output: label text only for informational medical questions, and never for self-harm. 100% of mixed-phrase tests (FR-051) show both messages with the 911 message first and no label text. 0 of them reach the answer AI.
 
 ## Assumptions
 

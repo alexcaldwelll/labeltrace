@@ -154,17 +154,23 @@ Grader results with `needs_owner_decision = yes` and no decision yet. Filter by 
   `.github/ai-related-paths.txt` (read fresh each run).
 - **AI-related** means a changed file matches any pattern in that list.
 - **Pass when**: (no AI-related files changed **or** a `test_runs` row for this commit has
-  `status = passed`) **and** that run's grader flags all have owner decisions.
+  `status = passed` **and** an `answer_model` and `grader_model` that both match
+  `src/config/models.ts` at this commit) **and** that run's grader flags all have owner
+  decisions.
 - **Fail message**: names the missing step, for example "Run the ai-tests workflow on this
-  commit" or "3 grader flags need your decision".
+  commit", "The AI test run used a different model than src/config/models.ts. Run the
+  ai-tests workflow with the configured models", or "3 grader flags need your decision".
 
 ## Release check (`release` workflow)
 
 - **Input**: a pushed `v*` tag, who pushed it, and the tagged commit ID.
 - **Pass when**: the tag was pushed by `alexcaldwelll` **and** a `test_runs` row for the
-  tagged commit has `status = passed` **and** that run's grader flags all have owner
-  decisions. Uses the same check code as `ai-gate`.
+  tagged commit has `status = passed`, with both models matching `src/config/models.ts`
+  at that commit, **and** that run's grader flags all have owner decisions. Uses the same
+  check code as `ai-gate`.
 - **Then**: publishes the tagged commit to Netlify's live site, using the
-  `NETLIFY_AUTH_TOKEN` GitHub secret.
-- **Fail message**: "Run the ai-tests workflow on this commit before releasing", "N grader
-  flags need your decision", or "Only the owner can release".
+  `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` GitHub secrets.
+- **Fail message**: "Run the ai-tests workflow on this commit before releasing", "The AI
+  test run used a different model than src/config/models.ts. Run the ai-tests workflow
+  with the configured models", "N grader flags need your decision", or "Only the owner
+  can release".
