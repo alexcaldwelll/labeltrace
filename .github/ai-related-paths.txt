@@ -35,5 +35,15 @@ src/lib/checks/**
 # Refusal rules (dosing, comparisons, other drugs)
 src/lib/refusals/**
 
+# The GitHub workflows (the automatic checks: fast-tests, ai-tests, ai-gate,
+# release). Changing them could switch off or weaken the checks themselves.
+.github/workflows/**
+
+# The script that runs the ai-gate check on every pull request
+scripts/ai-gate.ts
+
+# The code that decides if ai-gate and the release check pass or fail
+src/lib/ci/**
+
 # This list itself
 .github/ai-related-paths.txt
