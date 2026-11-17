@@ -21,6 +21,14 @@ src/lib/labels/**
 netlify/functions/label-check.ts
 scripts/labels-fetch.ts
 scripts/labels-check.ts
+# The script that loads saved labels into the database (label handling)
+scripts/seed-labels.ts
+
+# The scripts that build the word and name lists the checks use (the English
+# word list, the other-drug name list, and the common first-name list)
+scripts/build-english-words.ts
+scripts/build-drug-names.ts
+scripts/build-first-names.ts
 
 # The personal-details scrubber (masks names, emails, phone numbers)
 src/lib/scrub/**
@@ -57,6 +65,11 @@ src/lib/ci/**
 
 # The release check (decides if a release is allowed)
 scripts/release-check.ts
+
+# The AI test tier: the answer key and its loader, the grader calibration set,
+# and the test runner. Changing them could let unchecked tests in or weaken
+# what counts as a passing AI test run.
+tests/ai/**
 
 # This list itself
 .github/ai-related-paths.txt

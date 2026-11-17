@@ -16,8 +16,10 @@ order. The whole reply must fit in **9 seconds** (FR-053).
 2. **Basic checks**: blank, too long, not English. The language check also runs on the
    emergency path before anything is saved. Non-English questions, including emergency
    ones, are logged with only the reply type and time (FR-055).
-3. **Scrub**: names, emails, and phone numbers are masked. Drug names, including other
-   drugs' names, are never masked, so the refusal rules still see them.
+3. **Scrub**: names, emails, and phone numbers are masked. Exactly spelled drug names,
+   including other drugs' names, are never masked, so the refusal rules still see them.
+   Near-miss typos of drug names follow spec PC-9: they stay visible unless they're also
+   a common first name.
 4. **Refusal rules**: dosing, comparisons, other drugs, no drug named.
 5. **Pick label sections**: keyword search with synonyms.
 6. **Answer AI**: Claude Haiku 5.5, with a fixed answer shape. When both drugs are asked
@@ -28,8 +30,8 @@ order. The whole reply must fit in **9 seconds** (FR-053).
    doesn't cover this" in that case.
 8. **Audit log**: the scrubbed question only. Emergency rows also record which phrases
    matched (FR-054).
-9. **Grading sample**: 10% of real answers are sent to the OpenAI grader in the
-   background.
+9. **Grading sample**: 10% of real AI-written answers (including personal-dosing
+   summaries) are sent to the OpenAI grader in the background.
 
 Reviewers sign in to approve or flag answers. The owner records decisions on grader
 flags, and the app shows how often the owner disagrees with the grader.
@@ -67,7 +69,8 @@ through a PR.
 models; results saved to the online database; runs on PRs and by hand, each run approved
 by the owner). If the grader is down during an AI run, the run is `incomplete` and can't
 be used to merge. The AI runner also reports how often answers fall back to the label
-pointer (warning above 5%) and the slowest 5% of answer times. See
+pointer (above 5%: a warning on PRs, and the release check fails) and the slowest 5% of
+answer times. See
 [research.md R15](research.md#r15-two-tiers-of-tests).
 
 **Target Platform**: Netlify (Next.js runtime, server functions, scheduled functions). Works
@@ -105,14 +108,14 @@ Checked against constitution **v3.0.0** (ratified and last amended 2026-11-15).
 | I. Accountable | All work on branches with PRs. Branch protection needs the owner's approval and passing checks. Claude uses a bot account, so approval is real ([R17](research.md#r17-branch-protection-and-the-bot-account)). Only the owner can push `v*` release tags. | ✅ | ✅ |
 | II. Safe | Emergency check is plain code and runs first. Self-harm never shows label text. Rule-based plus AI refusals for dosing and comparisons. One fast test per emergency phrase ([emergency-rules](contracts/emergency-rules.md)). No skip list for false alarms (PC-6). | ✅ | ✅ |
 | III. Valid and Reliable | Only stored label text is sent to the AI. Code checks every cited section and the label date. "The label doesn't cover this" only when the label really doesn't. Two test tiers. `ai-gate` reads the official list `.github/ai-related-paths.txt`. Required checks `fast-tests` and `ai-gate` block merges. The release workflow blocks releases without a passing AI test run. An `incomplete` run (grader down) never counts as passing. | ✅ | ✅ |
-| III. Startup exception (v3.0.0) | Until the AI tier exists, AI-related PRs may merge with passing fast tests and the owner's approval. Tasks that use it are tagged "Startup exception" in tasks.md. Every PR merged under it gets a row (PR number, what changed, merge date) in the spec's table (task T085). It ends for good when T073 is merged and one AI test run passes with at least one signed-off entry (the calibration entries count, spec Clarifications 2026-11-16). Task T084 then records the end date and `test_runs` ID. PR #13 merged **before** the exception existed, so it is a recorded rule break (`docs/rule-incidents.md`), with a late AI test run once T073 exists, not an exception row. | ✅ | ✅ |
+| III. Startup exception (v3.0.0) | Until the AI tier exists, AI-related PRs may merge with passing fast tests and the owner's approval. Tasks that use it are tagged "Startup exception" in tasks.md. Every PR merged under it gets a row (PR number, what changed, merge date) in the spec's table (task T085). It ends for good when T073 is merged and one AI test run passes with at least one signed-off entry (the calibration entries count, spec Clarifications 2026-11-16). Task T084 then records the end date and `test_runs` ID. PR #13 merged **before** the exception existed, so it is a recorded rule break (`docs/rule-incidents.md`), not an exception row. Its late check is the first passing AI test run on a `main` commit that includes its change (T083). | ✅ | ✅ |
 | IV. Fair and Equitable | Reading level is checked by code on every AI-written answer. If an answer can't pass, the app points to the label section instead of showing hard text. Synonym map and typo matching. "Three ways" tests for each drug in the AI tier. Places where Safe or Privacy win over this principle are written down (spec PC-1 to PC-8). Misspelled drug names in normal questions are matched and shown to the user (FR-056). | ✅ | ✅ |
 | V. Privacy | Scrubber runs before any AI. Near-miss typos of drug names stay visible, but common first names (public SSA list, research R22) are always masked (spec PC-9, where Safe wins over Privacy). Raw question only in memory, with a test that searches all tables. Blank and non-English rows (including non-English emergencies) hold only reply type and time. Netlify logs get scrubbed text only. Made-up data in tests. Secrets in `.env`, Netlify, and GitHub secrets only. | ✅ | ✅ |
 | VI. Transparent | "AI, not a doctor" banner in the shared page layout, so every screen has it, including the label page. README task included. | ✅ | ✅ |
 | VII. Sustainable | Haiku 5.5 first, with a measured comparison before any change. openFDA update check downloads nothing unless the date is newer ([R6](research.md#r6-getting-the-label-from-openfda-and-checking-for-updates)). AI tests only run when the rules need them. | ✅ | ✅ |
 | VIII. Enhanced | Model is told to use only the given text. The answer key has `checked_by` and `checked_on` fields. The owner signs off entries as each story adds them, and the test loader refuses unchecked entries. | ✅ | ✅ |
 | When Principles Conflict | Each decision is in the spec's Clarifications section, "Principle conflict decisions" (PC-1 to PC-9), naming the principles, the winner, and why. | ✅ | ✅ |
-| Release safeguards | Grader on every test answer (from the first one), including emergency and rule-based replies, and 10% of real answers. Flags need owner decisions, and `ai-gate` and the release workflow block until they have them. Disagreement rate shown. Risk review is a separate task (spec Assumptions). | ✅ | ✅ |
+| Release safeguards | Grader on every test answer (from the first one), including emergency and rule-based replies, and 10% of real AI-written answers (including dosing summaries). Flags need owner decisions, and `ai-gate` and the release workflow block until they have them. Disagreement rate shown. Risk review is a separate task (spec Assumptions). | ✅ | ✅ |
 
 **Gate result**: PASS.
 
@@ -159,7 +162,7 @@ src/
 │   ├── pipeline/             # The ordered steps from the Summary, time limit, language check
 │   ├── grading/              # 10% sample and grading worker
 │   ├── log/                  # The only server logger (Netlify logs, scrubbed text only)
-│   ├── ci/                   # ai-gate and release-check decisions (pure functions)
+│   ├── ci/                   # ai-gate, release-check, and AI test run pass-rule decisions (pure functions)
 │   └── db/                   # Supabase access (log, reviews, grades)
 └── config/
     └── models.ts             # Model names in one place
@@ -212,7 +215,10 @@ scheduled functions live in `netlify/functions/`. The `ai-gate` check reads
      grader model both match `src/config/models.ts` at that commit (FR-045).
 - **Path list**: the workflow and gate files were added to `.github/ai-related-paths.txt`
   in PR #13 (task T083, done). That PR merged without a passing AI test run, which is a
-  recorded rule break with a late check (`docs/rule-incidents.md`).
+  recorded rule break (`docs/rule-incidents.md`). Its late check is the first passing AI
+  test run on a `main` commit that includes PR #13's change (`ac46453`). The AI test
+  tier (`tests/ai/**`) and the label seed and list-building scripts were added to the
+  list later (the fourth `/speckit-analyze` fixes).
 - **Releases** ([R21](research.md#r21-releases)): a tag ruleset lets only the owner
   create or delete `v*` tags. `release.yml` checks for a passing AI test run (with every
   grader flag decided) for the tagged commit, then publishes to Netlify with the
@@ -223,8 +229,9 @@ scheduled functions live in `netlify/functions/`. The `ai-gate` check reads
 - **Build order (tests built with each story, FR-042)**: CI workflows and the small AI test
   tier first → US1 emergencies (US-04) → US2 refusals (US-03) → **US5 scrubbing
   (US-05)** → grading of test answers (owner login, grader tables, flag decisions), then
-  the AI-tier entries for US1, US2, and US5 → US3
-  answers (US-01, first real AI call) → US4 citations (US-02) → US6 log (US-06) → US7
+  the AI-tier entries for US1, US2, and US5 that don't need the answer AI → US3
+  answers (US-01, first real AI call), then the AI-tier dosing, not-covered, and
+  normal-question privacy entries (task T087) → US4 citations (US-02) → US6 log (US-06) → US7
   label freshness (US-10) → US8 review pages (US-07) → US9 real-answer grading (US-08).
   Story labels match spec.md and tasks.md; the owner's original IDs are in brackets. Scrubbing comes before the real answer AI is connected, so no
   real AI call ever gets unscrubbed text. Grading comes before the first test answer from

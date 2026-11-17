@@ -76,6 +76,14 @@ Words that may be new are explained the first time they appear.
   the label, 5 with a known mistake, such as an added fact or a wrong section). Choose the
   smallest OpenAI model that catches all 5 bad answers and passes at least 4 of the 5 good
   ones. Record the chosen model ID and the calibration result in this file.
+- **How calibration runs (task T063)**: locally, by hand, before the AI test runner
+  (T073) exists. The developer runs `tests/ai/grader/calibrate.test.ts` with their own
+  `OPENAI_API_KEY` from `.env` (never committed), tries models from smallest up, and
+  records each model tried, its result (bad answers caught out of 5, good answers passed
+  out of 5), and the run date in this file. The first `ai-tests` run (T073, on T015's PR)
+  includes the signed-off calibration entries, so it re-confirms the chosen model on
+  GitHub.
+- _Added by task T063: models tried, results, run date, and the chosen model ID._
 - **What the grader sees**: the scrubbed question, the label sections given to the answer
   AI, and the answer. Never the raw question (FR-020).
 - **Output**: `pass` or `fail`, plus a short reason.
@@ -184,7 +192,11 @@ Words that may be new are explained the first time they appear.
 ## R11. Grader timing and the 10% sample
 
 - **Decision**: When a real answer is made, the server draws a secure random number. If
-  it's below 0.10, the answer is marked "to be graded" (FR-036). The `grading-worker`
+  it's below 0.10, the answer is marked "to be graded" (FR-036). This applies to every
+  AI-written answer shown to a patient, **including personal-dosing summaries**, which
+  are the highest-risk text the app shows. Emergencies, rule-based refusals, label
+  pointers, and the word-for-word dosing fallback (spec PC-7) show no AI text, so they
+  aren't sampled. The `grading-worker`
   runs every 10 minutes and grades waiting answers. If the grader is down, the status
   stays "not graded yet", and it tries again later, up to 5 times (Edge Cases).
 - **Test answers**: The AI test suite grades **every** answer right away (FR-035).
@@ -285,8 +297,13 @@ Words that may be new are explained the first time they appear.
 - **The first passing run** must include the signed-off calibration entries. They count
   as human-checked entries for ending the startup exception (constitution III v3.0.0;
   spec Clarifications 2026-11-16).
-- **Run report**: each run reports the label-pointer rate (warning above 5%, SC-004) and
-  each answer's time, with the slowest 5% compared to the 10-second goal (SC-013).
+- **Run report**: each run reports the label-pointer rate (SC-004) and each answer's
+  time, with the slowest 5% compared to the 10-second goal (SC-013). The pointer rate is
+  saved on the `test_runs` row. Above 5% is a clear warning on a PR (it doesn't block the
+  merge) and fails the release check (R21).
+- **Pass rule**: the rule that decides whether a run is `passed`, `failed`, or
+  `incomplete` is a pure function in `src/lib/ci/run-status.ts`, which is on the
+  AI-related list. The whole AI test tier (`tests/ai/**`) is on the list too.
 - **The AI tier never sends blank or non-English questions.** Those make no AI calls and
   are fully covered by fast tests. This keeps every AI-tier log row marked
   `source = test`, while blank and non-English rows hold only reply type and time
@@ -303,7 +320,7 @@ Words that may be new are explained the first time they appear.
   | `fast-tests.yml` | Every PR, every push to `main` | Install, type-check, lint, start local Supabase, run fast tests | `fast-tests` |
   | `ai-tests.yml` | Every PR (the PR's latest commit) and by hand (choose branch and model). Each run waits for the owner's approval in the `ai-tests` environment. | Run the AI test tier, grade every test answer, save results for that commit (including which answer model and grader model were used) to the online database | `ai-tests` |
   | `ai-gate.yml` | Every PR | (1) If the PR changes a file on `.github/ai-related-paths.txt`, require a passing AI test run for the PR's latest commit. (2) For every PR, require that all grader flags from that run have an owner decision. | `ai-gate` |
-  | `release.yml` | A `v*` tag is pushed | Check the tag was pushed by the owner, require a passing AI test run with all flags decided for the tagged commit, then publish to Netlify (R21) | `release` |
+  | `release.yml` | A `v*` tag is pushed | Check the tag was pushed by the owner, require a passing AI test run with all flags decided and a pointer rate of 5% or less for the tagged commit, then publish to Netlify (R21) | `release` |
 
 - **AI-related files**: `ai-gate` reads the official list, **`.github/ai-related-paths.txt`**,
   every time it runs (constitution v3.0.0, III). It never keeps its own copy, so a change
@@ -312,7 +329,8 @@ Words that may be new are explained the first time they appear.
 - **Workflow and gate files**: `.github/workflows/**`, `scripts/ai-gate.ts`, and
   `src/lib/ci/**` were added to the list in PR #13 (task T083). That PR merged without a
   passing AI test run, which broke constitution III (v2.0.0). It is recorded in
-  `docs/rule-incidents.md`, with a late AI test run on its commit once T073 exists.
+  `docs/rule-incidents.md`. Its late check is the first passing AI test run on a `main`
+  commit that includes PR #13's change (`ac46453`), after T073 is merged and T068 is done.
 - **Pattern rules**: one pattern per line. `**` means "everything inside this folder."
   Lines starting with `#` and blank lines are skipped. A line with no `*` matches that
   exact file.
@@ -325,7 +343,8 @@ Words that may be new are explained the first time they appear.
     reading the keys without the owner knowing.
   - `ai-gate` reads results with a **read-only** database login
     (`AI_GATE_DATABASE_URL`) that can only read `test_runs`, `grader_results`, and
-    `owner_flag_decisions`.
+    `owner_flag_decisions`. It starts with `test_runs` only (task T071). Read access to
+    the two grader tables is added once they exist online (task T086, after T055).
   - The online database's admin key is **never** put in a local `.env` file. Local work
     uses the local database. That way the bot account can't write test results to the
     online database by itself.
@@ -435,7 +454,8 @@ _Added by task T024 (query URLs, download date, and number of names)._
   - Only the owner can create or delete `v*` tags (tag ruleset, R17). The bot can't.
   - `release.yml` runs on the tag. It (1) checks the tag was pushed by `alexcaldwelll`,
     (2) uses the same check code as `ai-gate` (`src/lib/ci/gate.ts`) to require a passing
-    `test_runs` row for the tagged commit with all flags decided, and (3) publishes that
+    `test_runs` row for the tagged commit with all flags decided and a label-pointer
+    rate of 5% or less (SC-004), and (3) publishes that
     commit to Netlify's live site.
   - Netlify's automatic publishing of `main` is turned off. Merges to `main` don't
     change the public site. Deploy previews for PRs still work.
