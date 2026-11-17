@@ -77,7 +77,7 @@ One row per answered question (FR-023).
 | answer | text | Exactly what the patient saw. For English emergency rows: the emergency messages shown, in order, plus any label sentences (or "The label doesn't cover this.") (FR-025). |
 | drug | text | `emgality`, `reyvow`, `both`, or empty |
 | model_name | text | Empty when the AI was skipped (emergencies, rule-based refusals) |
-| prompt_version | text | For example `answer-v3`. Empty when the AI was skipped. |
+| prompt_version | text | For example `answer-v3`, or `dosing-v1` for personal-dosing summaries. Empty when the AI was skipped. |
 | sections_used | list of text | Display names |
 | label_id | → drug_labels | Gives the label date. Empty when no label was used. |
 | label_date | date | Copied in, for easy reading |
@@ -112,14 +112,17 @@ One row per answered question (FR-023).
 - **review_status changes**: `not_reviewed` → `approved` or `flagged` (by a reviewer). A
   later review can change it again. Every decision is kept in `review_decisions`.
 - **grading_status changes**:
-  - `not_sampled`: a real answer that wasn't picked for the 10% sample.
+  - `not_sampled`: a real AI-written answer that wasn't picked for the 10% sample.
   - `waiting` → `passed` or `failed`.
   - `waiting` → `not_graded_yet` (the grader is down) → back to `waiting` on the next
     try. After 5 tries it becomes `grading_gave_up`, which shows up on the owner's page.
-  - These states are for the 10% sample of **real** answers only. Test answers of every
-    kind are always graded by the test runner (T059).
-  - Emergencies, rule-based refusals, and `label_pointer` rows: `not_applicable`. No AI
-    answer was shown, so there's nothing to grade.
+  - These states are for the 10% sample of **real AI-written** answers only. That
+    includes personal-dosing replies whose AI-written summary was shown (`prompt_version
+    = dosing-v1`, spec FR-036). Test answers of every kind are always graded by the test
+    runner (T059).
+  - Emergencies, rule-based refusals (comparison, other drug, ask which drug), dosing
+    replies that showed the word-for-word fallback (spec PC-7), and `label_pointer` rows:
+    `not_applicable`. No AI answer was shown, so there's nothing to grade.
   - Blank and non-English rows: empty (see above), treated as `not_applicable`.
 
 ## reviewers
@@ -185,6 +188,7 @@ One run of the AI test tier.
 | started_at / finished_at | time | |
 | passed / failed / total | numbers | |
 | status | text | `running`, `passed`, `failed`, `incomplete` |
+| pointer_rate | number | Share of label answers that came back as `label_pointer` (0 to 1, SC-004). 0 when the run had no label answers. Above 0.05 → warning on a PR, and the release check fails. |
 
 - `incomplete`: the grader was down for at least one test answer, so not every
   answer was graded. It never counts as passing; `ai-gate` and the release check block it.

@@ -26,7 +26,7 @@
 - Q: What do log rows for blank and non-English questions hold? → A: Only the reply type and the time, plus the row's ID number (FR-055).
 - Q: When does the word "or" count as a comparison? → A: Only inside comparison phrasing, such as "which is better, Emgality or Reyvow?" or "should I take Emgality or Reyvow?". "How are Emgality or Reyvow given?" is answered for each drug separately.
 - Q: Should real words that look like emergency typos (for example "paint", "painting", "saint" next to "faint", "fainting") be skipped? → A: No. They still trigger the emergency message (PC-6 below). Every emergency log row records which phrase matched (FR-054), so the owner can see how often false alarms happen. A skip list would need a constitution amendment, backed by that evidence.
-- Q: Are changes to the workflow and gate files (`.github/workflows/**`, `scripts/ai-gate.ts`, `src/lib/ci/**`) protected by the AI test rule? → A: Yes. They were added to `.github/ai-related-paths.txt` in PR #13 (task T083), so there is no gap anymore. PR #13 merged without a passing AI test run while constitution v2.0.0 was in force. That was a rule break, recorded in `docs/rule-incidents.md`, with a late AI test run on its commit once T073 exists.
+- Q: Are changes to the workflow and gate files (`.github/workflows/**`, `scripts/ai-gate.ts`, `src/lib/ci/**`) protected by the AI test rule? → A: Yes. They were added to `.github/ai-related-paths.txt` in PR #13 (task T083), so there is no gap anymore. PR #13 merged without a passing AI test run while constitution v2.0.0 was in force. That was a rule break, recorded in `docs/rule-incidents.md`. Its late check is the first passing AI test run on a `main` commit that includes PR #13's change (`ac46453`), after T073 is merged and T068 is done (T083).
 - Q: What counts as a release? → A: A `v*` tag (for example `v1.0.0`) pushed by the owner, with a passing AI test run for that commit. Only the owner can create or delete `v*` tags. Netlify publishes the public site only from a release.
 
 ### Session 2026-11-16 (fixes after the second `/speckit-analyze`)
@@ -43,6 +43,12 @@
 - Q: Where is the grader model chosen? → A: Only in `src/config/models.ts`, which is on the AI-related list. There is no setting that can change it, so a model change always needs a PR and a passing AI test run.
 - Q: Can an AI test run made with a different model (for example, a hand-started comparison run) let a PR merge or a release go out? → A: No. `ai-gate` and the release check accept a run only if its answer model and grader model both match `src/config/models.ts` at that commit (FR-045).
 - Q: How does the language check handle very short questions, which language detection often gets wrong? → A: A question under 30 characters counts as English only if every word is an English word, a drug name, or a number (FR-055). So "chest pain?" is English, but "¿Reyvow causa náuseas?" is not. The English word list comes from a published source recorded in research R19, never from memory.
+
+### Session 2026-11-17 (fixes after the fourth `/speckit-analyze`)
+
+- Q: Constitution III says "Every answer MUST name the label section it used and show the label's date." Does that cover rule-based replies (comparison, other drug, ask which drug) and emergency-only replies (happening now, unclear, self-harm)? → A: No. Those aren't "answers" under that rule, because they don't use the label. They are fixed app text. The rule covers every reply that shows label information: AI-written answers, personal-dosing replies, label pointers, and label sentences shown under an emergency message (FR-017, FR-048).
+- Q: Are personal-dosing summaries part of the grader's 10% sample of real answers? → A: Yes. They are AI-written, and they're the highest-risk text the app shows, because they talk about doses. So the sample covers all AI-written answers, including dosing summaries (FR-036). When the dosing summary isn't shown (the word-for-word fallback, PC-7), there's no AI text to grade.
+- Q: What happens when the label-pointer rate goes above 5% (SC-004)? → A: On a PR's AI test run, it's a clear warning for the owner and doesn't block the merge. On a release, it blocks: the release check fails if the tagged commit's passing AI test run has a pointer rate above 5%.
 
 ### Principle conflict decisions
 
@@ -66,7 +72,8 @@ The constitution ("When Principles Conflict") says each decision where two princ
 
 | PR | What it changed | Merged on |
 |---|---|---|
-| #16 | Adds 6 files to `.github/ai-related-paths.txt` (label update check, label download scripts, language check, English word list, release check) and fixes the third `/speckit-analyze` findings | Added in the next PR, after merge (T085) |
+| #16 | Adds 6 files to `.github/ai-related-paths.txt` (label update check, label download scripts, language check, English word list, release check) and fixes the third `/speckit-analyze` findings | 2026-11-16 |
+| #19 | Adds `tests/ai/**` and 4 scripts (`scripts/seed-labels.ts`, `scripts/build-english-words.ts`, `scripts/build-drug-names.ts`, `scripts/build-first-names.ts`) to `.github/ai-related-paths.txt`, and fixes the fourth `/speckit-analyze` findings | Added after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -244,18 +251,18 @@ A quality reviewer signs in with their own login, looks at logged answers, and a
 
 ### User Story 9 - Second-AI grader (Priority: P3) — US-08
 
-An AI from a different company than the one that writes answers checks whether answers stick to the label. It grades every test answer and a random 10% of real answers. Failed grades go to the owner, who makes the final call.
+An AI from a different company than the one that writes answers checks whether answers stick to the label. It grades every test answer and a random 10% of real AI-written answers (including personal-dosing summaries). Failed grades go to the owner, who makes the final call.
 
 **Why this priority**: This is an extra safety net that depends on the log and the review page.
 
-**Independent Test**: Run the test suite and confirm every answer is graded. Send many real questions and confirm about 10% are graded. Force a failed grade and confirm it is flagged for the owner.
+**Independent Test**: Run the test suite and confirm every answer is graded. Send many real questions and confirm about 10% of the AI-written answers are graded. Force a failed grade and confirm it is flagged for the owner.
 
 **Tests built with this story**: Tests that a failed grade flags the answer, that the owner's decision and reason are saved, and that the disagreement rate is calculated correctly.
 
 **Acceptance Scenarios**:
 
 1. **Given** a test run, **When** it finishes, **Then** every test answer has a grade from the second AI.
-2. **Given** real answers, **When** they are made, **Then** about 10% are picked at random and graded.
+2. **Given** real AI-written answers (including personal-dosing summaries), **When** they are made, **Then** about 10% are picked at random and graded.
 3. **Given** a failed grade, **When** it happens, **Then** the answer is flagged for the owner's review. This does not fail the tests automatically.
 4. **Given** a flagged answer, **When** the owner decides, **Then** their decision (agree or disagree with the grader) and reason are saved.
 5. **Given** saved owner decisions, **When** the owner looks at the grader summary, **Then** they see how often they disagreed with the grader.
@@ -271,7 +278,7 @@ An AI from a different company than the one that writes answers checks whether a
 - A self-harm phrase is mixed with a normal question: only the 988 message shows, with no label text, and the AI is skipped. There are no exceptions.
 - A question has both a medical emergency phrase and a self-harm phrase: "Call 911 or see a doctor now" shows first, then the 988 message. No label text is shown (FR-051).
 - A question names the drug with a typo (for example, "Reyvo") and has an emergency phrase: it counts as "unclear" and gets only the emergency message (see Clarifications).
-- A question is blank or very long: blank questions get a friendly prompt to type a question. Very long questions are cut off at a set limit, and the user is told.
+- A question is blank or very long: blank questions get a friendly prompt to type a question. Questions longer than 1,000 characters are cut off at 1,000 characters, and the user is told.
 - A question is in another language: the app says it only answers in English right now.
 - The answer AI is down or slow: the app shows a friendly "try again later" message and does not make up an answer. The whole reply must fit in a 9-second time limit (FR-053).
 - An AI answer fails the answer checks twice, or there's no time left for a second try: the app points to the label section instead (FR-052).
@@ -366,7 +373,7 @@ An AI from a different company than the one that writes answers checks whether a
 
 - **FR-034**: The grader MUST be an AI from a different company than the one that writes answers.
 - **FR-035**: The grader MUST grade every test answer on whether it sticks to the label.
-- **FR-036**: The grader MUST also grade a random 10% of real answers.
+- **FR-036**: The grader MUST also grade a random 10% of real AI-written answers, including personal-dosing summaries.
 - **FR-037**: A failed grade MUST flag the answer for the owner. It MUST NOT fail the tests by itself.
 - **FR-038**: The owner MUST record a decision (agree or disagree with the grader) and a reason for each flag.
 - **FR-039**: The app MUST show how often the owner disagrees with the grader, so it can be looked at during each risk review. Changes with flagged test answers MUST NOT be merged until every flag has a recorded decision.
@@ -402,13 +409,13 @@ An AI from a different company than the one that writes answers checks whether a
 - **SC-001**: 100% of emergency phrase tests (medical and self-harm) show the right message, and 0 of them reach the answer AI.
 - **SC-002**: 100% of personal-dosing, comparison, and other-drug tests get a refusal with "doctor or pharmacist" wording.
 - **SC-003**: 100% of "not covered" tests say "The label doesn't cover this."
-- **SC-004**: 100% of AI-written answers shown to patients are 120 words or fewer and score grade 9 or lower for reading level. Of the questions that get a label answer from the answer step, at least 95% get an AI-written answer, not the label-section pointer (FR-052).
+- **SC-004**: 100% of AI-written answers shown to patients are 120 words or fewer and score grade 9 or lower for reading level. Of the questions that get a label answer from the answer step, at least 95% get an AI-written answer, not the label-section pointer (FR-052). A pointer rate above 5% in an AI test run is a warning on a PR and fails the release check.
 - **SC-005**: 100% of label-based answers name at least one real section and show the label date.
 - **SC-006**: 0 raw questions or unmasked names, emails, or phone numbers are found when all stored data is searched after the privacy tests.
 - **SC-007**: 100% of answered questions have a complete log entry.
 - **SC-008**: The label is downloaded again 0 times when the openFDA label date has not changed.
 - **SC-009**: 100% of review decisions show who made them and when.
-- **SC-010**: 100% of test answers and about 10% (within 2 percentage points over 500 or more answers) of real answers are graded by the second AI.
+- **SC-010**: 100% of test answers and about 10% (within 2 percentage points over 500 or more answers) of real AI-written answers are graded by the second AI.
 - **SC-011**: The owner's disagreement rate with the grader can be seen at any time.
 - **SC-012**: The AI-tier test suite has at least 20 questions. Fast tests pass before every merge. AI tests pass before every merge that changes an AI-related file and before every release.
 - **SC-013**: A patient sees an answer in under 10 seconds for at least 95% of questions, and sees emergency messages in under 1 second. (FR-053's 9-second limit for **every** reply is the real, enforced limit. This is a looser goal that the AI test runner reports on.)
@@ -422,7 +429,7 @@ An AI from a different company than the one that writes answers checks whether a
 - "About an 8th-grade reading level" is measured with a standard grade-level readability score, aiming for grade 8 and allowing up to grade 9. Drug names and label terms may push scores up a little, so they can be kept when needed.
 - The self-harm phrase list in FR-005 is a starting set. The owner can add phrases, and each new phrase needs its own test.
 - Emergency phrase checks may catch some non-emergency questions (for example, "Does Reyvow cause chest pain?"). Showing an emergency message by mistake is safer than missing a real emergency. For clearly informational questions, the label's matching sentences are also shown below the emergency message, so the patient still gets the label information (see FR-047 to FR-049).
-- The 10% of real answers sent to the grader are scrubbed first, just like the answer AI's input.
+- The 10% of real AI-written answers sent to the grader are scrubbed first, just like the answer AI's input.
 - The disagreement rate is reviewed during each risk review, as the constitution requires. The one-page risk review before public release is a separate task, not part of this feature.
 - openFDA is the only data source. It provides a label date that can be compared over time.
 - A README explaining how the app works, where its data comes from, and what it can't do is required by the constitution and will be delivered with this feature.
