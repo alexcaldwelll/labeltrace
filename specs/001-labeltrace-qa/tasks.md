@@ -97,7 +97,7 @@ US9 (rest) → Polish.
 - [X] T003 [P] Add ESLint and Prettier config (`eslint.config.mjs`, `.prettierrc`) with `no-console` set to error for `src/**`, **except** the one server logger `src/lib/log/server-log.ts` (research R18). There is no outside error-reporting service.
   - Tests: `npm run lint` passes.
   - Runs alongside: T002, T004. Needs: T001.
-- [ ] T004 [P] Check `.env.example` has blank placeholders for `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (never `NEXT_PUBLIC_`, so it can't reach the browser), `NETLIFY_AUTH_TOKEN`, and `NETLIFY_SITE_ID` (the last two are names only; the real values are GitHub secrets, research R21). There is no grader-model setting: the grader model lives only in `src/config/models.ts` (research R4). Add any that are missing, with no values. Confirm `.env` is listed in `.gitignore` (CLAUDE.md rule 5).
+- [X] T004 [P] Check `.env.example` has blank placeholders for `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (never `NEXT_PUBLIC_`, so it can't reach the browser), `NETLIFY_AUTH_TOKEN`, and `NETLIFY_SITE_ID` (the last two are names only; the real values are GitHub secrets, research R21). There is no grader-model setting: the grader model lives only in `src/config/models.ts` (research R4). Add any that are missing, with no values. Confirm `.env` is listed in `.gitignore` (CLAUDE.md rule 5). (Done. All 7 names were already there; the 5 sample values were blanked, and a comment shows the Supabase URL format. `.env` is git-ignored; `.gitignore` was not changed.)
   - Tests: —
   - Runs alongside: T002, T003.
 - [x] T005 Create `.github/CODEOWNERS` with `* @alexcaldwelll`. (Done. It also names the owner for `/.github/ai-related-paths.txt`.)
@@ -144,6 +144,7 @@ tier, `ai-gate`, and the release workflow.
   - Runs alongside: T014. Needs: T012.
 - [ ] T014 [P] Create the shared layout `src/app/layout.tsx` with a visible "LabelTrace is an AI, not a doctor." banner on every page (FR-003), and a simple question page `src/app/page.tsx` that posts to `/api/ask`.
   - Tests: `tests/fast/ui/banner.test.tsx`: banner is present on the question page.
+  - Lint: Add React and Next.js lint rules. Pick the exact package(s) during T014 after confirming they support the project's ESLint and TypeScript versions, and run npm audit. Files: `eslint.config.mjs`, `package.json`, `package-lock.json`.
   - Runs alongside: T013. Needs: T001.
 - [ ] T071 **Owner task**: set up the online database and GitHub secrets (research R16).
   1. Create the online Supabase project. Turn off public sign-up. Apply migrations 0001 and 0002 (and every later one, T082).
