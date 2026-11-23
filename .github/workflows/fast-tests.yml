@@ -1,0 +1,46 @@
+# fast-tests: the automatic check that runs on every pull request and every
+# push to main (research R16, FR-045). It installs the project, checks types,
+# runs lint, and runs the fast tests.
+#
+# Starting local Supabase is added in T007's pull request, together with
+# supabase/config.toml, which the start command needs.
+name: fast-tests
+
+on:
+  # Never use pull_request_target here: it would run pull request code with
+  # access to this repository's secrets and write permissions.
+  pull_request:
+  push:
+    branches: [main]
+
+# Read-only access to the repository. This workflow needs nothing more.
+permissions:
+  contents: read
+
+jobs:
+  fast-tests:
+    name: fast-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js (version from .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Fast tests
+        run: npm run test:fast
