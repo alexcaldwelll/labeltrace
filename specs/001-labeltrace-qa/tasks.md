@@ -88,7 +88,7 @@ US9 (rest) → Polish.
 
 **Purpose**: The bare minimum project so code and tests can exist and GitHub checks every PR.
 
-- [ ] T001 Create the Next.js (App Router) + TypeScript project on Node.js 22: `package.json`, `tsconfig.json`, `next.config.ts`, `.nvmrc` (`22`). Add the plan's libraries: `next`, `react`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `compromise`, `syllable`, `franc-min`, `zod`; dev: `typescript`, `vitest`, `@testing-library/react`, `jsdom`, `eslint`, `prettier`. Add npm scripts: `dev`, `build`, `lint`, `typecheck`, `test:fast`, `test:ai`, `db:migrate`, `db:seed`, `labels:fetch`, `labels:check`.
+- [X] T001 Create the Next.js (App Router) + TypeScript project on Node.js 22: `package.json`, `tsconfig.json`, `next.config.ts`, `.nvmrc` (`22`). Add the plan's libraries: `next`, `react`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `compromise`, `syllable`, `franc-min`, `zod`; dev: `typescript`, `vitest`, `@testing-library/react`, `jsdom`, `eslint`, `prettier`. Add npm scripts: `dev`, `build`, `lint`, `typecheck`, `test:fast`, `test:ai`, `db:migrate`, `db:seed`, `labels:fetch`, `labels:check`.
   - Tests: `npm run build` and `npm run typecheck` pass.
   - Runs alongside: —
 - [ ] T002 [P] Set up Vitest with two projects in `vitest.config.ts`: `fast` (`tests/fast/**`, never loads real AI clients) and `ai` (`tests/ai/**`). Add `tests/fast/smoke.test.ts`.
