@@ -1,9 +1,6 @@
 # fast-tests: the automatic check that runs on every pull request and every
 # push to main (research R16, FR-045). It installs the project, checks types,
-# runs lint, and runs the fast tests.
-#
-# Starting local Supabase is added in T007's pull request, together with
-# supabase/config.toml, which the start command needs.
+# runs lint, starts the local Supabase database, and runs the fast tests.
 name: fast-tests
 
 on:
@@ -41,6 +38,12 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # Local Supabase runs in Docker, which GitHub's Ubuntu runners already have.
+      # It uses supabase/config.toml and applies supabase/migrations/. The CLI
+      # version is pinned in package.json.
+      - name: Start local Supabase
+        run: npx supabase start
 
       - name: Fast tests
         run: npm run test:fast
