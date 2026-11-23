@@ -92,8 +92,10 @@ One row per answered question (FR-023).
 | grading_status | text | See the state changes below |
 | grading_attempts | number | 0 to 5 |
 
-- **No column defaults**: the log writer (`src/lib/db/log.ts`) fills in every field. A
-  database default would put values into blank and non-English rows and break FR-055.
+- **No column defaults except `id` and `created_at`**: the database fills in `id` and
+  `created_at`, so audit times come from the database, not app code. The log writer
+  (`src/lib/db/log.ts`) fills in everything else. A default on any other column would put
+  values into blank and non-English rows and break FR-055.
 - **Who can read it**: signed-in reviewers and the owner only. Patients and the public
   can't.
 - **Blank and non-English questions** (FR-055, constitution V): these rows hold **only**
