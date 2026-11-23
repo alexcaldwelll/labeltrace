@@ -15,6 +15,9 @@ Words that may be new are explained the first time they appear.
   project's `.gitignore` already expects a Node project.
 - **Alternatives**: Python (FastAPI) backend plus a separate frontend. Rejected: two
   projects to build, test, and host instead of one.
+- **TypeScript version (added 2026-11-23, task T003)**: TypeScript is held at **6.0.3**
+  because `typescript-eslint` (the add-on that lets ESLint read TypeScript) doesn't support
+  TypeScript 7 yet. Upgrade to 7 once `typescript-eslint` supports it.
 
 ## R2. Hosting
 

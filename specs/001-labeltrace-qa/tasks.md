@@ -94,7 +94,7 @@ US9 (rest) → Polish.
 - [X] T002 [P] Set up Vitest with two projects in `vitest.config.ts`: `fast` (`tests/fast/**`, never loads real AI clients) and `ai` (`tests/ai/**`). Add `tests/fast/smoke.test.ts`.
   - Tests: `tests/fast/smoke.test.ts`.
   - Runs alongside: T003, T004. Needs: T001.
-- [ ] T003 [P] Add ESLint and Prettier config (`eslint.config.mjs`, `.prettierrc`) with `no-console` set to error for `src/**`, **except** the one server logger `src/lib/log/server-log.ts` (research R18). There is no outside error-reporting service.
+- [X] T003 [P] Add ESLint and Prettier config (`eslint.config.mjs`, `.prettierrc`) with `no-console` set to error for `src/**`, **except** the one server logger `src/lib/log/server-log.ts` (research R18). There is no outside error-reporting service.
   - Tests: `npm run lint` passes.
   - Runs alongside: T002, T004. Needs: T001.
 - [ ] T004 [P] Check `.env.example` has blank placeholders for `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (never `NEXT_PUBLIC_`, so it can't reach the browser), `NETLIFY_AUTH_TOKEN`, and `NETLIFY_SITE_ID` (the last two are names only; the real values are GitHub secrets, research R21). There is no grader-model setting: the grader model lives only in `src/config/models.ts` (research R4). Add any that are missing, with no values. Confirm `.env` is listed in `.gitignore` (CLAUDE.md rule 5).
