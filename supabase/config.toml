@@ -86,7 +86,9 @@ allowed_cidrs_v6 = ["::/0"]
 # enabled = true
 
 [realtime]
-enabled = true
+# Off: no test and no task in tasks.md uses live updates (issue #28).
+# Turn it back on if a later task needs it.
+enabled = false
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
 # ip_version = "IPv6"
 # The maximum length in bytes of HTTP request headers. (default: 4096)
@@ -107,7 +109,11 @@ api_url = "http://127.0.0.1"
 # Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
 # are monitored, and you can view the emails that would have been sent from the web interface.
 [local_smtp]
-enabled = true
+# Off: no test and no task in tasks.md sends email. Logins use email and
+# password, and email confirmation is off. On 2026-11-23 this inbox's port
+# (54324) was already in use, which stopped `npx supabase start` (issue #28).
+# Turn it back on if a later task needs to send email.
+enabled = false
 # Port to use for the email testing server web interface.
 port = 54324
 # Uncomment to expose additional ports for testing user applications that send emails.
@@ -117,7 +123,10 @@ port = 54324
 # sender_name = "Admin"
 
 [storage]
-enabled = true
+# Off: no test and no task in tasks.md stores files. Labels are saved in
+# database tables (issue #28). This also turns off the S3 and vector add-ons
+# below. Turn it back on if a later task needs file storage.
+enabled = false
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
@@ -377,7 +386,10 @@ authorization_url_path = "/oauth/consent"
 allow_dynamic_registration = false
 
 [edge_runtime]
-enabled = true
+# Off: no test and no task in tasks.md uses Supabase Edge Functions. Scheduled
+# jobs run as Netlify functions (T050, T058) (issue #28). Turn it back on if a
+# later task needs it.
+enabled = false
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
 # `oneshot` — fallback mode if hot reload causes issues (e.g. in large repos or with symlinks).
@@ -391,7 +403,10 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 [analytics]
-enabled = true
+# Off: no test and no task in tasks.md reads Supabase's logs. Server logs go to
+# Netlify (T078) (issue #28). Studio's "Logs" page won't work while this is off.
+# Turn it back on if a later task needs it.
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
