@@ -77,7 +77,7 @@ US9 (rest) → Polish.
   the startup exception": PR number, what it changed, and the date it merged. Add the row
   in the same PR when possible; if the number or date isn't known until it merges, add it
   in the next PR that touches spec.md, or a dedicated PR opened right after. Tasks that use
-  the exception are tagged **Startup exception** below: T006, T009, T010, T011, T012,
+  the exception are tagged **Startup exception** below: T006, T007, T009, T010, T011, T012,
   T013, T025, T056, T063, and T073. T015, T062, and T074 can't
   use it: the first passing AI test run happens on T015's PR, after T068 (see T068). This
   stops for good when T084 merges.
@@ -103,7 +103,7 @@ US9 (rest) → Polish.
 - [x] T005 Create `.github/CODEOWNERS` with `* @alexcaldwelll`. (Done. It also names the owner for `/.github/ai-related-paths.txt`.)
 - [X] T006 **Startup exception.** Create `.github/workflows/fast-tests.yml` (check name `fast-tests`): runs on every PR and every push to `main`. Install, type-check, lint, start local Supabase, run `npm run test:fast` (research R16, FR-045).
   - Tests: the workflow runs `tests/fast/smoke.test.ts` on the PR and passes.
-  - Note: Done in PR #25 except the "start local Supabase" step. That step needs `supabase/config.toml`, which T007 creates, so T007's PR adds it to `fast-tests.yml`.
+  - Note: Done in PR #25 except the "start local Supabase" step. That step needs `supabase/config.toml`, which T007 creates, so T007's PR adds it to `fast-tests.yml` (T007 uses the startup exception for this).
   - Needs: T001–T003.
 - [X] T070 **Owner task**: right after `fast-tests` first runs on T006's PR, add `fast-tests` as a required check in branch protection for `main` (research R17).
   - Needs: T006.
@@ -120,7 +120,7 @@ tier, `ai-gate`, and the release workflow.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T007 Set up local Supabase (`supabase/config.toml`) and migration `supabase/migrations/0001_labels.sql` creating `drug_labels` and `label_sections` per data-model.md. Rules: `drug` is "`emgality` or `reyvow`"; `is_current` "Exactly one current label per drug" (partial unique index on `drug` where `is_current`); `label_sections.text` "Not empty. Empty openFDA fields aren't saved." (check constraint). Lock both tables to the server (service role) only.
+- [ ] T007 **Startup exception** (`.github/workflows/fast-tests.yml` is AI-related). Set up local Supabase (`supabase/config.toml`) and migration `supabase/migrations/0001_labels.sql` creating `drug_labels` and `label_sections` per data-model.md. Rules: `drug` is "`emgality` or `reyvow`"; `is_current` "Exactly one current label per drug" (partial unique index on `drug` where `is_current`); `label_sections.text` "Not empty. Empty openFDA fields aren't saved." (check constraint). Lock both tables to the server (service role) only.
   - Tests: `tests/fast/db/labels-schema.test.ts`: a second current label for the same drug is rejected; empty section text is rejected; `drug = 'advil'` is rejected.
   - Needs: T006.
 - [ ] T008 Migration `supabase/migrations/0002_log_and_runs.sql` creating `log_entries` and `test_runs` per data-model.md. Enforce: `answer_type` in `normal`, `label_pointer`, `refusal`, `not_covered`, `emergency`, `ask_which_drug`, `error`, `prompt_for_question`, `english_only`; `drug` in `emgality`, `reyvow`, `both`, or empty; `emergency_group` in `medical`, `self_harm`, `both`, or empty; `emergency_phrase_ids` (list of text); `emergency_case` in `informational`, `happening_now`, `unclear`, or empty; `review_status` "Starts `not_reviewed`"; `grading_attempts` "0 to 5"; `source` `real` or `test`; `test_runs.status` `running`, `passed`, `failed`, `incomplete` (the grader was down for at least one answer, T059); `test_runs.answer_model` and `test_runs.grader_model` both required (FR-045); `test_runs.pointer_rate` a number from 0 to 1 (filled in by T042, SC-004). **No column defaults** on `log_entries`: the log writer (T046) fills in every field, including `review_status`, so a blank or non-English row stays truly empty (FR-055). **Rule for rows with no question** (FR-055): a row whose `scrubbed_question` is empty must have every field except `id`, `created_at`, and `answer_type` empty; every other row must have a `scrubbed_question`. **No column may hold the raw question.** Server-only access for now (T051 adds reviewer read access).
