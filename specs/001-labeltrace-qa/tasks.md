@@ -101,8 +101,9 @@ US9 (rest) → Polish.
   - Tests: —
   - Runs alongside: T002, T003.
 - [x] T005 Create `.github/CODEOWNERS` with `* @alexcaldwelll`. (Done. It also names the owner for `/.github/ai-related-paths.txt`.)
-- [ ] T006 **Startup exception.** Create `.github/workflows/fast-tests.yml` (check name `fast-tests`): runs on every PR and every push to `main`. Install, type-check, lint, start local Supabase, run `npm run test:fast` (research R16, FR-045).
+- [X] T006 **Startup exception.** Create `.github/workflows/fast-tests.yml` (check name `fast-tests`): runs on every PR and every push to `main`. Install, type-check, lint, start local Supabase, run `npm run test:fast` (research R16, FR-045).
   - Tests: the workflow runs `tests/fast/smoke.test.ts` on the PR and passes.
+  - Note: Done in PR #25 except the "start local Supabase" step. That step needs `supabase/config.toml`, which T007 creates, so T007's PR adds it to `fast-tests.yml`.
   - Needs: T001–T003.
 - [ ] T070 **Owner task**: right after `fast-tests` first runs on T006's PR, add `fast-tests` as a required check in branch protection for `main` (research R17).
   - Needs: T006.
