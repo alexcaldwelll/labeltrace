@@ -3,8 +3,9 @@
 // Needs the local Supabase database (`npx supabase start`). fast-tests starts it
 // on GitHub. These tests never skip: if the database isn't running, they fail.
 //
-// Each test runs inside a transaction that is rolled back, so nothing is left
-// behind in the database.
+// Each test runs inside a transaction that first clears the label tables, then is
+// rolled back at the end. So the tests pass whether or not `npm run db:seed` has
+// loaded real labels, and the seeded labels come back untouched afterward.
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -23,6 +24,10 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await db.query("begin");
+  // Start each test from empty label tables (sections first, since they point at
+  // labels). The rollback in afterEach puts any seeded rows back.
+  await db.query("delete from public.label_sections");
+  await db.query("delete from public.drug_labels");
 });
 afterEach(async () => {
   await db.query("rollback");
@@ -66,7 +71,7 @@ describe("drug_labels", () => {
     await addLabel("emgality", false);
     await addLabel("reyvow", true);
     const result = await db.query("select count(*)::int as n from public.drug_labels");
-    expect(result.rows[0].n).toBeGreaterThanOrEqual(3);
+    expect(result.rows[0].n).toBe(3);
   });
 
   it("rejects a drug other than emgality or reyvow", async () => {
