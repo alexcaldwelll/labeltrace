@@ -75,6 +75,7 @@ The constitution ("When Principles Conflict") says each decision where two princ
 | #16 | Adds 6 files to `.github/ai-related-paths.txt` (label update check, label download scripts, language check, English word list, release check) and fixes the third `/speckit-analyze` findings | 2026-11-16 |
 | #19 | Adds `tests/ai/**` and 4 scripts (`scripts/seed-labels.ts`, `scripts/build-english-words.ts`, `scripts/build-drug-names.ts`, `scripts/build-first-names.ts`) to `.github/ai-related-paths.txt`, and fixes the fourth `/speckit-analyze` findings | 2026-11-17 |
 | #25 | Adds the `fast-tests` workflow (`.github/workflows/fast-tests.yml`, T006) | 2026-11-23 |
+| #27 | Sets up local Supabase and the label tables (T007), and adds the "Start local Supabase" step to `.github/workflows/fast-tests.yml` | Added after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 
