@@ -76,7 +76,7 @@ The constitution ("When Principles Conflict") says each decision where two princ
 | #19 | Adds `tests/ai/**` and 4 scripts (`scripts/seed-labels.ts`, `scripts/build-english-words.ts`, `scripts/build-drug-names.ts`, `scripts/build-first-names.ts`) to `.github/ai-related-paths.txt`, and fixes the fourth `/speckit-analyze` findings | 2026-11-17 |
 | #25 | Adds the `fast-tests` workflow (`.github/workflows/fast-tests.yml`, T006) | 2026-11-23 |
 | #27 | Sets up local Supabase and the label tables (T007), and adds the "Start local Supabase" step to `.github/workflows/fast-tests.yml` | 2026-11-23 |
-| #32 | Adds the AI model settings (`src/config/models.ts`) and the server-only database client (`src/lib/db/client.ts`) (T009) | Added after merge (T085) |
+| #32 | Adds the AI model settings (`src/config/models.ts`) and the server-only database client (`src/lib/db/client.ts`) (T009) | 2026-11-23 |
 
 ## User Scenarios & Testing *(mandatory)*
 
