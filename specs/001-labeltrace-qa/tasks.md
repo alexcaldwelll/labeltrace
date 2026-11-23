@@ -105,7 +105,7 @@ US9 (rest) → Polish.
   - Tests: the workflow runs `tests/fast/smoke.test.ts` on the PR and passes.
   - Note: Done in PR #25 except the "start local Supabase" step. That step needs `supabase/config.toml`, which T007 creates, so T007's PR adds it to `fast-tests.yml`.
   - Needs: T001–T003.
-- [ ] T070 **Owner task**: right after `fast-tests` first runs on T006's PR, add `fast-tests` as a required check in branch protection for `main` (research R17).
+- [X] T070 **Owner task**: right after `fast-tests` first runs on T006's PR, add `fast-tests` as a required check in branch protection for `main` (research R17).
   - Needs: T006.
 
 **Checkpoint**: Every later PR must pass fast tests.
