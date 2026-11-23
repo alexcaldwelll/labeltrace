@@ -91,7 +91,7 @@ US9 (rest) → Polish.
 - [X] T001 Create the Next.js (App Router) + TypeScript project on Node.js 22: `package.json`, `tsconfig.json`, `next.config.ts`, `.nvmrc` (`22`). Add the plan's libraries: `next`, `react`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `compromise`, `syllable`, `franc-min`, `zod`; dev: `typescript`, `vitest`, `@testing-library/react`, `jsdom`, `eslint`, `prettier`. Add npm scripts: `dev`, `build`, `lint`, `typecheck`, `test:fast`, `test:ai`, `db:migrate`, `db:seed`, `labels:fetch`, `labels:check`.
   - Tests: `npm run build` and `npm run typecheck` pass.
   - Runs alongside: —
-- [ ] T002 [P] Set up Vitest with two projects in `vitest.config.ts`: `fast` (`tests/fast/**`, never loads real AI clients) and `ai` (`tests/ai/**`). Add `tests/fast/smoke.test.ts`.
+- [X] T002 [P] Set up Vitest with two projects in `vitest.config.ts`: `fast` (`tests/fast/**`, never loads real AI clients) and `ai` (`tests/ai/**`). Add `tests/fast/smoke.test.ts`.
   - Tests: `tests/fast/smoke.test.ts`.
   - Runs alongside: T003, T004. Needs: T001.
 - [ ] T003 [P] Add ESLint and Prettier config (`eslint.config.mjs`, `.prettierrc`) with `no-console` set to error for `src/**`, **except** the one server logger `src/lib/log/server-log.ts` (research R18). There is no outside error-reporting service.
@@ -129,6 +129,7 @@ tier, `ai-gate`, and the release workflow.
   - Tests: —
   - Runs alongside: T010, T012. Needs: T001.
 - [ ] T010 [P] **Startup exception** (`scripts/seed-labels.ts` is AI-related). Save real openFDA label replies as fixtures: `tests/fixtures/openfda/emgality.json`, `tests/fixtures/openfda/reyvow.json` (public label data, not patient data). Add `scripts/seed-labels.ts` (`npm run db:seed`) that loads them into the local database as the current labels.
+  - Note: Node 22.23.5 runs this script directly (`node scripts/seed-labels.ts`) by stripping out the TypeScript type labels. So every import needs its full `.ts` file ending (for example `../src/lib/labels/store.ts`, not `../src/lib/labels/store`), and the script and the files it imports can't use `enum` or `namespace`.
   - Tests: —
   - Runs alongside: T009, T012. Needs: T007.
 - [ ] T011 **Startup exception.** Create `src/lib/labels/sections.ts` (fixed map from openFDA field to display name, research R7, e.g. `warnings_and_cautions` → "Warnings and Precautions"; skips empty fields) and `src/lib/labels/store.ts` (`getCurrentLabel(drug)` returns label date and sections).
@@ -456,6 +457,7 @@ date → new label saved and used.
   - Tests: `tests/fast/labels/freshness.test.ts`: no saved label → downloads and saves; same date → no full download and the `drug_labels` row count doesn't change (SC-008); newer → new row is current, old row kept, and a new answer shows the new date; network error → saved label still used.
   - Needs: T048.
 - [ ] T050 [US7] Create `scripts/labels-fetch.ts` (`npm run labels:fetch`), `scripts/labels-check.ts` (`npm run labels:check`), and `netlify/functions/label-check.ts` (daily schedule) that all call T049's code.
+  - Note: Node 22.23.5 runs `scripts/labels-fetch.ts` and `scripts/labels-check.ts` directly (`node scripts/….ts`) by stripping out the TypeScript type labels. So every import in those scripts needs its full `.ts` file ending (for example `../src/lib/labels/openfda.ts`, not `../src/lib/labels/openfda`), and the scripts and the files they import can't use `enum` or `namespace`.
   - Tests: `tests/fast/labels/label-check-function.test.ts`: the scheduled function calls `checkForNewer` for both drugs (fake fetch).
   - Needs: T049.
 
