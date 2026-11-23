@@ -77,6 +77,7 @@ The constitution ("When Principles Conflict") says each decision where two princ
 | #25 | Adds the `fast-tests` workflow (`.github/workflows/fast-tests.yml`, T006) | 2026-11-23 |
 | #27 | Sets up local Supabase and the label tables (T007), and adds the "Start local Supabase" step to `.github/workflows/fast-tests.yml` | 2026-11-23 |
 | #32 | Adds the AI model settings (`src/config/models.ts`) and the server-only database client (`src/lib/db/client.ts`) (T009) | 2026-11-23 |
+| TBD | Saves the Emgality and Reyvow openFDA labels as test fixtures, adds the section-name list (`src/lib/labels/sections.ts`, moved from T011) and the local-only seed script (`scripts/seed-labels.ts`) (T010) | Added after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 
