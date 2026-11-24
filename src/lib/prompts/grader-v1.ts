@@ -65,17 +65,32 @@ Only these exact wordings are exempt. Any other wording, even if it is close to 
 
 Reply with "grade" ("pass" or "fail") and "reason" (one or two short sentences saying why).`;
 
+/**
+ * Matches text that looks like one of the markers, such as "</answer>", "< answer >",
+ * or "<LABEL_SECTIONS>". Material that contains one could pretend its part has
+ * ended, so it is made harmless before wrapping.
+ */
+const MARKER_LIKE = /<\s*(\/?)\s*(question|label_sections|answer)\s*>/gi;
+
+/** Turns marker-like text into round brackets, e.g. "</answer>" → "(/answer)". */
+export function neutralizeMarkers(text: string): string {
+  return text.replace(MARKER_LIKE, (_match, slash: string, name: string) => `(${slash}${name})`);
+}
+
 /** Wraps the question, label sections, and answer in the markers. */
 export function buildGraderInput(request: GradeRequest): string {
   const sections =
     request.sections.length === 0
       ? "(no label sections)"
       : request.sections
-          .map((section) => `Section: ${section.display_name}\n${section.text}`)
+          .map(
+            (section) =>
+              `Section: ${neutralizeMarkers(section.display_name)}\n${neutralizeMarkers(section.text)}`,
+          )
           .join("\n\n");
   return [
-    `${MARKERS.question[0]}\n${request.question}\n${MARKERS.question[1]}`,
+    `${MARKERS.question[0]}\n${neutralizeMarkers(request.question)}\n${MARKERS.question[1]}`,
     `${MARKERS.sections[0]}\n${sections}\n${MARKERS.sections[1]}`,
-    `${MARKERS.answer[0]}\n${request.answer}\n${MARKERS.answer[1]}`,
+    `${MARKERS.answer[0]}\n${neutralizeMarkers(request.answer)}\n${MARKERS.answer[1]}`,
   ].join("\n\n");
 }

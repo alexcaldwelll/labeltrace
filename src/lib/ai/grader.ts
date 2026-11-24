@@ -21,7 +21,7 @@ import { GRADER_INSTRUCTIONS, buildGraderInput } from "@/lib/prompts/grader-v1";
 
 const replySchema = z.strictObject({
   grade: z.enum(["pass", "fail"]),
-  reason: z.string(),
+  reason: z.string().trim().min(1, "must not be blank"),
 });
 
 /** The reply shape OpenAI is asked to follow (Structured Outputs). */
