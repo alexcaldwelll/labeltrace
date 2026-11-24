@@ -24,6 +24,10 @@ scripts/labels-check.ts
 # The script that loads saved labels into the database (label handling)
 scripts/seed-labels.ts
 
+# The database setup files (the label tables, the question log and test-run
+# tables, and the function that looks up a drug's current label)
+supabase/migrations/**
+
 # The scripts that build the word and name lists the checks use (the English
 # word list, the other-drug name list, and the common first-name list)
 scripts/build-english-words.ts
