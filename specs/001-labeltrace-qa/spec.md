@@ -70,6 +70,8 @@ The constitution ("When Principles Conflict") says each decision where two princ
 
 **Status: active.** Ends when T073 is merged and one AI test run passes with at least 1 checked entry. It can't be extended. When it ends, this line changes to: **Status: ended on [date]** by the passing `test_runs` row **[test_runs ID]**.
 
+Merge dates are in U.S. Central time.
+
 | PR | What it changed | Merged on |
 |---|---|---|
 | #16 | Adds 6 files to `.github/ai-related-paths.txt` (label update check, label download scripts, language check, English word list, release check) and fixes the third `/speckit-analyze` findings | 2026-11-16 |
@@ -78,7 +80,7 @@ The constitution ("When Principles Conflict") says each decision where two princ
 | #27 | Sets up local Supabase and the label tables (T007), and adds the "Start local Supabase" step to `.github/workflows/fast-tests.yml` | 2026-11-23 |
 | #32 | Adds the AI model settings (`src/config/models.ts`) and the server-only database client (`src/lib/db/client.ts`) (T009) | 2026-11-23 |
 | #34 | Saves the Emgality and Reyvow openFDA labels as test fixtures, adds the section-name list (`src/lib/labels/sections.ts`, moved from T011) and the local-only seed script (`scripts/seed-labels.ts`) (T010) | 2026-11-23 |
-| #36 | Adds `getCurrentLabel` (`src/lib/labels/store.ts`), which returns a drug's current saved label and its sections, and the server-only database function `get_current_label` (`supabase/migrations/0003_get_current_label.sql`) (T011) | Added after merge (T085) |
+| #36 | Adds `getCurrentLabel` (`src/lib/labels/store.ts`), which returns a drug's current saved label and its sections, and the server-only database function `get_current_label` (`supabase/migrations/0003_get_current_label.sql`) (T011) | 2026-11-23 |
 
 ## User Scenarios & Testing *(mandatory)*
 
