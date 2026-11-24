@@ -145,9 +145,10 @@ tier, `ai-gate`, and the release workflow.
   - **Short questions** (FR-055): a question under 30 characters counts as English only if every word is an English word, a drug name (T024's lists), or a number. Write `scripts/build-english-words.ts`, which downloads a **published** English word list (never written from memory) and saves it to `src/lib/pipeline/english-words.json` with its source URL, download date, and count. Fill in research.md R19 with the source, the exact URL, the download date, and the number of words.
   - Tests: `tests/fast/pipeline/basic-checks.test.ts`: blank, 1,001-character, and Spanish questions; disclaimer on every reply kind; **"chest pain?" counts as English**; **"¿Reyvow causa náuseas?" → `english_only`**; `english-words.json` records its source URL and date.
   - Runs alongside: T014. Needs: T012.
-- [ ] T014 [P] Create the shared layout `src/app/layout.tsx` with a visible "LabelTrace is an AI, not a doctor." banner on every page (FR-003), and a simple question page `src/app/page.tsx` that posts to `/api/ask`.
+- [X] T014 [P] Create the shared layout `src/app/layout.tsx` with a visible "LabelTrace is an AI, not a doctor." banner on every page (FR-003), and a simple question page `src/app/page.tsx` that posts to `/api/ask`.
   - Tests: `tests/fast/ui/banner.test.tsx`: banner is present on the question page.
   - Lint: Add React and Next.js lint rules. Pick the exact package(s) during T014 after confirming they support the project's ESLint and TypeScript versions, and run npm audit. Files: `eslint.config.mjs`, `package.json`, `package-lock.json`.
+    - Picked: `@next/eslint-plugin-next` 16.4.6 (same version as Next.js; no ESLint version limit) and `eslint-plugin-react-hooks` 7.1.1 (supports ESLint 10). Not used: `eslint-plugin-react` 7.37.5 (supports ESLint up to 9 only) and `eslint-config-next` (it brings in `eslint-plugin-react`). `npm audit`: 0 vulnerabilities.
   - Runs alongside: T013. Needs: T001.
 - [ ] T071 **Owner task**: set up the online database and GitHub secrets (research R16).
   1. Create the online Supabase project. Turn off public sign-up. Apply migrations 0001 and 0002 (and every later one, T082).
@@ -320,6 +321,7 @@ normal questions with personal details) are in T087, after T040.
   - Needs: T051.
 - [ ] T052 [US8] Create `src/lib/auth/session.ts` (`@supabase/ssr`; `requireReviewer()` and `requireOwner()`, where owner counts as reviewer, FR-033) and the login page `src/app/login/page.tsx` (email and password).
   - Tests: `tests/fast/review/session.test.ts`: signed out → 401; inactive → 403; owner passes `requireReviewer`.
+  - Layout: The login page must stay inside the root layout (`src/app/layout.tsx`), so the "LabelTrace is an AI, not a doctor." banner always shows (FR-003). Don't add a separate root layout or a second copy of the banner.
   - Needs: T051.
 - [ ] T055 [US9] Migration `supabase/migrations/0004_grader.sql`: `grader_results` (`grade` `pass` or `fail`; `source` `real` or `test`; `needs_owner_decision` "Yes when `grade = fail` (FR-037)") and `owner_flag_decisions` ("One decision per flag", unique on `grader_result_id`; `owner_id` "Must have role `owner`"; `reason` "Required (FR-038)"). Only the owner can insert decisions.
   - Tests: `tests/fast/db/grader-schema.test.ts`: a second decision on the same flag is rejected; a reviewer (not owner) can't insert; a decision with no reason is rejected.
@@ -334,6 +336,7 @@ normal questions with personal details) are in T087, after T040.
   - Needs: T052, T055.
 - [ ] T061 [P] [US9] Create owner pages `src/app/owner/flags/page.tsx` and `src/app/owner/grader-summary/page.tsx` (shows `grading_gave_up` entries and the disagreement rate).
   - Tests: `tests/fast/ui/owner-pages.test.tsx`: a non-owner is blocked; the rate is displayed.
+  - Layout: Both owner pages must stay inside the root layout (`src/app/layout.tsx`), so the "LabelTrace is an AI, not a doctor." banner always shows (FR-003). Don't add a separate root layout or a second copy of the banner.
   - Runs alongside: T062. Needs: T060.
 - [ ] T062 [P] [US9] Extend `src/lib/ci/gate.ts` and `scripts/ai-gate.ts` with **part 2** (FR-039): every `grader_results` row with `needs_owner_decision = yes` from the PR's run must have an `owner_flag_decisions` row. Fail message: "N grader flags need your decision". The release check (T074) uses the same code.
   - Tests: extend `tests/fast/ci/ai-gate.test.ts`: a passed run with 3 undecided flags → fail with "3 grader flags need your decision"; all decided → pass. Extend `tests/fast/ci/release-check.test.ts` the same way.
@@ -483,6 +486,7 @@ and confirm both are saved with name and time. Signed-out users are blocked.
   - Runs alongside: T054. Needs: T052.
 - [ ] T054 [P] [US8] Create the review page `src/app/review/page.tsx` (list entries, approve, flag with a required reason box). Emergency entries show their matched phrase ids, so false alarms are easy to spot and flag (FR-054).
   - Tests: `tests/fast/ui/review-page.test.tsx`: signed out → sent to login; the flag button is disabled until a reason is typed; an emergency entry shows its phrase ids.
+  - Layout: The review page must stay inside the root layout (`src/app/layout.tsx`), so the "LabelTrace is an AI, not a doctor." banner always shows (FR-003). Don't add a separate root layout or a second copy of the banner.
   - Runs alongside: T053.
 
 **Checkpoint**: People can check answers.
