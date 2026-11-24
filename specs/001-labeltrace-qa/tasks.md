@@ -135,7 +135,7 @@ tier, `ai-gate`, and the release workflow.
   - Note: Node 22.23.5 runs this script directly (`node scripts/seed-labels.ts`) by stripping out the TypeScript type labels. So every import needs its full `.ts` file ending (for example `../src/lib/labels/store.ts`, not `../src/lib/labels/store`), and the script and the files it imports can't use `enum` or `namespace`.
   - Tests: `tests/fast/labels/sections.test.ts` (*moved here from T011*): known fields get the right names; empty fields are skipped. `tests/fast/scripts/seed-labels.test.ts`: the local-only check allows `localhost` and `127.0.0.1` and refuses online addresses, look-alikes (e.g. `localhost.example.com`), and a missing URL.
   - Runs alongside: T009, T012. Needs: T007.
-- [ ] T011 **Startup exception.** Create `src/lib/labels/store.ts` (`getCurrentLabel(drug)` returns label date and sections). (`src/lib/labels/sections.ts` and its tests moved to T010, because the seed script needs the section names.)
+- [X] T011 **Startup exception.** Create `src/lib/labels/store.ts` (`getCurrentLabel(drug)` returns label date and sections). (`src/lib/labels/sections.ts` and its tests moved to T010, because the seed script needs the section names.)
   - Tests: `tests/fast/labels/store.test.ts`: `getCurrentLabel` returns the seeded label and date.
   - Runs alongside: T012. Needs: T009, T010.
 - [ ] T012 [P] **Startup exception.** Create the AI client interface `src/lib/ai/types.ts` (answer client and grader client shapes), the **`ScrubbedText`** branded type in `src/lib/scrub/types.ts` (a type that plain strings can't pass as; only `scrub()` in T033 makes real ones), and `tests/helpers/fake-ai.ts` (returns fixed replies and records every call, so tests can prove the AI was or wasn't called).
