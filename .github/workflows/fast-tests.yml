@@ -39,6 +39,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Code and settings files must match the Prettier layout (.prettierrc).
+      # Documents (specs, CLAUDE.md, the constitution) aren't checked. The two
+      # saved openFDA labels are skipped (.prettierignore).
+      - name: Format check
+        run: npm run format:check
+
       # Local Supabase runs in Docker, which GitHub's Ubuntu runners already have.
       # It uses supabase/config.toml and applies supabase/migrations/. The CLI
       # version is pinned in package.json.

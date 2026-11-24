@@ -2,11 +2,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
-import {
-  buildWordFile,
-  parseWordList,
-  SOURCE_URL,
-} from "../../../scripts/build-english-words";
+import { buildWordFile, parseWordList, SOURCE_URL } from "../../../scripts/build-english-words";
 
 const SAMPLE = [
   "Custom wordlist generated from https://app.aspell.net/create using",

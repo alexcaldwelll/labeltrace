@@ -30,8 +30,7 @@ export type CurrentLabel = {
  * must handle it on purpose.
  */
 export type CurrentLabelResult =
-  | { found: true; label: CurrentLabel }
-  | { found: false; drug: Drug };
+  { found: true; label: CurrentLabel } | { found: false; drug: Drug };
 
 const sectionSchema = z.object({
   field_key: z.string(),
