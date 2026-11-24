@@ -10,6 +10,8 @@ Before creating or changing any file, explain:
 Then wait for my approval before making the change.
 Approving a fix approves the outcome, not every file. Before editing, list every file the fix will touch and wait for approval of that list.
 
+Approving a task does not approve changing a documented rule or design (a spec requirement, research decision, plan, or contract). If the work shows a documented rule or design should change, even inside an approved task, stop. Bring me the evidence and the options, and wait for my decision before changing it.
+
 ## 2. Follow the constitution
 The project constitution is at `.specify/memory/constitution.md`.
 If a task would break any rule in it, stop and ask me before doing anything.
