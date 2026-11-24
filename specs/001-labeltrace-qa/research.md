@@ -442,8 +442,26 @@ Words that may be new are explained the first time they appear.
   - **English word list**: comes from a **published** word list, never written from
     memory. Built by `scripts/build-english-words.ts` (task T013) and saved to
     `src/lib/pipeline/english-words.json` with its source URL, download date, and count.
-- _Added by task T013: the word list's source, exact URL, download date, and number of
-  words._
+- **Word list record** (task T013):
+  - **Source**: SCOWL (Spell Checker Oriented Word Lists), size 60, American English, made
+    with the English Speller Database (ESDB, the newer name for SCOWL) web tool by Kevin
+    Atkinson. Header settings: Size 60, Spelling US, Variant Level 1 (default), no special
+    lists, accents stripped. ESDB revision `1e5b7d3`.
+  - **Exact URL**: `https://app.aspell.net/create?max_size=60&spelling=US&diacritic=strip&download=wordlist&encoding=utf-8&format=inline`
+  - **Download date**: 2026-11-23
+  - **SHA-256 checksum** of the downloaded bytes: `bfbc258a6baaa50aec6fe07330b25b57cd90f3dd429345b8280df0414ccf242c`
+  - **License**: SCOWL/ESDB license. Free to use, copy, change, share, and sell, as long
+    as the copyright notice and permission notice stay with every copy. The full notice
+    is saved in the `notice` field of `english-words.json`.
+  - **Number of words**: 106,859 (lowercase, no repeats).
+- **Longer questions**: the "every word is known" rule also counts a question of 30
+  characters or more as English, before `franc-min` is asked. `franc-min` alone gets
+  some plain English questions wrong (it reads "Can I drive after taking Reyvow
+  tablets?" as Dutch and "Is it safe to take Reyvow while pregnant?" as French). Only
+  text made entirely of known words gets through this way, so it stays safe for
+  privacy.
+- **Drug names**: until T024, only our 4 names (`emgality`, `galcanezumab`, `reyvow`,
+  `lasmiditan`) count as drug names. T024 adds the full lists.
 
 ## R20. Other-drug name list
 

@@ -82,7 +82,8 @@ Merge dates are in U.S. Central time.
 | #34 | Saves the Emgality and Reyvow openFDA labels as test fixtures, adds the section-name list (`src/lib/labels/sections.ts`, moved from T011) and the local-only seed script (`scripts/seed-labels.ts`) (T010) | 2026-11-23 |
 | #36 | Adds `getCurrentLabel` (`src/lib/labels/store.ts`), which returns a drug's current saved label and its sections, and the server-only database function `get_current_label` (`supabase/migrations/0003_get_current_label.sql`) (T011) | 2026-11-23 |
 | #37 | Adds `supabase/migrations/**` (the database setup files) to `.github/ai-related-paths.txt`, fills in PR #36's merge date, and notes that merge dates are in U.S. Central time (T085) | 2026-11-23 |
-| #38 | Adds the AI client shapes (`src/lib/ai/types.ts`), the `ScrubbedText` type (`src/lib/scrub/types.ts`), and the fake AI for tests (`tests/helpers/fake-ai.ts`) (T012), and adds `tests/helpers/fake-ai.ts` and `tests/fast/stubs/no-ai-client.ts` to `.github/ai-related-paths.txt` | Added after merge (T085) |
+| #38 | Adds the AI client shapes (`src/lib/ai/types.ts`), the `ScrubbedText` type (`src/lib/scrub/types.ts`), and the fake AI for tests (`tests/helpers/fake-ai.ts`) (T012), and adds `tests/helpers/fake-ai.ts` and `tests/fast/stubs/no-ai-client.ts` to `.github/ai-related-paths.txt` | 2026-11-23 |
+| #39 | Adds the question steps (`src/lib/pipeline/ask.ts`), the language check (`src/lib/pipeline/language.ts`), the SCOWL English word list and its download script (`src/lib/pipeline/english-words.json`, `scripts/build-english-words.ts`), and `POST /api/ask` (T013) | Added after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 
