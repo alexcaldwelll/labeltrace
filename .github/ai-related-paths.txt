@@ -75,5 +75,13 @@ scripts/release-check.ts
 # what counts as a passing AI test run.
 tests/ai/**
 
+# The stand-in AI that tests use to prove the AI was or wasn't called (emergency
+# tests rely on it)
+tests/helpers/fake-ai.ts
+
+# The stand-in that keeps fast tests from reaching the real AI (any fast test that
+# tries to create a real AI client stops with an error)
+tests/fast/stubs/no-ai-client.ts
+
 # This list itself
 .github/ai-related-paths.txt
