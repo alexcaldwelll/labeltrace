@@ -27,8 +27,16 @@ describe("labelSections", () => {
       adverse_reactions: ["Injection site reactions."],
     });
     expect(sections).toEqual([
-      { field_key: "warnings_and_cautions", display_name: "Warnings and Precautions", text: "5.1 Hypersensitivity" },
-      { field_key: "adverse_reactions", display_name: "Adverse Reactions", text: "Injection site reactions." },
+      {
+        field_key: "warnings_and_cautions",
+        display_name: "Warnings and Precautions",
+        text: "5.1 Hypersensitivity",
+      },
+      {
+        field_key: "adverse_reactions",
+        display_name: "Adverse Reactions",
+        text: "Injection site reactions.",
+      },
     ]);
   });
 

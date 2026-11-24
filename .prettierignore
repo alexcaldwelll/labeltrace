@@ -1,0 +1,4 @@
+# Saved exactly as openFDA sent them (see tests/fixtures/openfda/README.md), so
+# Prettier must never reformat them.
+tests/fixtures/openfda/emgality.json
+tests/fixtures/openfda/reyvow.json

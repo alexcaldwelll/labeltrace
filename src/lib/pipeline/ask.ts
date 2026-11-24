@@ -43,8 +43,7 @@ export type AskReply = ReplyBase &
   );
 
 type BasicChecksResult =
-  | { done: true; reply: AskReply }
-  | { done: false; text: string; truncated: boolean };
+  { done: true; reply: AskReply } | { done: false; text: string; truncated: boolean };
 
 /**
  * Step 2: blank → ask for a question; over 1,000 characters → cut; not English →
@@ -54,7 +53,11 @@ export function basicChecks(question: string): BasicChecksResult {
   if (question.trim() === "") {
     return {
       done: true,
-      reply: { kind: "prompt_for_question", text: PROMPT_FOR_QUESTION_TEXT, disclaimer: DISCLAIMER },
+      reply: {
+        kind: "prompt_for_question",
+        text: PROMPT_FOR_QUESTION_TEXT,
+        disclaimer: DISCLAIMER,
+      },
     };
   }
   const truncated = question.length > MAX_QUESTION_LENGTH;

@@ -86,7 +86,8 @@ Merge dates are in U.S. Central time.
 | #38 | Adds the AI client shapes (`src/lib/ai/types.ts`), the `ScrubbedText` type (`src/lib/scrub/types.ts`), and the fake AI for tests (`tests/helpers/fake-ai.ts`) (T012), and adds `tests/helpers/fake-ai.ts` and `tests/fast/stubs/no-ai-client.ts` to `.github/ai-related-paths.txt` | 2026-11-23 |
 | #39 | Adds the question steps (`src/lib/pipeline/ask.ts`), the language check (`src/lib/pipeline/language.ts`), the SCOWL English word list and its download script (`src/lib/pipeline/english-words.json`, `scripts/build-english-words.ts`), and `POST /api/ask` (T013) | 2026-11-23 |
 | #42 | Adds the AI-tier answer-key loader (`tests/ai/questions/load.ts`), which refuses entries without `checked_by` / `checked_on` (a real YYYY-MM-DD date), bad categories, and blank or non-English questions (T025) | 2026-11-24 |
-| #44 | Adds the second-AI grader instructions (`src/lib/prompts/grader-v1.ts`) and the OpenAI grader client (`src/lib/ai/grader.ts`), which refuses to start with an empty grader model or a same-company grader (T056) | Added after merge (T085) |
+| #44 | Adds the second-AI grader instructions (`src/lib/prompts/grader-v1.ts`) and the OpenAI grader client (`src/lib/ai/grader.ts`), which refuses to start with an empty grader model or a same-company grader (T056) | 2026-11-24 |
+| #45 | Reformats code layout with Prettier (no code changes), including `src/lib/labels/store.ts` and `src/lib/pipeline/ask.ts`, and adds a Prettier format check to `.github/workflows/fast-tests.yml` | Added after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 

@@ -18,12 +18,22 @@ const question = "Can [NAME] take Reyvow with food?" as ScrubbedText;
 const answerRequest: AnswerRequest = {
   question,
   drug: "reyvow",
-  sections: [{ field_key: "dosage_and_administration", display_name: "Dosage and Administration", text: "Take with or without food." }],
+  sections: [
+    {
+      field_key: "dosage_and_administration",
+      display_name: "Dosage and Administration",
+      text: "Take with or without food.",
+    },
+  ],
   promptVersion: "answer-v1",
   deadline: 1_000,
 };
 
-const gradeRequest: GradeRequest = { question, sections: [], answer: "You can take it with or without food." };
+const gradeRequest: GradeRequest = {
+  question,
+  sections: [],
+  answer: "You can take it with or without food.",
+};
 
 describe("FakeAnswerClient", () => {
   it("has no calls before it is used", () => {
@@ -50,7 +60,11 @@ describe("FakeAnswerClient", () => {
   });
 
   it("returns a given fixed reply", async () => {
-    const reply = { answer: "Not in the label.", sectionsUsed: [], answerType: "not_covered" as const };
+    const reply = {
+      answer: "Not in the label.",
+      sectionsUsed: [],
+      answerType: "not_covered" as const,
+    };
     expect(await new FakeAnswerClient(reply).answer(answerRequest)).toEqual(reply);
   });
 

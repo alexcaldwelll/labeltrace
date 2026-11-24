@@ -2,9 +2,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 const src = fileURLToPath(new URL("./src", import.meta.url));
-const noAiClient = fileURLToPath(
-  new URL("./tests/fast/stubs/no-ai-client.ts", import.meta.url),
-);
+const noAiClient = fileURLToPath(new URL("./tests/fast/stubs/no-ai-client.ts", import.meta.url));
 
 export default defineConfig({
   resolve: {

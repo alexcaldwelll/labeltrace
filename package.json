@@ -10,6 +10,7 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "eslint .",
+    "format:check": "prettier --check src tests scripts supabase .github package.json tsconfig.json vitest.config.ts next.config.ts eslint.config.mjs .prettierrc",
     "typecheck": "tsc --noEmit",
     "test:fast": "vitest run --project fast",
     "test:ai": "vitest run --project ai",
