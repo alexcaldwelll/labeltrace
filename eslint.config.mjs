@@ -1,4 +1,6 @@
 // ESLint settings (T003). ESLint finds mistakes in code before it runs.
+import nextPlugin from "@next/eslint-plugin-next";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
@@ -9,6 +11,13 @@ export default tseslint.config(
 
   // The usual TypeScript checks.
   ...tseslint.configs.recommended,
+
+  // React and Next.js checks (T014). React's "hooks" rules catch common mistakes
+  // with useState and similar; the Next.js rules catch Next-specific mistakes and
+  // slow-page problems ("core web vitals"). eslint-plugin-react is not used: it
+  // doesn't support ESLint 10 yet.
+  reactHooks.configs.flat.recommended,
+  nextPlugin.configs["core-web-vitals"],
 
   // No console.* anywhere in src/. A stray console.log could put a user's raw
   // question into the logs (research R18).
