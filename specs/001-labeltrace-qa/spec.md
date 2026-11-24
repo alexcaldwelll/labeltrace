@@ -78,6 +78,7 @@ The constitution ("When Principles Conflict") says each decision where two princ
 | #27 | Sets up local Supabase and the label tables (T007), and adds the "Start local Supabase" step to `.github/workflows/fast-tests.yml` | 2026-11-23 |
 | #32 | Adds the AI model settings (`src/config/models.ts`) and the server-only database client (`src/lib/db/client.ts`) (T009) | 2026-11-23 |
 | #34 | Saves the Emgality and Reyvow openFDA labels as test fixtures, adds the section-name list (`src/lib/labels/sections.ts`, moved from T011) and the local-only seed script (`scripts/seed-labels.ts`) (T010) | 2026-11-23 |
+| #36 | Adds `getCurrentLabel` (`src/lib/labels/store.ts`), which returns a drug's current saved label and its sections, and the server-only database function `get_current_label` (`supabase/migrations/0003_get_current_label.sql`) (T011) | Added after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 
