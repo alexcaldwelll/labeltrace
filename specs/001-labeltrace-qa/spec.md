@@ -81,6 +81,7 @@ Merge dates are in U.S. Central time.
 | #32 | Adds the AI model settings (`src/config/models.ts`) and the server-only database client (`src/lib/db/client.ts`) (T009) | 2026-11-23 |
 | #34 | Saves the Emgality and Reyvow openFDA labels as test fixtures, adds the section-name list (`src/lib/labels/sections.ts`, moved from T011) and the local-only seed script (`scripts/seed-labels.ts`) (T010) | 2026-11-23 |
 | #36 | Adds `getCurrentLabel` (`src/lib/labels/store.ts`), which returns a drug's current saved label and its sections, and the server-only database function `get_current_label` (`supabase/migrations/0003_get_current_label.sql`) (T011) | 2026-11-23 |
+| #37 | Adds `supabase/migrations/**` (the database setup files) to `.github/ai-related-paths.txt`, fills in PR #36's merge date, and notes that merge dates are in U.S. Central time (T085) | Added after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 
