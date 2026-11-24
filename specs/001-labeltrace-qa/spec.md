@@ -85,7 +85,7 @@ Merge dates are in U.S. Central time.
 | #37 | Adds `supabase/migrations/**` (the database setup files) to `.github/ai-related-paths.txt`, fills in PR #36's merge date, and notes that merge dates are in U.S. Central time (T085) | 2026-11-23 |
 | #38 | Adds the AI client shapes (`src/lib/ai/types.ts`), the `ScrubbedText` type (`src/lib/scrub/types.ts`), and the fake AI for tests (`tests/helpers/fake-ai.ts`) (T012), and adds `tests/helpers/fake-ai.ts` and `tests/fast/stubs/no-ai-client.ts` to `.github/ai-related-paths.txt` | 2026-11-23 |
 | #39 | Adds the question steps (`src/lib/pipeline/ask.ts`), the language check (`src/lib/pipeline/language.ts`), the SCOWL English word list and its download script (`src/lib/pipeline/english-words.json`, `scripts/build-english-words.ts`), and `POST /api/ask` (T013) | 2026-11-23 |
-| #42 | Adds the AI-tier answer-key loader (`tests/ai/questions/load.ts`), which refuses entries without `checked_by` / `checked_on` (a real YYYY-MM-DD date), bad categories, and blank or non-English questions (T025) | Added after merge (T085) |
+| #42 | Adds the AI-tier answer-key loader (`tests/ai/questions/load.ts`), which refuses entries without `checked_by` / `checked_on` (a real YYYY-MM-DD date), bad categories, and blank or non-English questions (T025) | 2026-11-24 |
 
 ## User Scenarios & Testing *(mandatory)*
 
