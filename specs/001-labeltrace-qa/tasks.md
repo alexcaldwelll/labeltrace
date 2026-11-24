@@ -146,7 +146,7 @@ tier, `ai-gate`, and the release workflow.
   - Tests: `tests/fast/pipeline/basic-checks.test.ts`: blank, 1,001-character, and Spanish questions; disclaimer on every reply kind; **"chest pain?" counts as English**; **"¿Reyvow causa náuseas?" → `english_only`**; `english-words.json` records its source URL and date.
   - Runs alongside: T014. Needs: T012.
 - [X] T014 [P] Create the shared layout `src/app/layout.tsx` with a visible "LabelTrace is an AI, not a doctor." banner on every page (FR-003), and a simple question page `src/app/page.tsx` that posts to `/api/ask`.
-  - Tests: `tests/fast/ui/banner.test.tsx`: banner is present on the question page.
+  - Tests: `tests/fast/ui/banner.test.tsx`: the banner shows when the root layout renders any page (a sample page and the question page), and it shows only once on the question page.
   - Lint: Add React and Next.js lint rules. Pick the exact package(s) during T014 after confirming they support the project's ESLint and TypeScript versions, and run npm audit. Files: `eslint.config.mjs`, `package.json`, `package-lock.json`.
     - Picked: `@next/eslint-plugin-next` 16.4.6 (same version as Next.js; no ESLint version limit) and `eslint-plugin-react-hooks` 7.1.1 (supports ESLint 10). Not used: `eslint-plugin-react` 7.37.5 (supports ESLint up to 9 only) and `eslint-config-next` (it brings in `eslint-plugin-react`). `npm audit`: 0 vulnerabilities.
   - Runs alongside: T013. Needs: T001.
