@@ -135,9 +135,10 @@ with saved sample replies.
    admins.
 5. Check the settings match
    [research.md R17](research.md#r17-branch-protection-and-the-bot-account).
-6. **Read-only gate login**: connect with the `AI_GATE_DATABASE_URL` login (from a safe
-   place, never a committed file). **Expected**: it can read `test_runs`,
-   `grader_results`, and `owner_flag_decisions`. Trying to insert a `test_runs` row, or to
+6. **Read-only gate login** (`ai_gate_reader`, password set only through a scrambled
+   version, T071 step 2): connect with the `AI_GATE_DATABASE_URL` login (from a safe
+   place, never a committed file). **Expected**: it can read `test_runs` (and, after T086,
+   `grader_results` and `owner_flag_decisions`). Trying to insert a `test_runs` row, or to
    read `log_entries`, is **refused**.
 7. **Writer login** (`ai_tests_writer`): connect with the `AI_TESTS_DATABASE_URL` login
    (from a safe place, never a committed file). **Expected**: adding a `test_runs` row

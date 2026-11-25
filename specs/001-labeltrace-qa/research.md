@@ -386,10 +386,17 @@ Words that may be new are explained the first time they appear.
     path (checked 2026-11-25: same fingerprint as the root the pooler sends). The online
     project also has "Enforce SSL on incoming connections" turned on (T071 step 6), so
     unencrypted connections are refused.
-  - `ai-gate` reads results with a **read-only** database login
-    (`AI_GATE_DATABASE_URL`) that can only read `test_runs`, `grader_results`, and
-    `owner_flag_decisions`. It starts with `test_runs` only (task T071). Read access to
-    the two grader tables is added once they exist online (task T086, after T055).
+  - `ai-gate` reads results with a **read-only** database login, `ai_gate_reader`
+    (`AI_GATE_DATABASE_URL`, migration `0005_ai_gate_reader.sql`), that can only read
+    `test_runs`, `grader_results`, and `owner_flag_decisions`. It starts with `test_runs`
+    only (task T071). Read access to the two grader tables is added once they exist, by a
+    migration (task T086, after T055). Because Row Level Security is on, each table needs
+    a row rule for this role as well as the read permission; without it the gate would
+    see zero rows, with no error. Its password is set only through a scrambled version
+    (SCRAM verifier, `scripts/scram-verifier.mjs`), never typed into SQL, because the
+    database logs those commands word for word. `AI_GATE_DATABASE_URL` is a
+    **repo-wide** secret (ai-gate runs on every PR without approval), so any branch's
+    workflow can use it; that is why the login must stay read-only.
   - The online database's admin key is **never** put in a local `.env` file. Local work
     uses the local database. That way the bot account can't write test results to the
     online database by itself.
