@@ -361,11 +361,22 @@ Words that may be new are explained the first time they appear.
   exact file.
 - **Secrets**: API keys are stored as **GitHub Actions secrets** (encrypted settings on
   GitHub, not files in the repo). Rule 5 is followed.
-  - The online database's admin key and the AI keys for `ai-tests` live in a GitHub
+  - The AI keys for `ai-tests` and its database login live in a GitHub
     **environment** named `ai-tests`. The Netlify token lives in an environment named
     `release`. A GitHub environment is a locked group of secrets that a workflow can use
     only after the owner approves the run. This stops a changed workflow on a branch from
     reading the keys without the owner knowing.
+  - `ai-tests` writes results with a **limited writer login**, `ai_tests_writer`
+    (`AI_TESTS_DATABASE_URL`, migration `0004_ai_tests_writer.sql`), never the online
+    database's admin key (owner's decision 2026-11-24). It can only add `test_runs` rows
+    with status `running` (starting fields only) and finish a row that is still `running`
+    through the database function `finish_test_run`. It can't read, change, or delete any
+    row directly, or touch any other table, so a leaked key can't flip a finished run to
+    `passed`. It can still add and finish a new fake row; T015 considers a check against
+    GitHub's own record of the workflow run. The connection string must be Supabase's
+    **pooler** address, because GitHub can't reach the direct database address. When
+    later tasks write more (for example `grader_results` in T059), they give this login
+    just that extra access.
   - `ai-gate` reads results with a **read-only** database login
     (`AI_GATE_DATABASE_URL`) that can only read `test_runs`, `grader_results`, and
     `owner_flag_decisions`. It starts with `test_runs` only (task T071). Read access to

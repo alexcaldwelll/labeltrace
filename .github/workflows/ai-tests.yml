@@ -1,0 +1,59 @@
+# ai-tests: runs the AI test tier and records the result in the online database
+# (T073, research R16, FR-045).
+#
+# Runs on every pull request (the PR's latest commit) and by hand ("Run workflow"
+# button: pick the branch). Every run uses the `ai-tests` environment, so it waits
+# for the owner's approval before it can read any secret.
+#
+# The commit it tests is the commit it records: on pull requests, GitHub would
+# normally test a temporary commit that merges the PR into main. Instead, this
+# checks out the PR's own latest commit. RUN_COMMIT_SHA is set in one place below
+# and used for both the checkout and the record, and tests/ai/setup.ts stops if
+# the checked-out commit doesn't match it.
+#
+# Secrets (in the `ai-tests` environment): ANTHROPIC_API_KEY, OPENAI_API_KEY, and
+# AI_TESTS_DATABASE_URL (the limited ai_tests_writer login, never the admin key).
+name: ai-tests
+
+on:
+  # Never use pull_request_target here: it would run pull request code with
+  # access to this repository's secrets and write permissions.
+  pull_request:
+  workflow_dispatch:
+
+# Read-only access to the repository. This workflow needs nothing more.
+permissions:
+  contents: read
+
+jobs:
+  ai-tests:
+    name: ai-tests
+    runs-on: ubuntu-latest
+    environment: ai-tests
+    env:
+      # The PR's latest commit on pull requests; the chosen branch's latest commit
+      # on hand runs.
+      RUN_COMMIT_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      RUN_BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+    steps:
+      - name: Get the code (the exact commit that will be recorded)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RUN_COMMIT_SHA }}
+          persist-credentials: false
+
+      - name: Set up Node.js (version from .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Run the AI tests and record the result
+        run: npm run test:ai:run
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AI_TESTS_DATABASE_URL: ${{ secrets.AI_TESTS_DATABASE_URL }}

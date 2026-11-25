@@ -139,6 +139,13 @@ with saved sample replies.
    place, never a committed file). **Expected**: it can read `test_runs`,
    `grader_results`, and `owner_flag_decisions`. Trying to insert a `test_runs` row, or to
    read `log_entries`, is **refused**.
+7. **Writer login** (`ai_tests_writer`): connect with the `AI_TESTS_DATABASE_URL` login
+   (from a safe place, never a committed file). **Expected**: adding a `test_runs` row
+   with status `running` works, and `select public.finish_test_run(<that row's id>, 1, 0,
+   1, 'passed')` finishes it. Running the same `finish_test_run` call again, adding a row
+   with status `passed`, changing or deleting a row directly, and reading `test_runs` or
+   `log_entries` are all **refused**. Afterward, delete the practice row with your admin
+   login in the Supabase dashboard.
 
 ## 10. Releases
 
