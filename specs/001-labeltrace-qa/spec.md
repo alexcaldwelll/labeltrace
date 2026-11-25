@@ -69,7 +69,7 @@ The constitution ("When Principles Conflict") says each decision where two princ
 
 ### PRs merged under the startup exception (constitution III, v3.0.0)
 
-**Status: active.** Ends when T073 is merged and one AI test run passes with at least 1 checked entry. It can't be extended. When it ends, this line changes to: **Status: ended on [date]** by the passing `test_runs` row **[test_runs ID]**.
+**Status: ended on 2026-11-25** by the passing `test_runs` row **ce207918-cbdd-477f-a597-a0284df9a09d** (commit `2428386`, PR #52).
 
 Merge dates are in U.S. Central time.
 
