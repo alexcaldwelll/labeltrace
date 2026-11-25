@@ -39,6 +39,9 @@ describe("ai-gate decision", () => {
   });
 
   describe("every pattern in the real .github/ai-related-paths.txt", () => {
+    it("E1: the real list has at least one pattern (an empty list would let everything through)", () => {
+      expect(realPatterns.length).toBeGreaterThan(0);
+    });
     for (const pattern of realPatterns) {
       const file = exampleFile(pattern);
       it(`a change to ${file} with no run → fail`, () => {
@@ -62,6 +65,13 @@ describe("ai-gate decision", () => {
     expect(gate(["src/lib/prompts/grader-v1.ts"], [run("incomplete")])).toEqual({
       pass: false,
       message: "The AI test run is incomplete. Run the ai-tests workflow again",
+    });
+  });
+
+  it("E2: prompt change whose only run failed → fail with the failed message (D2)", () => {
+    expect(gate(["src/lib/prompts/grader-v1.ts"], [run("failed")])).toEqual({
+      pass: false,
+      message: "The AI test run failed. Fix the failures and run the ai-tests workflow again",
     });
   });
 
