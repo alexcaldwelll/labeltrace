@@ -72,7 +72,7 @@ US9 (rest) → Polish.
 - [ ] T082 **Owner task**: after a PR with a new file in `supabase/migrations/` merges,
   apply it to the online database (`npx supabase db push --linked` with your own login; the Supabase CLI's next major version targets the local database unless `--linked` is given). The bot never
   holds the online database's admin key (research R16).
-- [ ] T085 **Owner task** (Claude drafts the row): every PR merged under the startup
+- [X] T085 **Owner task** (Claude drafts the row): every PR merged under the startup
   exception (constitution III, v3.0.0) adds a row to the spec's table "PRs merged under
   the startup exception": PR number, what it changed, and the date it merged. Add the row
   in the same PR when possible; if the number or date isn't known until it merges, add it
@@ -183,11 +183,13 @@ tier, `ai-gate`, and the release workflow.
   - **Owner's note (2026-11-25), to decide at T015 together with the note above:** on pull requests, GitHub runs the PR branch's own copy of `.github/workflows/ai-gate.yml` (and `scripts/ai-gate.ts`), so a PR that edits the gate could make it pass. Claude brings options for both notes together when T015 starts; nothing is decided yet. **Decided 2026-11-25:** keep `pull_request` for now (N2-C) and defer checking the run with GitHub (1A). Both are in T089, and the leftover risks are written in research.md R16.
   - Tests: `tests/fast/ci/ai-gate.test.ts`: README-only change → pass; for **every** pattern in the real `.github/ai-related-paths.txt`, a matching file with no run → fail with "Run the ai-tests workflow on this commit" (so adding a line to the list automatically adds a test); a change to `.github/ai-related-paths.txt` itself with no run → fail; prompt change with a passed run → pass; **prompt change whose only run is `incomplete` (grader was down) → fail** with "The AI test run is incomplete. Run the ai-tests workflow again"; **a passed run whose answer model or grader model doesn't match `src/config/models.ts` at that commit → fail** with "The AI test run used a different model than src/config/models.ts. Run the ai-tests workflow with the configured models"; comment lines are ignored.
   - Needs: T008, T073.
-- [ ] T068 **Owner task**: right after `ai-gate` first runs on T015's PR (it fails there, because no `ai-tests` run has been approved yet), add `ai-gate` as a required check in branch protection for `main` (research R17). Also turn on **"Require branches to be up to date before merging"**: `ai-tests` tests the PR's own latest commit, not that commit combined with the newest `main`, so this makes sure what merges is what was tested. **Only then** approve the first `ai-tests` run, on T015's latest commit. That run is the one that can end the startup exception (T084). *(Moved here from Polish.)* **Before approving any `ai-tests` run** (this one and every later one), check whether the PR changes `.github/workflows/**`, `tests/ai/**`, `src/lib/ci/**`, or `scripts/ai-gate.ts` (quickstart.md section 9, step 8). If it does, read those changes first: the run uses the PR's own copy of them, so a changed runner or gate could report a fake pass.
+- [X] T068 **Owner task**: right after `ai-gate` first runs on T015's PR (it fails there, because no `ai-tests` run has been approved yet), add `ai-gate` as a required check in branch protection for `main` (research R17). Also turn on **"Require branches to be up to date before merging"**: `ai-tests` tests the PR's own latest commit, not that commit combined with the newest `main`, so this makes sure what merges is what was tested. **Only then** approve the first `ai-tests` run, on T015's latest commit. That run is the one that can end the startup exception (T084). *(Moved here from Polish.)* **Before approving any `ai-tests` run** (this one and every later one), check whether the PR changes `.github/workflows/**`, `tests/ai/**`, `src/lib/ci/**`, or `scripts/ai-gate.ts` (quickstart.md section 9, step 8). If it does, read those changes first: the run uses the PR's own copy of them, so a changed runner or gate could report a fake pass.
   - Needs: T015.
 - [ ] T074 Create `.github/workflows/release.yml` (runs on `v*` tags; uses the `release` environment) and `scripts/release-check.ts`: (1) fail with "Only the owner can release" unless the tag was pushed by `alexcaldwelll`; (2) use `src/lib/ci/gate.ts` to require a passing `test_runs` row for the tagged commit (the grader-flag check is added in T062, and the pointer-rate check in T042); (3) publish that commit to Netlify's live site using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets (research R21).
   - Tests: `tests/fast/ci/release-check.test.ts`: tag by the bot → fail; no run → fail with "Run the ai-tests workflow on this commit before releasing"; failed run → fail; passed run with a model that doesn't match `src/config/models.ts` at the tagged commit → fail; passed run with matching models, owner tag → pass.
   - Needs: T015.
+- [ ] T090 Make `ai-tests` start a run that waits for the owner only when the PR changes an AI-related file. Split `.github/workflows/ai-tests.yml` into two jobs: a first job with **no environment and no secrets** that works out the AI-related files with the same code as `ai-gate` (`src/lib/ci/gate.ts`, reading `.github/ai-related-paths.txt` from both `main` and the PR); and the existing `ai-tests` job, which runs only if that list isn't empty. Hand runs ("Run workflow") always run. `ai-gate` is unchanged: it still decides for itself, and still requires a passing run for any AI-related PR, so this can't weaken it.
+  - Tests: extend `tests/fast/ai/test-run-recorder.test.ts`'s workflow checks: the first job has no `environment` and no secrets; the `ai-tests` job still uses `environment: ai-tests` and depends on the first job; `workflow_dispatch` still runs it.
 - [ ] T075 **Owner task**: lock down releases (research R17, R21).
   1. Add a tag ruleset for `v*`: restrict creations and deletions, block force pushes, and put **only** `alexcaldwelll` on the bypass list (not the bot).
   2. Create a GitHub environment `release` that needs your approval. Put `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` in it. Never put them in a file.
@@ -321,7 +323,7 @@ from their stories and come last, after T059. All of these keep their IDs. They 
 entries that don't need the answer AI. The entries that do (dosing, not covered, and
 normal questions with personal details) are in T087, after T040.
 
-- [ ] T051 [US8] Migration `supabase/migrations/0003_reviewers.sql`: `reviewers` (`role` "`reviewer` or `owner`", `active`) and `review_decisions` (`decision` `approve` or `flag`; `reviewer_id` "Required (FR-031)"; `reason` "**Required when `flag`** (FR-032)"; `decided_at` required). Access rules (FR-029): active reviewers and the owner can read `log_entries`; patients and the public can't. Turn off public sign-up in `supabase/config.toml`.
+- [ ] T051 [US8] Migration `supabase/migrations/0006_reviewers.sql`: `reviewers` (`role` "`reviewer` or `owner`", `active`) and `review_decisions` (`decision` `approve` or `flag`; `reviewer_id` "Required (FR-031)"; `reason` "**Required when `flag`** (FR-032)"; `decided_at` required). Access rules (FR-029): active reviewers and the owner can read `log_entries`; patients and the public can't. Turn off public sign-up in `supabase/config.toml`.
   - Tests: `tests/fast/db/review-rls.test.ts`: the anonymous client can't read `log_entries`; an inactive reviewer can't; an active reviewer can; a `flag` row with no reason is rejected.
 - [ ] T079 **Owner task**: after T051 is applied online (T082), create your own login in the online Supabase project and add your `reviewers` row with `role = owner`, `active = yes`.
   - Needs: T051.
@@ -329,7 +331,7 @@ normal questions with personal details) are in T087, after T040.
   - Tests: `tests/fast/review/session.test.ts`: signed out → 401; inactive → 403; owner passes `requireReviewer`.
   - Layout: The login page must stay inside the root layout (`src/app/layout.tsx`), so the "LabelTrace is an AI, not a doctor." banner always shows (FR-003). Don't add a separate root layout or a second copy of the banner.
   - Needs: T051.
-- [ ] T055 [US9] Migration `supabase/migrations/0004_grader.sql`: `grader_results` (`grade` `pass` or `fail`; `source` `real` or `test`; `needs_owner_decision` "Yes when `grade = fail` (FR-037)") and `owner_flag_decisions` ("One decision per flag", unique on `grader_result_id`; `owner_id` "Must have role `owner`"; `reason` "Required (FR-038)"). Only the owner can insert decisions.
+- [ ] T055 [US9] Migration `supabase/migrations/0007_grader.sql`: `grader_results` (`grade` `pass` or `fail`; `source` `real` or `test`; `needs_owner_decision` "Yes when `grade = fail` (FR-037)") and `owner_flag_decisions` ("One decision per flag", unique on `grader_result_id`; `owner_id` "Must have role `owner`"; `reason` "Required (FR-038)"). Only the owner can insert decisions.
   - Tests: `tests/fast/db/grader-schema.test.ts`: a second decision on the same flag is rejected; a reviewer (not owner) can't insert; a decision with no reason is rejected.
   - Needs: T051.
 - [ ] T086 After T055, add a migration that gives `ai_gate_reader` read access to `grader_results` and `owner_flag_decisions` (read permission plus a row rule for each, as in migration 0005). The owner applies it online (T082), then repeats quickstart.md section 9, step 6.
@@ -550,7 +552,7 @@ it's flagged for the owner.
   late check is the first passing AI test run on a `main` commit that includes PR #13's
   change, after T073 and T068. T068 right after `ai-gate` first runs on T015's
   PR; the owner approves no `ai-tests` run before T068. T084 right after the first
-  passing AI run, which comes after T068. T085 applies to every PR merged under the startup exception until T084.
+  passing AI run, which comes after T068. T085 applies to every PR merged under the startup exception until T084. **T090 and T074 come right after housekeeping. T075 moves to the release milestone (below).**
 - **US1 (Phase 3)**: needs Foundational.
 - **US2 (Phase 4)**: needs Foundational. T026 uses T016 (text matching) from US1 for
   drug-name typo matching (FR-013, FR-056).
@@ -558,23 +560,26 @@ it's flagged for the owner.
   for T032). **Must be finished before T039.**
 - **Grading test answers (Phase 6)**: needs Foundational and T033 (T059 scrubs each test
   question first). T076 also needs T022. T086 right after T055 is applied
-  online; T062 needs it. **Must be finished before T042.**
+  online; T062 needs it. **Must be finished before T042.** **The order inside this phase is T051 → T055 → T086 → T059 → T052 + T060 + T061 → T062, with T079 (owner) once T051 is applied online. The owner flag pages and gate part 2 must be in place right after T059, before any graded test answer can create a flag, because every flag needs a recorded owner decision before merging, enforced by a required check (constitution, Release Safeguards and III).**
 - **US3 (Phase 7)**: needs US5 (T033's `ScrubbedText`), Phase 6 (T059), and T016. T087
   (the AI-tier entries that need the answer AI) needs T040.
 - **US4 (Phase 8)**: needs US3 (T040).
 - **US6 (Phase 9)**: needs US1, US2, US3, US5 (it logs every reply type).
-- **US7 (Phase 10)**: needs Foundational only. Can run alongside US3–US6.
-- **US8 rest (Phase 11)**: needs Phase 6 (T052) and US6.
-- **US9 rest (Phase 12)**: needs Phase 6 and US6.
+- **US7 (Phase 10)**: needs Foundational only. **Must be finished before the release milestone: the live site gets its labels only from US7's `labels:fetch` and daily check (the seed script needs the admin key, which never goes in a local `.env`, T071 step 5).**
+- **Release milestone (demo-ready live site; owner's decision 2026-11-25)**: needs US1, US2, US5, Phase 6, US3, US4, US6, and US7, and the one-page risk review written and approved by the owner (constitution, Release Safeguards; outside this feature). Then T072 (if not done earlier), T075, the first `v*` release, and T081.
+- **US8 rest (Phase 11)**: needs Phase 6 (T052) and US6. **Comes after the release milestone.**
+- **US9 rest (Phase 12)**: needs Phase 6 and US6. **Comes after the release milestone.**
 - **Polish (Phase 13)**: needs all stories.
 
 ### Story order
 
 ```text
-Setup → Foundation (+ AI tier, ai-gate, release) → US1 → US2 → US5 → Grading test answers
-      (+ AI-tier entries for US1, US2, US5 that don't need the answer AI)
-      → US3 (+ T087: AI-tier entries that need the answer AI) → US4 → US6 → US8 rest → US9 rest → Polish
-                    └──────── US7 (any time after Foundation) ────────┘
+Setup → Foundation (+ AI tier, ai-gate, T090, T074) → US1 → US2 → US5 → Grading test answers
+      (T051 → T055 → T086 → T059 → T052 + T060 + T061 → T062;
+       + AI-tier entries for US1, US2, US5 that don't need the answer AI)
+      → US3 (+ T087) → US4 → US6 → US7
+      → Release milestone (risk review → T072 → T075 → first v* release → T081)
+      → US8 rest → US9 rest → Polish
 ```
 
 ### Within each story
@@ -592,7 +597,7 @@ Setup → Foundation (+ AI tier, ai-gate, release) → US1 → US2 → US5 → G
 T002, T003, T004            then  T006 → T070 (owner)
 
 # Foundation
-T009, T010, T012            then  T013, T014;  T025 + T056  then  T063 → T073 → T015 → T068 (owner) → first passing AI run on T015's PR → T084;  T083 late check on the first passing run on `main` after that;  T074 → T075 (owner)
+T009, T010, T012            then  T013, T014;  T025 + T056  then  T063 → T073 → T015 → T068 (owner) → first passing AI run on T015's PR → T084;  T083 late check on the first passing run on `main` after that;  T090 + T074  (T075 moves to the release milestone)
 
 # US1 Emergencies
 T016 + T017               then  T018 + T019 + T020   then  T021   then  T022 + T023
@@ -604,10 +609,13 @@ T024                      then  T026 → T027 → T028 → T029
 T031 + T032               then  T033 → T077, T034  (T078 alongside)
 
 # Grading test answers
-T051 → T052, T055         then  T086, T059, T060   then  T061 + T062;  after T059: T076 + T030 + T035
+T051 → T055 → T086 → T059 → T052 + T060   then  T061 + T062;  T079 (owner) after T051 is online;  after T059: T076 + T030 + T035
 
 # US3 Answers
 T036 + T037 + T038        then  T039 → T040   then  T041 + T042 + T080 + T087
+
+# Release milestone (live site)
+risk review (owner) → T072 (owner, if not done) → T075 (owner) → first v* release → T081 (owner)
 ```
 
 ---
