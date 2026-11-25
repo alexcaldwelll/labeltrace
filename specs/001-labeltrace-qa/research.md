@@ -527,7 +527,17 @@ _Added by task T024 (query URLs, download date, and number of names)._
     (2) uses the same check code as `ai-gate` (`src/lib/ci/gate.ts`) to require a passing
     `test_runs` row for the tagged commit with all flags decided and a label-pointer
     rate of 5% or less (SC-004), and (3) publishes that
-    commit to Netlify's live site.
+    commit to Netlify's live site (T074b, at the release milestone). The tagged commit
+    must be on `main`.
+  - **How publishing will work (planned, T074b; owner's decision 2026-11-25)**: until
+    Netlify's site exists (T072), `release.yml` runs the release check only, in a job
+    with no environment and only the read-only `AI_GATE_DATABASE_URL`; a passing check
+    publishes nothing. The planned method (PUB-A): Netlify builds every `main` commit but
+    doesn't publish it (auto-publishing off). A `publish` job, which runs only after the
+    check passes and is the only job using the `release` environment and its Netlify
+    secrets, finds Netlify's deploy for the tagged commit and publishes it through
+    Netlify's API. No Netlify command-line tool is installed. To be confirmed against
+    Netlify's API docs at T074b.
   - Netlify's automatic publishing of `main` is turned off. Merges to `main` don't
     change the public site. Deploy previews for PRs still work.
 - **Secrets (names only)**: `NETLIFY_AUTH_TOKEN` (lets the workflow publish) and

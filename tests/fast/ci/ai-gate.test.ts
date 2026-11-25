@@ -1,6 +1,10 @@
 // T015: the ai-gate decision (src/lib/ci/gate.ts) and its workflow
 // (.github/workflows/ai-gate.yml). No GitHub or database calls: runs are made up.
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ANSWER_MODEL, GRADER_MODEL } from "@/config/models";
 import {
@@ -143,5 +147,51 @@ describe("ai-gate workflow (X1)", () => {
   it("has read-only repository access", () => {
     expect(code).toMatch(/^permissions:\n\s+contents: read\s*$/m);
     expect(code).not.toMatch(/: write\b/);
+  });
+});
+
+describe("X2: scripts/ai-gate.ts --changes-only", () => {
+  const SCRIPT = fileURLToPath(new URL("../../../scripts/ai-gate.ts", import.meta.url));
+
+  // A throwaway git repository with its own list and two commits: a base commit, then
+  // a commit that changes `changedFile`.
+  function tryChange(changedFile: string) {
+    const dir = mkdtempSync(join(tmpdir(), "changes-only-"));
+    const git = (...args: string[]) =>
+      execFileSync(
+        "git",
+        ["-c", "user.name=test", "-c", "user.email=test@example.invalid", ...args],
+        {
+          cwd: dir,
+          encoding: "utf8",
+        },
+      ).trim();
+    git("init", "-q", "-b", "main");
+    mkdirSync(join(dir, ".github"));
+    writeFileSync(join(dir, ".github/ai-related-paths.txt"), "src/lib/prompts/**\n");
+    writeFileSync(join(dir, "README.md"), "start\n");
+    git("add", "-A");
+    git("commit", "-q", "-m", "base");
+    const base = git("rev-parse", "HEAD");
+    mkdirSync(join(dir, changedFile, ".."), { recursive: true });
+    writeFileSync(join(dir, changedFile), "changed\n");
+    git("add", "-A");
+    git("commit", "-q", "-m", "change");
+    const head = git("rev-parse", "HEAD");
+    const output = join(dir, "github-output.txt");
+    writeFileSync(output, "");
+    const env: NodeJS.ProcessEnv = { ...process.env, BASE_SHA: base, HEAD_SHA: head };
+    env.GITHUB_OUTPUT = output;
+    delete env.AI_GATE_DATABASE_URL;
+    execFileSync(process.execPath, [SCRIPT, "--changes-only"], { cwd: dir, env, encoding: "utf8" });
+    return readFileSync(output, "utf8");
+  }
+
+  it("README-only change → ai=false", () => {
+    expect(tryChange("README.md")).toBe("ai=false\n");
+  });
+
+  it("prompt change → ai=true, without AI_GATE_DATABASE_URL", () => {
+    expect(tryChange("src/lib/prompts/answer-v1.ts")).toBe("ai=true\n");
   });
 });
