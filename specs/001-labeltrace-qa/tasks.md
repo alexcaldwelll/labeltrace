@@ -524,7 +524,7 @@ it's flagged for the owner.
 
 ## Phase 13: Polish & Cross-Cutting Concerns
 
-- [ ] T064 [P] Write `README.md`: how the app works (the ordered steps and the 9-second limit), where the data comes from (openFDA only), what it can't do (no personal advice, no comparisons, English only, not a doctor), and how releases work (owner's `v*` tag, passing AI test run) (constitution VI).
+- [ ] T064 [P] Write `README.md`: how the app works (the ordered steps and the 9-second limit), where the data comes from (openFDA only), what it can't do (no personal advice, no comparisons, English only, not a doctor), and how releases work (owner's `v*` tag, passing AI test run) (constitution VI). This finishes the short `README.md` added early (owner's decision 2026-11-25), which already covers what LabelTrace is, its status, what it can't do, and a link to quickstart.md.
 - [ ] T065 [P] Create `tests/fast/meta/question-count.test.ts`: reads the **raw JSON files** in `tests/ai/questions/` directly (not through the T025 loader, so unsigned entries are still counted): at least 20 AI-tier questions in total (FR-040); every category in FR-041 has at least one; each drug has a `three_ways_group` (FR-043).
 - [ ] T067 Run the first full AI test run, then the Haiku 5.5 vs Sonnet 5.5 comparison on the same commit (quickstart section 5). Fill in the table in research.md R3 and apply its decision rule (constitution VII). Needs: every answer-key entry signed off (T066).
 - [ ] T069 Run [quickstart.md](quickstart.md) end to end, including all hands-on checks and the speed targets (SC-013: answers under 10 seconds for 95%, emergencies under 1 second; FR-053: every reply under 9 seconds).
