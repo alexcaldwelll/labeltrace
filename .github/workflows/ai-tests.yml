@@ -1,9 +1,10 @@
 # ai-tests: runs the AI test tier and records the result in the online database
 # (T073, research R16, FR-045).
 #
-# Runs on every pull request (the PR's latest commit) and by hand ("Run workflow"
-# button: pick the branch). Every run uses the `ai-tests` environment, so it waits
-# for the owner's approval before it can read any secret.
+# Runs on pull requests that change an AI-related file (the PR's latest commit; T090)
+# and by hand ("Run workflow" button: pick the branch). The AI test job uses the
+# `ai-tests` environment, so it waits for the owner's approval before it can read
+# any secret.
 #
 # The commit it tests is the commit it records: on pull requests, GitHub would
 # normally test a temporary commit that merges the PR into main. Instead, this
@@ -26,8 +27,49 @@ permissions:
   contents: read
 
 jobs:
+  # T090: works out whether this PR changes an AI-related file, with the same code as
+  # ai-gate (scripts/ai-gate.ts --changes-only, src/lib/ci/gate.ts). No environment,
+  # no secrets, no `npm ci`. Hand runs always count as AI-related. ai-gate still
+  # decides for itself, so a wrong "false" here can only make ai-gate fail, never
+  # pass.
+  ai-related-changes:
+    name: ai-related-changes
+    runs-on: ubuntu-latest
+    outputs:
+      ai: ${{ steps.decide.outputs.ai }}
+    steps:
+      - name: Get the code (the PR's latest commit, with history to compare against main)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js (version from .nvmrc)
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Decide
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            node scripts/ai-gate.ts --changes-only
+          else
+            echo "Hand run: always runs the AI tests."
+            echo "ai=true" >> "$GITHUB_OUTPUT"
+          fi
+
   ai-tests:
     name: ai-tests
+    needs: ai-related-changes
+    if: needs.ai-related-changes.outputs.ai == 'true'
     runs-on: ubuntu-latest
     environment: ai-tests
     env:

@@ -12,12 +12,18 @@
 //      read-only AI_GATE_DATABASE_URL login, and lets src/lib/ci/gate.ts decide.
 //
 // Settings (environment variables): BASE_SHA, HEAD_SHA, AI_GATE_DATABASE_URL.
+//
+// `--changes-only` (T090, used by ai-tests.yml's first job): does steps 1-2 only,
+// with the same code, and writes `ai=true` or `ai=false` to GitHub's step output
+// (GITHUB_OUTPUT). It never reads the database, so it needs no secrets, and it loads
+// no installed packages, so it needs no `npm ci`. It always exits 0 when it could
+// work out the answer; ai-gate itself still decides whether a PR may merge.
 // Leftover risks (research R16, closed by T089): this runs the PR's own copy of
 // this file and of ai-gate.yml.
 //
 // Runs with plain Node, so imports are relative and end in `.ts`.
 import { execFileSync } from "node:child_process";
-import pg from "pg";
+import { appendFileSync } from "node:fs";
 import { ANSWER_MODEL, GRADER_MODEL } from "../src/config/models.ts";
 import { aiRelatedFiles, decideGate, parsePatterns, type TestRun } from "../src/lib/ci/gate.ts";
 
@@ -38,6 +44,8 @@ function listAt(sha: string): string {
 }
 
 async function readRuns(databaseUrl: string, sha: string): Promise<TestRun[]> {
+  // Loaded only here, so --changes-only works without `npm ci`.
+  const { default: pg } = await import("pg");
   const client = new pg.Client({ connectionString: databaseUrl, connectionTimeoutMillis: 15000 });
   await client.connect();
   try {
@@ -68,6 +76,13 @@ async function main(): Promise<void> {
   const aiFiles = aiRelatedFiles(changed, parsePatterns(listAt(base)), parsePatterns(listAt(head)));
   console.log(`Changed files: ${changed.length}. AI-related: ${aiFiles.length}.`);
   for (const file of aiFiles) console.log(`  ${file}`);
+
+  if (process.argv.includes("--changes-only")) {
+    const line = `ai=${aiFiles.length > 0}`;
+    console.log(line);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${line}\n`);
+    return;
+  }
 
   let runs: TestRun[] = [];
   if (aiFiles.length > 0) {

@@ -15,8 +15,11 @@
 //    row with status "passed" whose answer_model and grader_model both match
 //    src/config/models.ts at that commit.
 //
-// Plain TypeScript with no imports, so scripts/ai-gate.ts can load it with plain
-// Node.
+// 4. The release check (T074) uses the same run check for the tagged commit, after
+//    making sure the owner pushed the tag and the tagged commit is on main.
+//
+// Plain TypeScript with no imports, so scripts/ai-gate.ts and
+// scripts/release-check.ts can load it with plain Node.
 
 export const MESSAGES = {
   noRun: "Run the ai-tests workflow on this commit",
@@ -24,7 +27,13 @@ export const MESSAGES = {
   failed: "The AI test run failed. Fix the failures and run the ai-tests workflow again",
   modelMismatch:
     "The AI test run used a different model than src/config/models.ts. Run the ai-tests workflow with the configured models",
+  noRunRelease: "Run the ai-tests workflow on this commit before releasing",
+  notOwner: "Only the owner can release",
+  notOnMain: "Releases must be tagged on a commit in main",
 } as const;
+
+/** The only account allowed to release (research R17, R21). */
+export const OWNER = "alexcaldwelll";
 
 export type Pattern = { kind: "folder"; prefix: string } | { kind: "file"; path: string };
 
@@ -77,6 +86,11 @@ export function decideGate(input: {
   if (aiFiles.length === 0) {
     return { pass: true, message: "No AI-related files changed. No AI test run needed." };
   }
+  return checkRuns(runs, models, MESSAGES.noRun);
+}
+
+/** The run check shared by ai-gate and the release check. */
+function checkRuns(runs: TestRun[], models: Models, noRunMessage: string): GateResult {
   const passed = runs.filter((run) => run.status === "passed");
   const matching = passed.find(
     (run) => run.answer_model === models.answer && run.grader_model === models.grader,
@@ -91,5 +105,17 @@ export function decideGate(input: {
   if (runs.some((run) => run.status === "failed")) {
     return { pass: false, message: MESSAGES.failed };
   }
-  return { pass: false, message: MESSAGES.noRun };
+  return { pass: false, message: noRunMessage };
+}
+
+/** T074: may this tag be released? (Publishing is T074b.) */
+export function decideRelease(input: {
+  pusher: string;
+  onMain: boolean;
+  runs: TestRun[];
+  models: Models;
+}): GateResult {
+  if (input.pusher !== OWNER) return { pass: false, message: MESSAGES.notOwner };
+  if (!input.onMain) return { pass: false, message: MESSAGES.notOnMain };
+  return checkRuns(input.runs, input.models, MESSAGES.noRunRelease);
 }

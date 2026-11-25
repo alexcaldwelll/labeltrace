@@ -202,4 +202,33 @@ describe("ai-tests workflow", () => {
   it("its job uses the ai-tests environment", () => {
     expect(workflow).toMatch(/^\s+environment: ai-tests\s*$/m);
   });
+
+  // T090: the text of one job, from its "  name:" line to the next job (or the end).
+  function jobBlock(name: string): string {
+    const start = workflow.indexOf(`\n  ${name}:\n`);
+    expect(start).toBeGreaterThan(-1);
+    const rest = workflow.slice(start + 1);
+    const next = rest.slice(1).search(/\n {2}[a-z][a-z-]*:\n/);
+    return next === -1 ? rest : rest.slice(0, next + 1);
+  }
+
+  it("T090: the first job (ai-related-changes) has no environment and no secrets", () => {
+    const first = jobBlock("ai-related-changes");
+    expect(first).not.toMatch(/environment:/);
+    expect(first).not.toMatch(/secrets\./);
+  });
+
+  it("T090: the ai-tests job still uses the ai-tests environment and depends on the first job", () => {
+    const job = jobBlock("ai-tests");
+    expect(job).toMatch(/^\s+environment: ai-tests\s*$/m);
+    expect(job).toMatch(/^\s+needs: ai-related-changes\s*$/m);
+    expect(job).toMatch(/^\s+if: needs\.ai-related-changes\.outputs\.ai == 'true'\s*$/m);
+  });
+
+  it("T090: hand runs (workflow_dispatch) still run it", () => {
+    const first = jobBlock("ai-related-changes");
+    // Only pull requests are checked for AI-related files; anything else says ai=true.
+    expect(first).toMatch(/if \[ "\$EVENT_NAME" = "pull_request" \]; then/);
+    expect(first).toMatch(/else\n(?:.*\n)*?\s+echo "ai=true" >> "\$GITHUB_OUTPUT"/);
+  });
 });

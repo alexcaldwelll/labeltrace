@@ -185,15 +185,18 @@ tier, `ai-gate`, and the release workflow.
   - Needs: T008, T073.
 - [X] T068 **Owner task**: right after `ai-gate` first runs on T015's PR (it fails there, because no `ai-tests` run has been approved yet), add `ai-gate` as a required check in branch protection for `main` (research R17). Also turn on **"Require branches to be up to date before merging"**: `ai-tests` tests the PR's own latest commit, not that commit combined with the newest `main`, so this makes sure what merges is what was tested. **Only then** approve the first `ai-tests` run, on T015's latest commit. That run is the one that can end the startup exception (T084). *(Moved here from Polish.)* **Before approving any `ai-tests` run** (this one and every later one), check whether the PR changes `.github/workflows/**`, `tests/ai/**`, `src/lib/ci/**`, or `scripts/ai-gate.ts` (quickstart.md section 9, step 8). If it does, read those changes first: the run uses the PR's own copy of them, so a changed runner or gate could report a fake pass.
   - Needs: T015.
-- [ ] T074 Create `.github/workflows/release.yml` (runs on `v*` tags; uses the `release` environment) and `scripts/release-check.ts`: (1) fail with "Only the owner can release" unless the tag was pushed by `alexcaldwelll`; (2) use `src/lib/ci/gate.ts` to require a passing `test_runs` row for the tagged commit (the grader-flag check is added in T062, and the pointer-rate check in T042); (3) publish that commit to Netlify's live site using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets (research R21).
-  - Tests: `tests/fast/ci/release-check.test.ts`: tag by the bot → fail; no run → fail with "Run the ai-tests workflow on this commit before releasing"; failed run → fail; passed run with a model that doesn't match `src/config/models.ts` at the tagged commit → fail; passed run with matching models, owner tag → pass.
+- [X] T074 Create `.github/workflows/release.yml` (runs on `v*` tags) and `scripts/release-check.ts`, **the release check only**: (1) fail with "Only the owner can release" unless the tag was pushed by `alexcaldwelll`; (2) fail with "Releases must be tagged on a commit in main" unless the tagged commit is on `main`; (3) use `src/lib/ci/gate.ts` to require a passing `test_runs` row for the tagged commit (the grader-flag check is added in T062, and the pointer-rate check in T042). The check job uses no environment and only the read-only `AI_GATE_DATABASE_URL`. Publishing to Netlify is **T074b** (release milestone), so for now a passing check publishes nothing (owner's decision 2026-11-25, PUB-C).
+  - Tests: `tests/fast/ci/release-check.test.ts`: tag by the bot → fail; tag on a commit not in `main` → fail with "Releases must be tagged on a commit in main"; no run → fail with "Run the ai-tests workflow on this commit before releasing"; failed run → fail; passed run with a model that doesn't match `src/config/models.ts` at the tagged commit → fail; passed run with matching models, owner tag on `main` → pass. Workflow checks: runs on `v*` tags only; never uses `pull_request_target` (comment lines ignored); read-only repository access; no job uses an environment (until T074b).
   - Needs: T015.
-- [ ] T090 Make `ai-tests` start a run that waits for the owner only when the PR changes an AI-related file. Split `.github/workflows/ai-tests.yml` into two jobs: a first job with **no environment and no secrets** that works out the AI-related files with the same code as `ai-gate` (`src/lib/ci/gate.ts`, reading `.github/ai-related-paths.txt` from both `main` and the PR); and the existing `ai-tests` job, which runs only if that list isn't empty. Hand runs ("Run workflow") always run. `ai-gate` is unchanged: it still decides for itself, and still requires a passing run for any AI-related PR, so this can't weaken it.
+- [X] T090 Make `ai-tests` start a run that waits for the owner only when the PR changes an AI-related file. Split `.github/workflows/ai-tests.yml` into two jobs: a first job with **no environment and no secrets** that works out the AI-related files with the same code as `ai-gate` (`src/lib/ci/gate.ts`, reading `.github/ai-related-paths.txt` from both `main` and the PR); and the existing `ai-tests` job, which runs only if that list isn't empty. Hand runs ("Run workflow") always run. `ai-gate` is unchanged: it still decides for itself, and still requires a passing run for any AI-related PR, so this can't weaken it.
   - Tests: extend `tests/fast/ai/test-run-recorder.test.ts`'s workflow checks: the first job has no `environment` and no secrets; the `ai-tests` job still uses `environment: ai-tests` and depends on the first job; `workflow_dispatch` still runs it.
 - [ ] T075 **Owner task**: lock down releases (research R17, R21).
   1. Add a tag ruleset for `v*`: restrict creations and deletions, block force pushes, and put **only** `alexcaldwelll` on the bypass list (not the bot).
   2. Create a GitHub environment `release` that needs your approval. Put `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` in it. Never put them in a file.
   - Needs: T072, T074.
+- [ ] T074b **Release milestone.** Add publishing to `.github/workflows/release.yml`: a `publish` job that runs only after the release check passes, and is the only job that uses the `release` environment (T075). It publishes the tagged commit to Netlify's live site the planned way (research R21, PUB-A): find the deploy Netlify already built for that commit (auto-publishing of `main` is off, so Netlify builds it but doesn't publish it) and publish it through Netlify's API, using `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID`. **First confirm PUB-A against Netlify's API docs**; if it doesn't work as planned, bring the owner options before building.
+  - Tests: decided with the file list; at least, the publish job depends on the check job and uses `environment: release`, and nothing is published when the check fails. Then a first real release on the Netlify site.
+  - Needs: T072, T074, T075.
 
 **Checkpoint**: Foundation ready. `fast-tests` and `ai-gate` are required checks, the AI
 tier runs and saves results online, and only the owner can release. Story work can begin.
@@ -552,7 +555,7 @@ it's flagged for the owner.
   late check is the first passing AI test run on a `main` commit that includes PR #13's
   change, after T073 and T068. T068 right after `ai-gate` first runs on T015's
   PR; the owner approves no `ai-tests` run before T068. T084 right after the first
-  passing AI run, which comes after T068. T085 applies to every PR merged under the startup exception until T084. **T090 and T074 come right after housekeeping. T075 moves to the release milestone (below).**
+  passing AI run, which comes after T068. T085 applies to every PR merged under the startup exception until T084. **T090 and T074 come right after housekeeping. T075 and T074b (publishing) are in the release milestone (below).**
 - **US1 (Phase 3)**: needs Foundational.
 - **US2 (Phase 4)**: needs Foundational. T026 uses T016 (text matching) from US1 for
   drug-name typo matching (FR-013, FR-056).
@@ -566,7 +569,7 @@ it's flagged for the owner.
 - **US4 (Phase 8)**: needs US3 (T040).
 - **US6 (Phase 9)**: needs US1, US2, US3, US5 (it logs every reply type).
 - **US7 (Phase 10)**: needs Foundational only. **Must be finished before the release milestone: the live site gets its labels only from US7's `labels:fetch` and daily check (the seed script needs the admin key, which never goes in a local `.env`, T071 step 5).**
-- **Release milestone (demo-ready live site; owner's decision 2026-11-25)**: needs US1, US2, US5, Phase 6, US3, US4, US6, and US7, and the one-page risk review written and approved by the owner (constitution, Release Safeguards; outside this feature). Then T072 (if not done earlier), T075, the first `v*` release, and T081.
+- **Release milestone (demo-ready live site; owner's decision 2026-11-25)**: needs US1, US2, US5, Phase 6, US3, US4, US6, and US7, and the one-page risk review written and approved by the owner (constitution, Release Safeguards; outside this feature). Then T072 (if not done earlier), T075, T074b, the first `v*` release, and T081.
 - **US8 rest (Phase 11)**: needs Phase 6 (T052) and US6. **Comes after the release milestone.**
 - **US9 rest (Phase 12)**: needs Phase 6 and US6. **Comes after the release milestone.**
 - **Polish (Phase 13)**: needs all stories.
@@ -578,7 +581,7 @@ Setup → Foundation (+ AI tier, ai-gate, T090, T074) → US1 → US2 → US5 �
       (T051 → T055 → T086 → T059 → T052 + T060 + T061 → T062;
        + AI-tier entries for US1, US2, US5 that don't need the answer AI)
       → US3 (+ T087) → US4 → US6 → US7
-      → Release milestone (risk review → T072 → T075 → first v* release → T081)
+      → Release milestone (risk review → T072 → T075 → T074b → first v* release → T081)
       → US8 rest → US9 rest → Polish
 ```
 
@@ -615,7 +618,7 @@ T051 → T055 → T086 → T059 → T052 + T060   then  T061 + T062;  T079 (owne
 T036 + T037 + T038        then  T039 → T040   then  T041 + T042 + T080 + T087
 
 # Release milestone (live site)
-risk review (owner) → T072 (owner, if not done) → T075 (owner) → first v* release → T081 (owner)
+risk review (owner) → T072 (owner, if not done) → T075 (owner) → T074b → first v* release → T081 (owner)
 ```
 
 ---

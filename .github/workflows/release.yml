@@ -1,0 +1,48 @@
+# release: the release check for a `v*` tag (T074, research R21).
+#
+# A release is a `v*` tag pushed by the owner, on a commit in main, with a passing
+# AI test run for that commit made with the configured models. This workflow runs
+# that check. It reads results with the read-only AI_GATE_DATABASE_URL login and
+# uses no environment.
+#
+# Publishing to Netlify's live site is T074b (release milestone): a `publish` job,
+# after this check, will be the only job that uses the `release` environment. Until
+# then a passing check publishes nothing.
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Read-only access to the repository. This workflow needs nothing more.
+permissions:
+  contents: read
+
+jobs:
+  release-check:
+    name: release-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code (the tagged commit, with history to check it is on main)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js (version from .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Check the release is allowed
+        run: node scripts/release-check.ts
+        env:
+          TAG_SHA: ${{ github.sha }}
+          PUSHER: ${{ github.actor }}
+          AI_GATE_DATABASE_URL: ${{ secrets.AI_GATE_DATABASE_URL }}
