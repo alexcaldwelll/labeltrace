@@ -89,7 +89,7 @@ Merge dates are in U.S. Central time.
 | #44 | Adds the second-AI grader instructions (`src/lib/prompts/grader-v1.ts`) and the OpenAI grader client (`src/lib/ai/grader.ts`), which refuses to start with an empty grader model or a same-company grader (T056) | 2026-11-24 |
 | #45 | Reformats code layout with Prettier (no code changes), including `src/lib/labels/store.ts` and `src/lib/pipeline/ask.ts`, and adds a Prettier format check to `.github/workflows/fast-tests.yml` | 2026-11-24 |
 | #46 | Adds the grader calibration set (`tests/ai/grader/calibration.json`), its loader and test, and sets the grader model in `src/config/models.ts` to `gpt-6-luna` with reasoning effort `low` (T063) | 2026-11-24 |
-| #47 | Adds the AI-tier runner and test-run recorder (`.github/workflows/ai-tests.yml`, `tests/ai/setup.ts`, `src/lib/ci/run-status.ts`) and a limited `ai_tests_writer` database login (`supabase/migrations/0004_ai_tests_writer.sql`) (T073) | Added after merge (T085) |
+| #47 | Adds the AI-tier runner and test-run recorder (`.github/workflows/ai-tests.yml`, `tests/ai/setup.ts`, `src/lib/ci/run-status.ts`) and a limited `ai_tests_writer` database login (`supabase/migrations/0004_ai_tests_writer.sql`) (T073) | 2026-11-24 |
 
 ## User Scenarios & Testing *(mandatory)*
 

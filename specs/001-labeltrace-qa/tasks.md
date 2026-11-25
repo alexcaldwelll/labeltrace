@@ -70,7 +70,7 @@ US9 (rest) → Polish.
   loader (T025) refuses unchecked entries, so the AI test run, and `ai-gate`, fail until
   they're signed off.
 - [ ] T082 **Owner task**: after a PR with a new file in `supabase/migrations/` merges,
-  apply it to the online database (`supabase db push` with your own login). The bot never
+  apply it to the online database (`npx supabase db push --linked` with your own login; the Supabase CLI's next major version targets the local database unless `--linked` is given). The bot never
   holds the online database's admin key (research R16).
 - [ ] T085 **Owner task** (Claude drafts the row): every PR merged under the startup
   exception (constitution III, v3.0.0) adds a row to the spec's table "PRs merged under
@@ -154,8 +154,9 @@ tier, `ai-gate`, and the release workflow.
   1. Create the online Supabase project. Turn off public sign-up. Apply migrations 0001 and 0002 (and every later one, T082).
   2. Create a **read-only** database login that can only read `test_runs`. Save its connection string as the GitHub secret `AI_GATE_DATABASE_URL`. (The grader tables don't exist yet; T086 adds read access to them after T055.)
   3. Create a GitHub environment `ai-tests` that needs your approval for each run. Put in it: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `AI_TESTS_DATABASE_URL` (step 4). **Not** the online admin key (`SUPABASE_SERVICE_ROLE_KEY`) or `NEXT_PUBLIC_SUPABASE_URL`: the recorder doesn't need them (owner's decision 2026-11-24, option A). (No grader-model setting: the model is in `src/config/models.ts`.)
-  4. After migration 0004 is applied online (T082), turn on the `ai_tests_writer` role's login and give it a long random password in the online SQL editor (`alter role ai_tests_writer with login password '…'`; never in a file). Save its **pooler** connection string (Supabase's shared connection address, which GitHub can reach; the direct address can't be reached from GitHub) as `AI_TESTS_DATABASE_URL` in the `ai-tests` environment. Then do quickstart.md section 9, step 7. This login can only add `running` `test_runs` rows and finish them with `finish_test_run` (research R16).
+  4. After migration 0004 is applied online (T082), turn on the `ai_tests_writer` role's login and give it a long random password in the online SQL editor (`alter role ai_tests_writer with login password '…'`; never in a file). Save its **session** pooler connection string (Supabase's shared connection address, which GitHub can reach; the direct address can't be reached from GitHub) as `AI_TESTS_DATABASE_URL` in the `ai-tests` environment, with the username changed to `ai_tests_writer.<project ID>` and `?sslmode=verify-full&sslrootcert=supabase/certs/supabase-root-2021.crt` added to the end, so the connection is encrypted and checks it is really talking to Supabase (research R16). Then do quickstart.md section 9, step 7. This login can only add `running` `test_runs` rows and finish them with `finish_test_run` (research R16).
   5. Never put the online admin key in a local `.env` file.
+  6. In the online project, open **Database → Settings → SSL Configuration** and turn on **Enforce SSL on incoming connections**, so the database refuses unencrypted connections. The database restarts briefly. Then check that `npx supabase migration list` still works; if it doesn't, turn the setting back off and look into it before going on.
   - Needs: T008.
 - [ ] T072 **Owner task**: set up the Netlify site (research R2, R21). Connect the repo, turn on deploy previews for PRs, and **turn off automatic publishing of `main`** (the live site is published only by the release workflow). Add the app's secrets (Anthropic, OpenAI, online Supabase keys) as Netlify environment variables, with test keys for deploy previews.
   - Needs: T001.
@@ -526,6 +527,8 @@ it's flagged for the owner.
 - [ ] T067 Run the first full AI test run, then the Haiku 5.5 vs Sonnet 5.5 comparison on the same commit (quickstart section 5). Fill in the table in research.md R3 and apply its decision rule (constitution VII). Needs: every answer-key entry signed off (T066).
 - [ ] T069 Run [quickstart.md](quickstart.md) end to end, including all hands-on checks and the speed targets (SC-013: answers under 10 seconds for 95%, emergencies under 1 second; FR-053: every reply under 9 seconds).
 - [ ] T081 **Owner task**: after the first release (T074 workflow on a `v*` tag), check in Netlify that the scheduled functions `label-check` (daily) and `grading-worker` (every 10 minutes) are running, and that their logs show no question text.
+- [ ] T088 Upgrade the Supabase CLI (pinned at 2.122.1 in `package.json`; 3.x is out) in its own PR, not during other setup. Read the 3.x upgrade notes first, especially any change to which database `db push` targets by default (T082 uses `--linked`).
+  - Tests: on the PR, `npx supabase start` works, local migrations apply, and fast-tests passes.
 
 ---
 
