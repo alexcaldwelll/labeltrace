@@ -51,13 +51,18 @@ self-harm.
 ## 3. Matching (FR-009)
 
 1. **Normalize**: lowercase. Change `’` to `'`. Turn other punctuation into spaces.
-   Squash repeated spaces.
+   Squash repeated spaces. **Apostrophes at the start or end of a word are treated as
+   punctuation (removed); apostrophes inside a word stay (can't, i'm, i've).**
 2. **Split** the text and each phrase or variant into words.
 3. A phrase **matches** when its words appear next to each other, in order, somewhere in
    the question. Each word can match exactly or within the typo allowance:
    - 1–3 letters: exact only
    - 4–7 letters: off by at most 1 change (an added, removed, swapped, or wrong letter)
    - 8 or more letters: off by at most 2 changes
+
+   The length is the **phrase word's** length (the word in the phrase list), counting
+   **letters only**, so an apostrophe doesn't count (owner's decision 2026-11-25). For
+   example, "die" is always exact, and "can't" (4 letters) allows 1 change.
 4. The result is the set of matched phrase ids and their groups. Medical, self-harm, or
    both.
 5. **No skip list.** Real words that fall inside the typo allowance still match. Known
