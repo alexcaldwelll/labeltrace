@@ -397,6 +397,7 @@ Words that may be new are explained the first time they appear.
     database logs those commands word for word. `AI_GATE_DATABASE_URL` is a
     **repo-wide** secret (ai-gate runs on every PR without approval), so any branch's
     workflow can use it; that is why the login must stay read-only.
+  - **Leftover risks (owner's decision 2026-11-25, to be closed by T089):** `ai-gate` runs on `pull_request`, so GitHub uses the **PR's own copy** of `ai-gate.yml` and `scripts/ai-gate.ts`. A PR could edit them to pass, or add its own job named `ai-gate` (required checks may be matched only by name). `ai-tests` likewise runs the PR's own runner and tests. A leaked `ai_tests_writer` key could add and finish a fake passing row. Until T089, the owner reads every PR's changes to the gate and runner before approving an `ai-tests` run (T068, quickstart section 9 step 8), and reviews every PR before merge (R17). The gate reads the AI-related list from both `main` and the PR, so a PR can't remove its own files from the list.
   - The online database's admin key is **never** put in a local `.env` file. Local work
     uses the local database. That way the bot account can't write test results to the
     online database by itself.

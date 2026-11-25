@@ -147,6 +147,7 @@ with saved sample replies.
    with status `passed`, changing or deleting a row directly, and reading `test_runs` or
    `log_entries` are all **refused**. Afterward, delete the practice row with your admin
    login in the Supabase dashboard.
+8. **Before approving any `ai-tests` run**: open the PR's "Files changed" tab and check whether it changes `.github/workflows/**`, `tests/ai/**`, `src/lib/ci/**`, or `scripts/ai-gate.ts`. If it does, read those changes before approving. The run uses the PR's own copy of them, so a changed runner or gate could report a fake pass (research.md R16, leftover risks).
 
 ## 10. Releases
 

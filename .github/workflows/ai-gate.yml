@@ -1,0 +1,51 @@
+# ai-gate: the required check that blocks merging AI-related changes without a
+# passing AI test run (T015, FR-045, research R16).
+#
+# Runs on every pull request. If the PR changes a file named in
+# .github/ai-related-paths.txt (main's copy or the PR's copy), it needs a passed
+# test_runs row for the PR's latest commit, made with the models in
+# src/config/models.ts. It reads results with the read-only AI_GATE_DATABASE_URL
+# login (ai_gate_reader: can only read test_runs).
+#
+# Leftover risks (owner's decision 2026-11-25, research R16, closed by T089): on
+# pull_request, GitHub runs the PR's own copy of this file and of
+# scripts/ai-gate.ts. The owner reads gate and runner changes before approving any
+# ai-tests run (T068).
+name: ai-gate
+
+on:
+  # Never use pull_request_target here without T089's safeguards: it runs with this
+  # repository's secrets and write permissions.
+  pull_request:
+
+# Read-only access to the repository. This workflow needs nothing more.
+permissions:
+  contents: read
+
+jobs:
+  ai-gate:
+    name: ai-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code (the PR's latest commit, with history to compare against main)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js (version from .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Check for a passing AI test run
+        run: node scripts/ai-gate.ts
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          AI_GATE_DATABASE_URL: ${{ secrets.AI_GATE_DATABASE_URL }}
