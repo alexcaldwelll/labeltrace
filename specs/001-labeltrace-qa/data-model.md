@@ -60,7 +60,7 @@ One named part of a label (FR-018).
 
 - **Rule**: Every `id` must have its own test. A fast test fails if any phrase lacks one
   (FR-010).
-- The starting list has 16 ids: 10 medical and 6 self-harm.
+- The list has 30 ids: 18 medical and 12 self-harm (contracts/emergency-rules.md section 2).
 - **No skip list**: there is no list of words that are ignored. Known false alarms
   ("paint", "painting", "saint") are kept on purpose (spec PC-6).
 

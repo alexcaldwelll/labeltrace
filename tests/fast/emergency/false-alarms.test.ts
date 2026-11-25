@@ -17,3 +17,20 @@ describe("known false alarms return fainting", () => {
     });
   }
 });
+
+// Recorded false alarms from the 2026-11-25 phrase additions (owner's decision): kept on
+// purpose, like the ones above.
+describe("recorded false alarms from the added phrases", () => {
+  it('"I cut myself shaving" → exactly cut_myself (988)', () => {
+    expect(
+      detectEmergency("I cut myself shaving this morning. Can I still take Emgality?"),
+    ).toEqual({ ids: ["cut_myself"], groups: ["self_harm"] });
+  });
+
+  it('"took too much time" → exactly accidental_overdose (911)', () => {
+    expect(detectEmergency("The pharmacy took too much time to fill my Reyvow.")).toEqual({
+      ids: ["accidental_overdose"],
+      groups: ["medical"],
+    });
+  });
+});

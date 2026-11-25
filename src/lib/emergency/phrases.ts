@@ -84,6 +84,50 @@ export const EMERGENCY_PHRASES = [
     phrase: "swollen throat",
     variants: ["throat swelling", "throat closing"],
   },
+  // Added 2026-11-25 (owner's decision; contract section 2).
+  {
+    id: "seizure",
+    group: "medical",
+    phrase: "seizure",
+    variants: ["seizures", "having a seizure"],
+  },
+  {
+    id: "anaphylaxis",
+    group: "medical",
+    phrase: "anaphylaxis",
+    variants: ["anaphylactic", "anaphylactic shock", "severe allergic reaction"],
+  },
+  {
+    id: "swollen_tongue",
+    group: "medical",
+    phrase: "swollen tongue",
+    variants: ["tongue swelling", "tongue is swollen"],
+  },
+  {
+    id: "accidental_overdose",
+    group: "medical",
+    phrase: "took too much",
+    variants: ["took too many", "taken too much", "taken too many", "overdosed on"],
+  },
+  {
+    id: "face_drooping",
+    group: "medical",
+    phrase: "face drooping",
+    variants: ["drooping face", "facial droop"],
+  },
+  {
+    id: "sudden_vision_loss",
+    group: "medical",
+    phrase: "sudden vision loss",
+    variants: ["suddenly can't see", "lost my vision"],
+  },
+  {
+    id: "sudden_confusion",
+    group: "medical",
+    phrase: "sudden confusion",
+    variants: ["suddenly confused"],
+  },
+  { id: "having_a_stroke", group: "medical", phrase: "having a stroke", variants: [] },
   // Self-harm (shows MSG_988)
   {
     id: "kill_myself",
@@ -106,6 +150,18 @@ export const EMERGENCY_PHRASES = [
     phrase: "overdose on purpose",
     variants: ["overdose intentionally"],
   },
+  // Added 2026-11-25 (owner's decision; contract section 2).
+  { id: "end_it_all", group: "self_harm", phrase: "end it all", variants: ["ending it all"] },
+  { id: "better_off_dead", group: "self_harm", phrase: "better off dead", variants: [] },
+  {
+    id: "dont_want_to_be_alive",
+    group: "self_harm",
+    phrase: "don't want to be alive",
+    variants: ["do not want to be alive", "don't want to live"],
+  },
+  { id: "self_harm", group: "self_harm", phrase: "self harm", variants: ["self harming"] },
+  { id: "cut_myself", group: "self_harm", phrase: "cut myself", variants: ["cutting myself"] },
+  { id: "no_reason_to_live", group: "self_harm", phrase: "no reason to live", variants: [] },
 ] as const satisfies readonly EmergencyPhrase[];
 
 export type EmergencyPhraseId = (typeof EMERGENCY_PHRASES)[number]["id"];

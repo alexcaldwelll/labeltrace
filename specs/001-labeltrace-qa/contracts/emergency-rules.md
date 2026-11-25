@@ -32,6 +32,14 @@ in memory, before scrubbing or anything else.
 | `swollen_face` | swollen face | face swelling, face is swollen |
 | `swollen_lips` | swollen lips | lips swelling |
 | `swollen_throat` | swollen throat | throat swelling, throat closing |
+| `seizure` | seizure | seizures, having a seizure |
+| `anaphylaxis` | anaphylaxis | anaphylactic, anaphylactic shock, severe allergic reaction |
+| `swollen_tongue` | swollen tongue | tongue swelling, tongue is swollen |
+| `accidental_overdose` | took too much | took too many, taken too much, taken too many, overdosed on |
+| `face_drooping` | face drooping | drooping face, facial droop |
+| `sudden_vision_loss` | sudden vision loss | suddenly can't see, lost my vision |
+| `sudden_confusion` | sudden confusion | suddenly confused |
+| `having_a_stroke` | having a stroke | |
 
 **Self-harm** (shows `MSG_988`):
 
@@ -43,10 +51,31 @@ in memory, before scrubbing or anything else.
 | `hurt_myself` | hurt myself | hurt my self, hurting myself |
 | `end_my_life` | end my life | ending my life |
 | `overdose_on_purpose` | overdose on purpose | overdose intentionally |
+| `end_it_all` | end it all | ending it all |
+| `better_off_dead` | better off dead | |
+| `dont_want_to_be_alive` | don't want to be alive | do not want to be alive, don't want to live |
+| `self_harm` | self harm | self harming |
+| `cut_myself` | cut myself | cutting myself |
+| `no_reason_to_live` | no reason to live | |
+
+"overdose on purpose" also matches `accidental_overdose` ("overdosed on"), so it shows the 911 message, then the 988 message. This is intended: an intentional overdose is both a medical emergency and a crisis.
 
 The owner can add phrases. **Every id needs its own fast test** (FR-010). A
-meta-test fails if any id has none. The starting list has **16 ids**: 10 medical and 6
-self-harm.
+meta-test fails if any id has none. The list has **30 ids**: 18 medical and 12
+self-harm (16 at the start; 14 added on 2026-11-25, owner's decision).
+
+**Considered and left out** (owner's decision 2026-11-25). These were checked against the
+typo rules (section 3) and the two labels, and left out because they would fire on
+everyday migraine questions. Don't add them back without weighing these reasons.
+
+| Candidate | Why it was left out |
+|---|---|
+| overdose (on its own) | Within 2 changes of "overuse". Reyvow's label has a "Medication Overuse Headache" warning, and "medication overuse headache" is a common migraine topic, so it would show 911 for ordinary questions. Also matches "overdue" and "overdone". |
+| overdosed (on its own) | Matches "overused" ("I overused my triptans…"). "overdosed on" is used instead (`accidental_overdose`). |
+| convulsing | Matches "consulting", "confusing", and "conversing" ("I'm consulting my doctor about Reyvow"). |
+| convulsions | Matches "conclusions", "confusions", and "concussions" ("What were the conclusions of the Reyvow studies?"). |
+| allergic reaction (on its own) | Would make any allergy question an emergency. "severe allergic reaction" is used instead (`anaphylaxis`). |
+| hives | Matches "hikes", "hires", "gives", "lives", "dives", and more. Hives alone isn't an emergency; the label pairs it with trouble breathing, which is on the list. |
 
 ## 3. Matching (FR-009)
 
