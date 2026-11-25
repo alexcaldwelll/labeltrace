@@ -90,7 +90,7 @@ Merge dates are in U.S. Central time.
 | #45 | Reformats code layout with Prettier (no code changes), including `src/lib/labels/store.ts` and `src/lib/pipeline/ask.ts`, and adds a Prettier format check to `.github/workflows/fast-tests.yml` | 2026-11-24 |
 | #46 | Adds the grader calibration set (`tests/ai/grader/calibration.json`), its loader and test, and sets the grader model in `src/config/models.ts` to `gpt-6-luna` with reasoning effort `low` (T063) | 2026-11-24 |
 | #47 | Adds the AI-tier runner and test-run recorder (`.github/workflows/ai-tests.yml`, `tests/ai/setup.ts`, `src/lib/ci/run-status.ts`) and a limited `ai_tests_writer` database login (`supabase/migrations/0004_ai_tests_writer.sql`) (T073) | 2026-11-24 |
-| #49 | Adds the read-only `ai_gate_reader` database login for `ai-gate` (`supabase/migrations/0005_ai_gate_reader.sql`) (T071 step 2) | Added after merge (T085) |
+| #49 | Adds the read-only `ai_gate_reader` database login for `ai-gate` (`supabase/migrations/0005_ai_gate_reader.sql`) (T071 step 2) | 2026-11-25 |
 
 ## User Scenarios & Testing *(mandatory)*
 
