@@ -96,6 +96,8 @@ Words that may be new are explained the first time they appear.
     small models (gpt-5-nano, gpt-5.4-nano, GPT-4.1 mini, GPT-4o mini), which are all
     scheduled for shutdown. Sources: https://developers.openai.com/api/docs/models and
     https://developers.openai.com/api/docs/deprecations (checked 2026-11-24).
+    Sources checked 2026-11-24: the deprecations page directly; the prices from the owner's
+    screenshot of the models page.
   - **Run 1** (8:07 PM): passed. Per-entry grades weren't captured, because Vitest hides
     printed output from passing tests unless `--silent=false` is given.
   - **Run 2** (8:08 PM): bad answers caught **5 of 5**, good answers passed **5 of 5**.
