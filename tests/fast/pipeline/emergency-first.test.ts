@@ -66,6 +66,26 @@ describe("emergency check first", () => {
     expect(reply).toMatchObject({ kind: "emergency", messages: [MSG_911] });
   });
 
+  it("label lookup throws (database down) → 911 first, then 'The label doesn't cover this.'", async () => {
+    const ai = new FakeAnswerClient();
+    const failingLookup: GetLabel = async () => {
+      throw new Error("database down");
+    };
+    const reply = await ask("Can galcanezumab cause trouble breathing?", {
+      getLabel: failingLookup,
+      answerAI: ai,
+    });
+    expect(reply).toEqual({
+      kind: "emergency",
+      case: "informational",
+      messages: [MSG_911],
+      label_excerpts: [],
+      not_covered: true,
+      disclaimer: "LabelTrace is an AI, not a doctor.",
+    });
+    expect(ai.calls).toHaveLength(0);
+  });
+
   it("an emergency reply comes back in under 1 second", async () => {
     const start = performance.now();
     await ask("I have the worst headache of my life, can I take Reyvow?", { getLabel });
