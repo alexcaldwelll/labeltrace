@@ -158,6 +158,7 @@ with saved sample replies.
    that row in the online SQL Editor using the id it prints
    (`delete from public.test_runs where id = '<id>';`). If it can't connect, stop and
    look into it instead of retrying, for the same reason as step 6.
+8. **Before approving any `ai-tests` run**: open the PR's "Files changed" tab and check whether it changes `.github/workflows/**`, `tests/ai/**`, `src/lib/ci/**`, or `scripts/ai-gate.ts`. If it does, read those changes before approving. The run uses the PR's own copy of them, so a changed runner or gate could report a fake pass (research.md R16, leftover risks).
 
 ## 10. Releases
 
