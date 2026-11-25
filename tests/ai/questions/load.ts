@@ -39,7 +39,7 @@ export const QUESTIONS_DIR = fileURLToPath(new URL(".", import.meta.url));
 const nonBlank = z.string().trim().min(1, "must not be blank");
 
 /** True only for a real calendar date written as YYYY-MM-DD (so 2026-02-30 is refused). */
-function isRealDate(value: string): boolean {
+export function isRealDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;

@@ -78,7 +78,9 @@ Words that may be new are explained the first time they appear.
   a passing AI test run (constitution I and III). We pick it with a **calibration test**: 10 hand-made answers (5 that stick to
   the label, 5 with a known mistake, such as an added fact or a wrong section). Choose the
   smallest OpenAI model that catches all 5 bad answers and passes at least 4 of the 5 good
-  ones. Record the chosen model ID and the calibration result in this file.
+  ones. Then run that model a second time: if any of its 10 grades differ between the two
+  runs, it doesn't win, and the next model up is tried. Record the chosen model ID and the
+  calibration results (both runs) in this file.
 - **How calibration runs (task T063)**: locally, by hand, before the AI test runner
   (T073) exists. The developer runs `tests/ai/grader/calibrate.test.ts` with their own
   `OPENAI_API_KEY` from `.env` (never committed), tries models from smallest up, and
@@ -86,7 +88,16 @@ Words that may be new are explained the first time they appear.
   out of 5), and the run date in this file. The first `ai-tests` run (T073, on T015's PR)
   includes the signed-off calibration entries, so it re-confirms the chosen model on
   GitHub.
-- _Added by task T063: models tried, results, run date, and the chosen model ID._
+- **Calibration results (task T063, run by the owner on 2026-11-24, U.S. Central)**:
+  - **Model tried**: `gpt-6-luna` with reasoning effort `low`. Only this model was tried; the
+    owner picked it from OpenAI's official models page.
+  - **Run 1** (8:07 PM): passed. Per-entry grades weren't captured, because Vitest hides
+    printed output from passing tests unless `--silent=false` is given.
+  - **Run 2** (8:08 PM): bad answers caught **5 of 5**, good answers passed **5 of 5**.
+  - **Run 3** (8:09 PM, the repeat run): bad answers caught **5 of 5**, good answers passed
+    **5 of 5**. All 10 grades were the same as in run 2.
+  - **Chosen grader model**: `gpt-6-luna`, reasoning effort `low`, written in
+    `src/config/models.ts`.
 - **What the grader sees**: the scrubbed question, the label sections given to the answer
   AI, and the answer. Never the raw question (FR-020).
 - **Output**: `pass` or `fail`, plus a short reason.

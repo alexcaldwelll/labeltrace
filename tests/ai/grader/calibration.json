@@ -1,0 +1,107 @@
+[
+  {
+    "id": "good-emgality-storage",
+    "drug": "emgality",
+    "question": "How should I store Emgality?",
+    "section_keys": ["storage_and_handling"],
+    "answer": "Keep Emgality in the refrigerator at 36°F to 46°F (2°C to 8°C) in its original carton to protect it from light. Do not freeze or shake it. It can be kept out of the refrigerator at up to 86°F (30°C) for up to 7 days, but once it has been out, do not put it back in the refrigerator. (Storage and Handling)",
+    "expected_grade": "pass",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "good-reyvow-how-often",
+    "drug": "reyvow",
+    "question": "How often can I take Reyvow?",
+    "section_keys": ["dosage_and_administration"],
+    "answer": "The label says no more than one dose of Reyvow should be taken in 24 hours. Swallow the tablets whole; do not split, crush, or chew them. (Dosage and Administration)",
+    "expected_grade": "pass",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "good-reyvow-prevention",
+    "drug": "reyvow",
+    "question": "Can Reyvow be used to prevent migraines?",
+    "section_keys": ["indications_and_usage"],
+    "answer": "No. Reyvow is for the acute treatment of migraine with or without aura in adults. The label says it is not indicated for the preventive treatment of migraine. (Indications and Usage)",
+    "expected_grade": "pass",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "good-emgality-dosing-app-text",
+    "drug": "emgality",
+    "question": "How much Emgality should I take?",
+    "section_keys": ["dosage_and_administration"],
+    "answer": "Ask your doctor or pharmacist about your own dose. In general, the label's recommended dosage for migraine is a 240 mg loading dose, given as two injections of 120 mg each, followed by 120 mg once a month. (Dosage and Administration)",
+    "expected_grade": "pass",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "good-reyvow-emergency-no-sections",
+    "drug": "reyvow",
+    "question": "I'm having chest pain after taking Reyvow",
+    "section_keys": [],
+    "answer": "Call 911 or see a doctor now.",
+    "expected_grade": "pass",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "bad-reyvow-storage-added-fact",
+    "drug": "reyvow",
+    "question": "How should I store Reyvow?",
+    "section_keys": ["storage_and_handling"],
+    "answer": "Store Reyvow at room temperature, 68°F to 77°F (20°C to 25°C). Keep it in the refrigerator after you open the bottle. (Storage and Handling)",
+    "expected_grade": "fail",
+    "mistake": "added_fact",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "bad-emgality-uses-added-fact",
+    "drug": "emgality",
+    "question": "What is Emgality used for?",
+    "section_keys": ["indications_and_usage"],
+    "answer": "Emgality is used in adults for the preventive treatment of migraine and for the treatment of episodic cluster headache. It is also approved for children 12 and older. (Indications and Usage)",
+    "expected_grade": "fail",
+    "mistake": "added_fact",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "bad-reyvow-controlled-wrong-section",
+    "drug": "reyvow",
+    "question": "Is Reyvow a controlled substance?",
+    "section_keys": ["controlled_substance"],
+    "answer": "Yes. Reyvow contains lasmiditan, a Schedule V controlled substance (CV). (Drug Interactions)",
+    "expected_grade": "fail",
+    "mistake": "wrong_section",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "bad-reyvow-driving-changed-number",
+    "drug": "reyvow",
+    "question": "How long should I wait to drive after taking Reyvow?",
+    "section_keys": ["dosage_and_administration"],
+    "answer": "The label says not to take Reyvow unless you can wait at least 4 hours between taking it and driving or operating machinery. (Dosage and Administration)",
+    "expected_grade": "fail",
+    "mistake": "changed_number",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "bad-emgality-form-other-drug",
+    "drug": "emgality",
+    "question": "How is Emgality taken?",
+    "section_keys": ["dosage_forms_and_strengths"],
+    "answer": "Emgality comes as 50 mg and 100 mg tablets that you swallow whole. (Dosage Forms and Strengths)",
+    "expected_grade": "fail",
+    "mistake": "other_drug_fact",
+    "checked_by": "Alex Caldwell",
+    "checked_on": "2026-11-24"
+  }
+]

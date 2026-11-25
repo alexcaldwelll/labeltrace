@@ -87,7 +87,8 @@ Merge dates are in U.S. Central time.
 | #39 | Adds the question steps (`src/lib/pipeline/ask.ts`), the language check (`src/lib/pipeline/language.ts`), the SCOWL English word list and its download script (`src/lib/pipeline/english-words.json`, `scripts/build-english-words.ts`), and `POST /api/ask` (T013) | 2026-11-23 |
 | #42 | Adds the AI-tier answer-key loader (`tests/ai/questions/load.ts`), which refuses entries without `checked_by` / `checked_on` (a real YYYY-MM-DD date), bad categories, and blank or non-English questions (T025) | 2026-11-24 |
 | #44 | Adds the second-AI grader instructions (`src/lib/prompts/grader-v1.ts`) and the OpenAI grader client (`src/lib/ai/grader.ts`), which refuses to start with an empty grader model or a same-company grader (T056) | 2026-11-24 |
-| #45 | Reformats code layout with Prettier (no code changes), including `src/lib/labels/store.ts` and `src/lib/pipeline/ask.ts`, and adds a Prettier format check to `.github/workflows/fast-tests.yml` | Added after merge (T085) |
+| #45 | Reformats code layout with Prettier (no code changes), including `src/lib/labels/store.ts` and `src/lib/pipeline/ask.ts`, and adds a Prettier format check to `.github/workflows/fast-tests.yml` | 2026-11-24 |
+| #46 | Adds the grader calibration set (`tests/ai/grader/calibration.json`), its loader and test, and sets the grader model in `src/config/models.ts` to `gpt-6-luna` with reasoning effort `low` (T063) | Added after merge (T085) |
 
 ## User Scenarios & Testing *(mandatory)*
 
