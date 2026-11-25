@@ -136,17 +136,28 @@ with saved sample replies.
 5. Check the settings match
    [research.md R17](research.md#r17-branch-protection-and-the-bot-account).
 6. **Read-only gate login** (`ai_gate_reader`, password set only through a scrambled
-   version, T071 step 2): connect with the `AI_GATE_DATABASE_URL` login (from a safe
-   place, never a committed file). **Expected**: it can read `test_runs` (and, after T086,
-   `grader_results` and `owner_flag_decisions`). Trying to insert a `test_runs` row, or to
-   read `log_entries`, is **refused**.
-7. **Writer login** (`ai_tests_writer`): connect with the `AI_TESTS_DATABASE_URL` login
-   (from a safe place, never a committed file). **Expected**: adding a `test_runs` row
-   with status `running` works, and `select public.finish_test_run(<that row's id>, 1, 0,
-   1, 'passed')` finishes it. Running the same `finish_test_run` call again, adding a row
-   with status `passed`, changing or deleting a row directly, and reading `test_runs` or
-   `log_entries` are all **refused**. Afterward, delete the practice row with your admin
-   login in the Supabase dashboard.
+   version, T071 step 2): in your own Terminal, from the project folder, run
+   `node scripts/gate-login-check.mjs`. Wait for the `ai_gate_reader password (hidden):`
+   prompt before pasting the gate password; it builds the `AI_GATE_DATABASE_URL`
+   connection itself and never prints the password. **Expected**: `Encrypted: true` and
+   "All 4 checks are as expected": it can read `test_runs`, the row rule for it is in
+   place, and adding a `test_runs` row or reading `log_entries` is **refused**. (After
+   T086 it can also read `grader_results` and `owner_flag_decisions`.) If it can't
+   connect, stop and look into it instead of retrying: Supabase's pooler can block a
+   login for a while after repeated wrong passwords.
+7. **Writer login** (`ai_tests_writer`, password set only through a scrambled version,
+   T071 step 4): in your own Terminal, from the project folder, run
+   `node scripts/writer-login-check.mjs`. Wait for the `ai_tests_writer password
+   (hidden):` prompt before pasting the writer password; it builds the
+   `AI_TESTS_DATABASE_URL` connection itself and never prints the password.
+   **Expected**: `Encrypted: true` and "All 8 checks are as expected": adding a
+   `running` row and finishing it with `finish_test_run` work; finishing it again, adding
+   a `passed` row, changing or deleting a row directly, and reading `test_runs` or
+   `log_entries` are all **refused**. Its practice row uses commit `000…0` (40 zeros) and
+   branch `practice-writer-check`, so `ai-gate` can never match it. Afterward, delete
+   that row in the online SQL Editor using the id it prints
+   (`delete from public.test_runs where id = '<id>';`). If it can't connect, stop and
+   look into it instead of retrying, for the same reason as step 6.
 
 ## 10. Releases
 
