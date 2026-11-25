@@ -9,7 +9,9 @@
 // inside a rolled-back transaction), because a separate login can't see a role that
 // isn't saved yet, so it is always deleted afterward. The database log records only
 // the scrambled version, never the password.
+import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -21,12 +23,19 @@ const LOCAL_DB_URL =
 // The script is plain JavaScript and TypeScript isn't set up to read JavaScript
 // files, so it is loaded by a path held in a variable (TypeScript doesn't follow it).
 const SCRIPT_PATH = "../../../scripts/scram-verifier.mjs";
-type ScramModule = { scramVerifier: (password: string) => string };
+type ScramModule = {
+  scramVerifier: (password: string) => string;
+  checkRole: (role: string | undefined) => string;
+  alterRoleLine: (role: string, verifier: string) => string;
+};
+const SCRIPT_FILE = fileURLToPath(new URL(SCRIPT_PATH, import.meta.url));
 
 const admin = new pg.Client({ connectionString: LOCAL_DB_URL });
 const role = `scram_check_${randomBytes(6).toString("hex")}`;
 const password = randomBytes(24).toString("hex"); // 48 letters and numbers
 let scramVerifier: ScramModule["scramVerifier"];
+let checkRole: ScramModule["checkRole"];
+let alterRoleLine: ScramModule["alterRoleLine"];
 let verifier: string;
 
 function loginUrl(pw: string): string {
@@ -48,7 +57,9 @@ async function tryLogin(pw: string): Promise<string> {
 }
 
 beforeAll(async () => {
-  ({ scramVerifier } = (await import(/* @vite-ignore */ SCRIPT_PATH)) as ScramModule);
+  ({ scramVerifier, checkRole, alterRoleLine } = (await import(
+    /* @vite-ignore */ SCRIPT_PATH
+  )) as ScramModule);
   verifier = scramVerifier(password);
   await admin.connect();
   // Role names can't be query parameters; this one is made here from hex only.
@@ -89,5 +100,42 @@ describe("scripts/scram-verifier.mjs", () => {
   it("refuses a wrong password", async () => {
     const wrong = `${password.slice(0, -1)}${password.endsWith("a") ? "b" : "a"}`;
     expect(await tryLogin(wrong)).toBe("28P01"); // invalid_password
+  });
+});
+
+describe("scripts/scram-verifier.mjs: which role the line is for", () => {
+  for (const role of ["ai_tests_writer", "ai_gate_reader"]) {
+    it(`prints the right alter role line for ${role}`, () => {
+      expect(alterRoleLine(role, verifier)).toBe(
+        `alter role ${role} with login password '${verifier}';`,
+      );
+    });
+  }
+
+  for (const role of ["postgres", "authenticated", "", "ai_gate_reader; drop table x"]) {
+    it(`refuses the role "${role}"`, () => {
+      expect(() => checkRole(role)).toThrow(/Unknown role.*Nothing was made/);
+      expect(() => alterRoleLine(role, verifier)).toThrow(/Unknown role/);
+    });
+  }
+
+  // Running the script itself, with no terminal attached (so it can never get a password).
+  function runScript(...args: string[]) {
+    return spawnSync(process.execPath, [SCRIPT_FILE, ...args], { encoding: "utf8", input: "" });
+  }
+
+  it("running it with an unknown role stops before asking for a password", () => {
+    const result = runScript("postgres");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/Unknown role "postgres"/);
+    expect(result.stdout).not.toMatch(/password \(hidden\)/);
+  });
+
+  it("running it with an allowed role names the role before asking for a password", () => {
+    const result = runScript("ai_gate_reader");
+    expect(result.stdout).toMatch(/^Making a scrambled password for: ai_gate_reader$/m);
+    // No terminal is attached, so it stops there instead of asking.
+    expect(result.stderr).toMatch(/Run this in your own Terminal window/);
+    expect(result.status).toBe(1);
   });
 });
