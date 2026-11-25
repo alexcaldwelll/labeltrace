@@ -9,11 +9,15 @@ export const ANSWER_MODEL = {
   company: "anthropic",
 } as const;
 
+/** The reasoning effort settings the grader may use. A typo here fails the type check. */
+export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh" | "max";
+
 /**
  * The model that grades answers in the AI tests. It comes from a different
- * company than the answer model. Its ID stays empty until T063 picks it.
+ * company than the answer model. Picked by grader calibration (T063, research R4).
  */
 export const GRADER_MODEL = {
-  id: "",
+  id: "gpt-6-luna",
   company: "openai",
-} as const;
+  reasoningEffort: "low",
+} as const satisfies { id: string; company: string; reasoningEffort: ReasoningEffort };

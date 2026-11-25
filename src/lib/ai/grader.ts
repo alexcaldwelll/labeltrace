@@ -15,7 +15,7 @@ import "server-only";
 
 import OpenAI from "openai";
 import { z } from "zod";
-import { ANSWER_MODEL, GRADER_MODEL } from "@/config/models";
+import { ANSWER_MODEL, GRADER_MODEL, type ReasoningEffort } from "@/config/models";
 import type { GradeReply, GradeRequest, GraderClient } from "@/lib/ai/types";
 import { GRADER_INSTRUCTIONS, buildGraderInput } from "@/lib/prompts/grader-v1";
 
@@ -45,9 +45,13 @@ export function createGraderClient(): GraderClient {
   const model: string = GRADER_MODEL.id;
   const graderCompany: string = GRADER_MODEL.company;
   const answerCompany: string = ANSWER_MODEL.company;
+  const effort: ReasoningEffort = GRADER_MODEL.reasoningEffort;
 
   if (model.trim() === "") {
     throw new Error("The grader model is empty in src/config/models.ts. Task T063 picks it.");
+  }
+  if ((effort as string).trim() === "") {
+    throw new Error("The grader reasoning effort is empty in src/config/models.ts.");
   }
   if (graderCompany === answerCompany) {
     throw new Error(
@@ -67,6 +71,7 @@ export function createGraderClient(): GraderClient {
         model,
         instructions: GRADER_INSTRUCTIONS,
         input: buildGraderInput(request),
+        reasoning: { effort },
         text: { format: REPLY_FORMAT },
       });
 

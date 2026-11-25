@@ -25,10 +25,10 @@ vi.mock("openai", () => ({
   },
 }));
 
-type ModelSettings = { id: string; company: string };
+type ModelSettings = { id: string; company: string; reasoningEffort?: string };
 
 async function loadGrader(
-  grader: ModelSettings = { id: "test-grader-model", company: "openai" },
+  grader: ModelSettings = { id: "test-grader-model", company: "openai", reasoningEffort: "low" },
   answer: ModelSettings = { id: "claude-haiku-5-5", company: "anthropic" },
 ) {
   // Pretend we're in server code so the file can load.
@@ -74,15 +74,28 @@ describe("grader client: refusing to start", () => {
 
   it("throws when the grader comes from the same company as the answer model", async () => {
     const createGraderClient = await loadGrader(
-      { id: "some-model", company: "anthropic" },
+      { id: "some-model", company: "anthropic", reasoningEffort: "low" },
       { id: "claude-haiku-5-5", company: "anthropic" },
     );
     expect(() => createGraderClient()).toThrow(/different company.*FR-034/);
   });
 
   it("throws when the grader model is empty", async () => {
-    const createGraderClient = await loadGrader({ id: "", company: "openai" });
+    const createGraderClient = await loadGrader({
+      id: "",
+      company: "openai",
+      reasoningEffort: "low",
+    });
     expect(() => createGraderClient()).toThrow(/grader model is empty/);
+  });
+
+  it("throws when the grader reasoning effort is empty (Z1)", async () => {
+    const createGraderClient = await loadGrader({
+      id: "test-grader-model",
+      company: "openai",
+      reasoningEffort: "",
+    });
+    expect(() => createGraderClient()).toThrow(/reasoning effort is empty/);
   });
 
   it("throws a clear error when OPENAI_API_KEY is missing", async () => {
@@ -93,13 +106,20 @@ describe("grader client: refusing to start", () => {
 });
 
 describe("grader client: the request", () => {
-  it("sends only the model, instructions, wrapped material, and reply format, with no raw personal details", async () => {
+  it("sends only the model, instructions, wrapped material, reasoning effort, and reply format, with no raw personal details", async () => {
     const createGraderClient = await loadGrader();
     await createGraderClient().grade(request);
 
     expect(calls).toHaveLength(1);
     const body = calls[0] as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(["input", "instructions", "model", "text"]);
+    expect(Object.keys(body).sort()).toEqual([
+      "input",
+      "instructions",
+      "model",
+      "reasoning",
+      "text",
+    ]);
+    expect(body.reasoning).toEqual({ effort: "low" });
     expect(body.model).toBe("test-grader-model");
     expect(body.instructions).toBe(GRADER_INSTRUCTIONS);
     expect(body.input).toBe(buildGraderInput(request));
