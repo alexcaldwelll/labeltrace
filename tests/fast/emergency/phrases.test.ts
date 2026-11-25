@@ -6,7 +6,15 @@
 import { describe, expect, it } from "vitest";
 import { detectEmergency } from "@/lib/emergency/detect";
 
-const cases: { id: string; group: "medical" | "self_harm"; main: string; variant: string }[] = [
+// `variant` is left out for ids that have no other wordings. `mainAlso` is another id
+// the main phrase also matches on purpose (contract section 2).
+const cases: {
+  id: string;
+  group: "medical" | "self_harm";
+  main: string;
+  variant?: string;
+  mainAlso?: string;
+}[] = [
   // Medical
   {
     id: "worst_headache",
@@ -28,6 +36,25 @@ const cases: { id: string; group: "medical" | "self_harm"; main: string; variant
   { id: "swollen_face", group: "medical", main: "swollen face", variant: "face is swollen" },
   { id: "swollen_lips", group: "medical", main: "swollen lips", variant: "lips swelling" },
   { id: "swollen_throat", group: "medical", main: "swollen throat", variant: "throat closing" },
+  // Medical, added 2026-11-25
+  { id: "seizure", group: "medical", main: "seizure", variant: "having a seizure" },
+  { id: "anaphylaxis", group: "medical", main: "anaphylaxis", variant: "severe allergic reaction" },
+  { id: "swollen_tongue", group: "medical", main: "swollen tongue", variant: "tongue is swollen" },
+  { id: "accidental_overdose", group: "medical", main: "took too much", variant: "overdosed on" },
+  { id: "face_drooping", group: "medical", main: "face drooping", variant: "facial droop" },
+  {
+    id: "sudden_vision_loss",
+    group: "medical",
+    main: "sudden vision loss",
+    variant: "lost my vision",
+  },
+  {
+    id: "sudden_confusion",
+    group: "medical",
+    main: "sudden confusion",
+    variant: "suddenly confused",
+  },
+  { id: "having_a_stroke", group: "medical", main: "having a stroke" },
   // Self-harm
   { id: "kill_myself", group: "self_harm", main: "kill myself", variant: "killing myself" },
   { id: "want_to_die", group: "self_harm", main: "want to die", variant: "wanna die" },
@@ -39,20 +66,48 @@ const cases: { id: string; group: "medical" | "self_harm"; main: string; variant
     group: "self_harm",
     main: "overdose on purpose",
     variant: "overdose intentionally",
+    // "overdose on" is 1 change from "overdosed on" (accidental_overdose): 911, then 988.
+    mainAlso: "accidental_overdose",
   },
+  // Self-harm, added 2026-11-25
+  { id: "end_it_all", group: "self_harm", main: "end it all", variant: "ending it all" },
+  { id: "better_off_dead", group: "self_harm", main: "better off dead" },
+  {
+    id: "dont_want_to_be_alive",
+    group: "self_harm",
+    main: "don't want to be alive",
+    variant: "don't want to live",
+  },
+  { id: "self_harm", group: "self_harm", main: "self harm", variant: "self harming" },
+  { id: "cut_myself", group: "self_harm", main: "cut myself", variant: "cutting myself" },
+  { id: "no_reason_to_live", group: "self_harm", main: "no reason to live" },
 ];
 
 describe("one test per phrase id", () => {
   for (const c of cases) {
-    it(`${c.id}: main phrase and one other wording`, () => {
-      for (const wording of [c.main, c.variant]) {
-        expect(detectEmergency(`Question: ${wording}.`)).toEqual({
+    it(`${c.id}: main phrase${c.variant ? " and one other wording" : ""}`, () => {
+      expect(detectEmergency(`Question: ${c.main}.`)).toEqual(
+        c.mainAlso
+          ? { ids: [c.mainAlso, c.id], groups: ["medical", "self_harm"] }
+          : { ids: [c.id], groups: [c.group] },
+      );
+      if (c.variant) {
+        expect(detectEmergency(`Question: ${c.variant}.`)).toEqual({
           ids: [c.id],
           groups: [c.group],
         });
       }
     });
   }
+});
+
+describe("intentional overdose shows both messages (contract section 2)", () => {
+  it('"I overdosed on purpose" → 911 (accidental_overdose), then 988 (overdose_on_purpose)', () => {
+    expect(detectEmergency("I overdosed on purpose")).toEqual({
+      ids: ["accidental_overdose", "overdose_on_purpose"],
+      groups: ["medical", "self_harm"],
+    });
+  });
 });
 
 describe("US1 scenario 4: capitals, long sentence, typo", () => {

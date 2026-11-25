@@ -319,9 +319,9 @@ An AI from a different company than the one that writes answers checks whether a
 **Emergencies (US-04)**
 
 - **FR-004**: Every question MUST be checked for emergency phrases **before** anything else happens, including before personal details are scrubbed or anything is sent to the AI.
-- **FR-005**: The app MUST keep one emergency phrase list with two groups. The starting list has 16 phrases, each with its own ID (see [contracts/emergency-rules.md](contracts/emergency-rules.md) section 2):
-  - **Medical emergency phrases (10)**: worst headache of my life, sudden numbness, sudden weakness, trouble speaking, fainting, chest pain, trouble breathing, swollen face, swollen lips, and swollen throat.
-  - **Self-harm phrases (6)**: kill myself, want to die, suicide, hurt myself, end my life, and overdose on purpose.
+- **FR-005**: The app MUST keep one emergency phrase list with two groups. The list has 30 phrases (16 at the start, 14 added on 2026-11-25), each with its own ID (see [contracts/emergency-rules.md](contracts/emergency-rules.md) section 2):
+  - **Medical emergency phrases (18)**: worst headache of my life, sudden numbness, sudden weakness, trouble speaking, fainting, chest pain, trouble breathing, swollen face, swollen lips, swollen throat, seizure, anaphylaxis, swollen tongue, took too much (accidental overdose), face drooping, sudden vision loss, sudden confusion, and having a stroke.
+  - **Self-harm phrases (12)**: kill myself, want to die, suicide, hurt myself, end my life, overdose on purpose, end it all, better off dead, don't want to be alive, self harm, cut myself, and no reason to live.
 - **FR-006**: A medical emergency phrase MUST show "Call 911 or see a doctor now."
 - **FR-007**: A self-harm phrase MUST show the 988 Suicide & Crisis Lifeline (call or text 988) and say to call 911 if in immediate danger.
 - **FR-008**: When an emergency phrase is found, the question MUST NOT be sent to the AI.

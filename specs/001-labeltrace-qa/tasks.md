@@ -237,7 +237,7 @@ this phase.
   - Tests: `tests/fast/emergency/scenarios.test.ts`: **US1 scenarios 5–17, one test each, with the spec's exact questions**; 911 is always before 988; any self-harm match → no label text.
   - Needs: T018, T019, T020.
 - [ ] T022 [US1] Make the emergency check **step 1** in `src/lib/pipeline/ask.ts`, before basic checks, scrubbing, and everything else (FR-004). It runs on the full raw text in memory. A match returns the emergency reply immediately, without sending the question to the AI (FR-008).
-  - Tests: `tests/fast/pipeline/emergency-first.test.ts`: the fake AI is called **0 times** for all 16 phrases and all 17 scenarios; an emergency phrase at character 1,200 of a 1,500-character question is still caught; emergency + dosing question → emergency wins; a Spanish question containing "chest pain" still shows `MSG_911`; emergency reply returns in under 1 second (SC-013).
+  - Tests: `tests/fast/pipeline/emergency-first.test.ts`: the fake AI is called **0 times** for every phrase on the list and all 17 scenarios; an emergency phrase at character 1,200 of a 1,500-character question is still caught; emergency + dosing question → emergency wins; a Spanish question containing "chest pain" still shows `MSG_911`; emergency reply returns in under 1 second (SC-013).
   - Runs alongside: T023. Needs: T013, T021.
 - [ ] T023 [P] [US1] Create `src/components/EmergencyReply.tsx` and use it in `src/app/page.tsx`: emergency messages at the very top, 911 above 988, then any label sentences with section name and label date, or "The label doesn't cover this."
   - Tests: `tests/fast/ui/emergency-reply.test.tsx`: messages render before anything else; 911 above 988; excerpts show section and date.
@@ -569,7 +569,7 @@ it's flagged for the owner.
 - **US4 (Phase 8)**: needs US3 (T040).
 - **US6 (Phase 9)**: needs US1, US2, US3, US5 (it logs every reply type).
 - **US7 (Phase 10)**: needs Foundational only. **Must be finished before the release milestone: the live site gets its labels only from US7's `labels:fetch` and daily check (the seed script needs the admin key, which never goes in a local `.env`, T071 step 5).**
-- **Release milestone (demo-ready live site; owner's decision 2026-11-25)**: needs US1, US2, US5, Phase 6, US3, US4, US6, and US7, and the one-page risk review written and approved by the owner (constitution, Release Safeguards; outside this feature). Then T072 (if not done earlier), T075, T074b, the first `v*` release, and T081.
+- **Release milestone (demo-ready live site; owner's decision 2026-11-25)**: needs US1, US2, US5, Phase 6, US3, US4, US6, and US7, and the one-page risk review written and approved by the owner (constitution, Release Safeguards; outside this feature). Items the risk review must cover are collected in `docs/risk-review-notes.md`. Then T072 (if not done earlier), T075, T074b, the first `v*` release, and T081.
 - **US8 rest (Phase 11)**: needs Phase 6 (T052) and US6. **Comes after the release milestone.**
 - **US9 rest (Phase 12)**: needs Phase 6 and US6. **Comes after the release milestone.**
 - **Polish (Phase 13)**: needs all stories.
