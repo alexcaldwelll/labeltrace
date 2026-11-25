@@ -195,7 +195,9 @@ One run of the AI test tier.
 - `incomplete`: the grader was down for at least one test answer, so not every
   answer was graded. It never counts as passing; `ai-gate` and the release check block it.
 - Stored in the **online** database. Written only by the `ai-tests` workflow, which uses
-  the `ai-tests` GitHub environment (owner-approved runs, R16).
+  the `ai-tests` GitHub environment (owner-approved runs, R16), through the
+  `ai_tests_writer` login: it adds `running` rows and finishes them with
+  `finish_test_run` (migration 0004).
 - A run is `passed` only if at least one checked entry ran and every one passed (R15).
 - The `ai-gate` check looks up the PR's latest commit here. The release workflow looks up
   the tagged commit (R21). Each passes only if a run has `status = passed` **and** every
