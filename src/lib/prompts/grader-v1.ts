@@ -11,20 +11,19 @@
 // App text: the app adds some fixed sentences of its own. Only their exact
 // wording is exempt from grading, so near-copies are still graded.
 //
-// The emergency messages below are copied letter for letter from
-// contracts/emergency-rules.md section 1 (a fast test checks this). T017 will
-// create the shared constants in src/lib/emergency/phrases.ts; then this file
-// must use those instead of its own copies. The wording must not change, so the
-// version stays "grader-v1".
+// The emergency messages come from the shared constants in
+// src/lib/emergency/phrases.ts (T017), so they can never drift from what the app
+// shows. Their wording didn't change when this file switched to them, so the version
+// stays "grader-v1".
 import type { GradeRequest } from "@/lib/ai/types";
+import { MSG_911, MSG_988 } from "@/lib/emergency/phrases";
 
 export const GRADER_PROMPT_VERSION = "grader-v1";
 
-/** Copy of MSG_911 (contracts/emergency-rules.md section 1). */
-const APP_TEXT_911 = "Call 911 or see a doctor now.";
-/** Copy of MSG_988 (contracts/emergency-rules.md section 1). */
-const APP_TEXT_988 =
-  "You can call or text 988 to reach the 988 Suicide & Crisis Lifeline, any time. If you are in immediate danger, call 911.";
+/** MSG_911 (contracts/emergency-rules.md section 1). */
+const APP_TEXT_911 = MSG_911;
+/** MSG_988 (contracts/emergency-rules.md section 1). */
+const APP_TEXT_988 = MSG_988;
 /** The personal-dosing wording (FR-011). */
 const APP_TEXT_ASK_DOCTOR = "Ask your doctor or pharmacist";
 /** The comparison and other-drug refusal wording (FR-012, FR-013). */
