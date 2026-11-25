@@ -377,6 +377,15 @@ Words that may be new are explained the first time they appear.
     **pooler** address, because GitHub can't reach the direct database address. When
     later tasks write more (for example `grader_results` in T059), they give this login
     just that extra access.
+  - **Encrypted, checked connections**: every connection string to the online database
+    (`AI_TESTS_DATABASE_URL`, and `AI_GATE_DATABASE_URL` later) ends in
+    `?sslmode=verify-full&sslrootcert=supabase/certs/supabase-root-2021.crt`. The
+    pooler's certificate is signed by Supabase's own root ("Supabase Root 2021 CA"),
+    not a public one, so the `pg` library needs that root to confirm it's really talking
+    to Supabase. The root certificate is public, not a secret, and is committed at that
+    path (checked 2026-11-25: same fingerprint as the root the pooler sends). The online
+    project also has "Enforce SSL on incoming connections" turned on (T071 step 6), so
+    unencrypted connections are refused.
   - `ai-gate` reads results with a **read-only** database login
     (`AI_GATE_DATABASE_URL`) that can only read `test_runs`, `grader_results`, and
     `owner_flag_decisions`. It starts with `test_runs` only (task T071). Read access to

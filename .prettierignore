@@ -2,3 +2,6 @@
 # Prettier must never reformat them.
 tests/fixtures/openfda/emgality.json
 tests/fixtures/openfda/reyvow.json
+
+# Written by `supabase link`. Git ignores it too (supabase/.gitignore).
+supabase/.temp
