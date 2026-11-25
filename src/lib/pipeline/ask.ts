@@ -10,12 +10,18 @@
 //   8. Log                   (T047) exactly one row for every reply
 //   9. Grading sample        (T057) pick some AI answers for the grader
 //
-// Only step 2 works so far. The other steps are empty slots that later tasks fill in.
-// A question that gets past step 2 gets a "try again later" reply for now, so
+// Steps 1 and 2 work so far. The other steps are empty slots that later tasks fill
+// in. A question that gets past step 2 gets a "try again later" reply for now, so
 // nothing is ever made up.
 //
 // Privacy: the raw question stays in memory only. This file never logs, saves, or
 // sends it back in a reply (FR-021).
+import type { AnswerClient } from "@/lib/ai/types";
+import {
+  buildEmergencyReply,
+  type EmergencyReplyFields,
+  type GetLabel,
+} from "@/lib/emergency/respond";
 import { isEnglish } from "./language";
 
 /** Shown on every reply (FR-003). */
@@ -40,7 +46,25 @@ export type AskReply = ReplyBase &
     | { kind: "prompt_for_question"; text: string }
     | { kind: "english_only"; text: string }
     | { kind: "try_again"; text: string }
+    | EmergencyReplyFields
   );
+
+/**
+ * What the steps use. Tests pass fakes; the real ones are used when nothing is
+ * passed. The answer AI isn't used by any step yet (T040); emergency tests pass a
+ * fake one to prove it is never called.
+ */
+export interface AskDeps {
+  /** Reads a drug's current saved label (default: the database, T011). */
+  getLabel?: GetLabel;
+  answerAI?: AnswerClient;
+}
+
+/** The real label lookup, loaded only when an emergency question needs a label. */
+const getSavedLabel: GetLabel = async (drug) => {
+  const { getCurrentLabel } = await import("@/lib/labels/store");
+  return getCurrentLabel(drug);
+};
 
 type BasicChecksResult =
   { done: true; reply: AskReply } | { done: false; text: string; truncated: boolean };
@@ -79,8 +103,8 @@ function withTruncated(reply: AskReply, truncated: boolean): AskReply {
 }
 
 /** Runs a question through the steps and returns the reply. */
-export async function ask(question: string): Promise<AskReply> {
-  const reply = await answer(question);
+export async function ask(question: string, deps: AskDeps = {}): Promise<AskReply> {
+  const reply = await answer(question, deps);
 
   // Step 8: log (T047). Exactly one row for every reply, including blank and
   // non-English ones (those rows hold no question text, FR-055).
@@ -90,9 +114,13 @@ export async function ask(question: string): Promise<AskReply> {
   return reply;
 }
 
-async function answer(question: string): Promise<AskReply> {
-  // Step 1: emergency check (T022). Runs on the full question, before the
-  // 1,000-character cut, so an emergency phrase anywhere is still caught.
+async function answer(question: string, deps: AskDeps): Promise<AskReply> {
+  // Step 1: emergency check (T022, FR-004, FR-008). Runs on the full raw question,
+  // in memory, before the 1,000-character cut, the language check, scrubbing, and
+  // everything else, so an emergency phrase anywhere is still caught. A match
+  // returns right away: the question never reaches any AI.
+  const emergency = await buildEmergencyReply(question, deps.getLabel ?? getSavedLabel);
+  if (emergency) return { ...emergency, disclaimer: DISCLAIMER };
 
   // Step 2: basic checks.
   const basic = basicChecks(question);

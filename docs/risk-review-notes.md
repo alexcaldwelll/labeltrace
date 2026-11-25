@@ -18,3 +18,13 @@ review should weigh.
   `emergency_phrase_ids`, FR-054), and how often the list is reviewed again.
 - **The 911 and 988 messages assume a US user.** 988 isn't available in most other
   countries.
+- **Label "sentences" can be run-on text.** Emergency label excerpts split label text at
+  ".", "!", or "?". Bullet lists and tables in openFDA label text have no periods, so a
+  matched "sentence" can run across bullets, headings, or table numbers (for example
+  Emgality's "…tongue, or throat trouble breathing Constipation with serious
+  complications."). Shown under an emergency message, this can be confusing. Better
+  sentence splitting should be a future task.
+- **"chest discomfort" and "chest pressure" don't trigger 911 yet.** A user who types
+  either one gets no emergency message. Consider adding them (to `chest_pain`) once
+  sentence splitting improves, since Reyvow's label says "chest discomfort" inside a
+  run-on table sentence.
