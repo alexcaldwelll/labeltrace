@@ -19,7 +19,8 @@
     "db:seed": "node scripts/seed-labels.ts",
     "labels:fetch": "node scripts/labels-fetch.ts",
     "labels:check": "node scripts/labels-check.ts",
-    "words:build": "node scripts/build-english-words.ts"
+    "words:build": "node scripts/build-english-words.ts",
+    "drugs:build": "node scripts/build-drug-names.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.12.0",

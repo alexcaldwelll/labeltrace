@@ -339,7 +339,7 @@ An AI from a different company than the one that writes answers checks whether a
 
 **Refusals and "not covered" (US-03)**
 
-- **FR-011**: Personal dosing questions MUST NOT get personal advice. They MUST get "Ask your doctor or pharmacist" plus what the label says about dosing in general.
+- **FR-011**: Personal dosing questions MUST NOT get personal advice. They MUST get "Ask your doctor or pharmacist" plus what the label says about dosing in general. A question counts as personal dosing when it has one of the triggers in research R14 (for example "how much … should I", "I weigh", "take another", "double my dose"). "My weight", "safe for me", and questions about a child ("my son", "my daughter", "my child", "my kid", "my kids", "my children") count only together with a dose word, so questions like "Can my son take Emgality?" or "Is Reyvow safe for me during pregnancy?" are answered from the label. If both drugs are named, the app asks which one first.
 - **FR-012**: Questions comparing any drugs (including Emgality versus Reyvow) MUST be refused with "talk to your doctor or pharmacist."
 - **FR-013**: Questions about drugs other than Emgality and Reyvow MUST be refused with "talk to your doctor or pharmacist." Other drugs' names MUST be caught even with common typos (for example "Imitrx"), using the same typo rules as FR-009.
 - **FR-014**: When the label does not answer the question, the app MUST say "The label doesn't cover this" and MUST NOT guess.

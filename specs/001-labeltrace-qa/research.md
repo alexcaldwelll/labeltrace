@@ -270,23 +270,56 @@ Words that may be new are explained the first time they appear.
 ## R14. Refusals (dosing, comparisons, other drugs, which drug)
 
 - **Decision**: Two layers.
-  1. **Rules first (no AI)**: A list of other drug names (all common migraine drugs plus
-     about 200 common medicines) catches other-drug questions. Comparison words ("better
-     than", "vs", "compared to", "instead of") with two drug names catch comparisons.
-     The word "or" counts **only inside comparison phrasing**: together with "which",
-     "better", "best", "worse", "stronger", "safer", "choose", or "should I take/use
-     … or …". So "Which is better, Emgality or Reyvow?" is refused, but "How are Emgality
-     or Reyvow given?" is answered for each drug.
-     Personal-dosing patterns ("how much should I", "my weight", "I weigh", "for my age")
-     catch dosing questions. No drug named → ask "Do you mean Emgality or Reyvow?"
-     **Drug names are matched with the R8 typo rules** (an exact match wins): "Imitrx"
-     counts as Imitrex (FR-013), and "Reyvo" counts as Reyvow, with the reply saying
-     "Answering about Reyvow (you typed 'Reyvo')." (FR-056). The emergency path doesn't
-     use this; there, only exact names count (PC-1).
+  1. **Rules first (no AI)**, in `src/lib/refusals/rules.ts`. Checked top to bottom; the
+     first match wins:
+     1. **Comparison**: two *different* drugs are named (a brand and its generic count as
+        one; a drug-class word counts as a drug) plus comparison words: "better than",
+        "vs", "compared to", "instead of". The word "or" counts **only inside comparison
+        phrasing**: together with "which", "better", "best", "worse", "stronger", "safer",
+        "choose", or "should I take/use … or …". So "Which is better, Emgality or
+        Reyvow?" is refused, but "How are Emgality or Reyvow given?" is answered for each
+        drug.
+     2. **Other drug**: any drug that isn't ours is named. The other-drug list (R20) has
+        the openFDA names plus the owner-reviewed **drug-class words** ("triptan",
+        "SSRI", "beta blocker", and the rest in `src/lib/refusals/drug-names.ts`). This
+        includes interaction questions ("Can I take Reyvow with an SSRI?"), even when the
+        label covers them (docs/risk-review-notes.md).
+     3. **Which drug**: neither of our drugs is named → "Do you mean Emgality or Reyvow?"
+     4. **Personal dosing** (FR-011). Always counts: "how much … should I" and "how many
+        … should I" (up to 4 words between), "I weigh", "for my age", "take another",
+        "a second dose", "take two" / "take 2" (not when the next word is a time word:
+        minute, hour, day, week, month, year, or their plurals), "double my dose".
+        Counts only together with a dose word (dose, doses, dosing, dosage, mg, tablet,
+        pill, injection, shot, their plurals, "how much", "how many"): "my weight",
+        "safe for me", "my son", "my daughter", "my child", "my kid", "my kids",
+        "my children". With both of our drugs named, the reply asks which drug instead
+        (owner's decision 4A, 2026-11-26). Known false alarms are kept on purpose and
+        recorded as tests (for example "How many days should I wait…").
+     5. Otherwise the question isn't refused and goes on as `emgality`, `reyvow`, or
+        `both`.
+  - **Drug names are matched with the R8 typo rules**: "Imitrx" counts as Imitrex
+    (FR-013), and "Reyvo" counts as Reyvow, with the reply saying "Answering about Reyvow
+    (you typed 'Reyvo')." (FR-056). An exact match wins; "'s" and a plural "s" are
+    ignored. Two limits (owner's decisions, 2026-11-26):
+    - A word on the English word list (R19) is never a typo of a drug name (2A):
+      "clarity" isn't Claritin.
+    - **Closer-English rule**: a misspelled word at least as close to an English word as
+      to another drug's name isn't that drug ("migrane" is migraine, not the product
+      "migraide"). English words that are themselves on the drug list (aspirin) don't
+      count. The trade-off: some misspelled drug names pass the rules (for example
+      "Botx", 1 change from "box"); in a check of 1,367 simple typos of well-known names,
+      88 (6%) passed, almost all of names with 7 letters or fewer. They rely on layer 2.
+    - If a misspelled word is equally close to one of our names and another drug, it
+      counts as the other drug (refused).
+  - **Trigger words other than drug names must be exact** (capitals, punctuation, and
+    "'s" ignored). Typo matching only added false alarms ("make another", "same for me").
+  - The emergency path doesn't use any of this; there, only exact names count (PC-1).
   2. **AI backstop**: The prompt tells the AI to label its answer type as `refusal` when
      a question slips past the rules.
 - Personal-dosing questions still get the general dosing text from the label, with "Ask
-  your doctor or pharmacist" (FR-011).
+  your doctor or pharmacist" (FR-011). The summary is written with the `dosing-v1` prompt
+  from the "Dosage and Administration" section only. The AI never sees the question: it
+  gets a fixed app sentence through `appText()` (owner's decision 3A, 2026-11-26).
 
 ## R15. Two tiers of tests
 
@@ -515,7 +548,43 @@ Words that may be new are explained the first time they appear.
 
 ## R20. Other-drug name list
 
-_Added by task T024 (query URLs, download date, and number of names)._
+- **Source**: the openFDA drug label endpoint, built by `scripts/build-drug-names.ts`
+  (`npm run drugs:build`) and saved to `src/lib/refusals/other-drugs.json`. Never written
+  from memory. The 4 queries (run 2026-11-26):
+  1. `https://api.fda.gov/drug/label.json?search=indications_and_usage:migraine&count=openfda.brand_name.exact&limit=1000`
+  2. `https://api.fda.gov/drug/label.json?search=indications_and_usage:migraine&count=openfda.generic_name.exact&limit=1000`
+  3. `https://api.fda.gov/drug/label.json?count=openfda.brand_name.exact&limit=1000`
+  4. `https://api.fda.gov/drug/label.json?count=openfda.generic_name.exact&limit=1000`
+- **Download date**: 2026-11-26. **Number of names**: 999 (897 from the 4 queries, plus
+  102 common brands).
+- **Cleaning** (owner's decision 1A, 2026-11-26): openFDA's names are product names
+  ("Dove", "Water", "Migraine Relief"), so each name is split into words and words under 4
+  letters are dropped. A word that isn't on the English word list (R19) is kept
+  automatically (imitrex, ubrelvy, sumatriptan). Of the 385 words that are English words,
+  the owner reviewed every one (`src/lib/refusals/english-word-drugs.json`): 59 kept (for
+  example aspirin, ibuprofen, tylenol, magnesium), 326 left off (for example water,
+  alcohol, caffeine, headache, migraine). An English word that the owner hasn't reviewed
+  is left off and printed by the script for review. Our 4 names and the "never on the
+  list" words (cgrp, ditan, antibody, monoclonal, serotonin, medicine, medication, drug,
+  vitamin, supplement) are always removed.
+- **Drug-class words**: hand-written and reviewed by the owner (2026-11-26), like the
+  emergency phrase list, because openFDA has no field with the class words people type.
+  They live in `src/lib/refusals/drug-names.ts` (`DRUG_CLASS_WORDS`, `DRUG_CLASS_PHRASES`).
+- **Known gap**: these queries count labels, so a brand sold under one label (for example
+  Zoloft, Lexapro, Xanax, Prozac, Ambien, Benadryl, Ozempic, Aleve) isn't in the top
+  1,000. The common-brands list below adds the best-known ones; any other such brand
+  isn't on the list, and questions about it rely on the AI backstop (R14 layer 2).
+  A fuller openFDA source is follow-up task T091.
+- **Common brands** (owner-reviewed 2026-11-26, `src/lib/refusals/common-brands.json`):
+  102 very common brands the count queries miss (for example Zoloft, Lexapro, Xanax,
+  Ozempic, Lipitor). Hand-picked, but never added from memory: every time the script
+  runs, it confirms each brand with an openFDA query, first in the drug label data
+  (`openfda.brand_name:"<brand>"`), then in Drugs@FDA (`products.brand_name:"<brand>"`),
+  and stops if any isn't confirmed. On 2026-11-26, 76 were confirmed in the label data and
+  26 in Drugs@FDA. `other-drugs.json` records each brand's dataset, query address, and
+  number of matches (`common_brands`). The 13 migraine brands the owner asked about
+  (Topamax, Inderal, Depakote, Maxalt, Zomig, Relpax, Treximet, Nurtec, Ubrelvy, Qulipta,
+  Aimovig, Ajovy, Vyepti) were already on the list from the queries.
 
 ## R21. Releases
 

@@ -5,6 +5,34 @@ Safeguards). The risk review itself is written later, at the release milestone
 (`specs/001-labeltrace-qa/tasks.md`). Add an item here whenever work turns up a risk the
 review should weigh.
 
+## Refusal rules
+
+- **Interaction questions are refused even when the label covers them.** Any question
+  that names another drug or a drug class gets "talk to your doctor or pharmacist" (FR-013,
+  research R14). So "Can I take Reyvow with my SSRI?" never shows Reyvow's own
+  serotonin-syndrome warning with SSRIs, SNRIs, tricyclic antidepressants, and MAO
+  inhibitors, and "Can I take Reyvow with propranolol?" never shows the label's heart-rate
+  warning. This is safe, but the risk review should weigh whether those label warnings
+  should be shown alongside the referral.
+- **"Is Reyvow a triptan?" is refused as another drug** (a known false alarm, recorded as
+  a test). It's a candidate for a future exception for "is [our drug] a [class]"
+  questions.
+- **Misspelled other-drug names close to English words can pass the refusal rules and
+  rely on the AI backstop.** The closer-English rule (research R14) keeps common
+  misspellings like "migrane" from being refused, but a misspelled drug name that is as
+  close to an English word passes the rules (for example "Botx", 1 change from "box").
+  In a check of 1,367 simple typos of well-known drug names, 88 (6%) passed: 86 of the
+  643 typos of names with 7 letters or fewer, and 2 of the 724 longer ones.
+- **The other-drug list misses brands sold under a single label.** The openFDA queries
+  (research R20) count labels, so very common brands like Zoloft, Lexapro, and Xanax
+  weren't in the top 1,000. A hand-reviewed list of common brands, each confirmed in
+  openFDA, closes part of the gap; any other brand relies on the AI backstop. A fuller
+  source is follow-up task T091.
+- **A person named Allegra won't be masked by the scrubber.** "Allegra" is a drug name
+  (the allergy brand) on the other-drug list, and drug names are known words, so the
+  scrubber (T032) won't turn it into `[NAME]`. A question that uses it also gets the
+  other-drug refusal.
+
 ## Emergency phrases and messages
 
 - **The emergency phrase list hasn't been clinically validated.** The emergency phrases

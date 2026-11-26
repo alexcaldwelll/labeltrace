@@ -6,9 +6,32 @@
 // ScrubbedText is needed. So raw text can't reach the AI, the log, or the server
 // logger by mistake; the code won't compile.
 //
-// Only scrub() (src/lib/scrub/index.ts, T033) makes real ScrubbedText.
+// Only scrub() (src/lib/scrub/index.ts, T033) makes real ScrubbedText from a
+// question. The one other way is appText() below, which takes only fixed sentences
+// written by the app itself, never user text (owner's decision 3A, 2026-11-26).
 
 declare const scrubbedBrand: unique symbol;
 
 /** Question text that has been scrubbed. Plain strings can't pass as this type. */
 export type ScrubbedText = string & { readonly [scrubbedBrand]: true };
+
+/**
+ * The fixed sentences the app itself may send to an AI in place of a question. Only
+ * these exact sentences: no user text, and nothing built from user text.
+ */
+export const APP_TEXTS = ["Summarize the general dosing in this section."] as const;
+
+/** One of APP_TEXTS. A plain `string` doesn't fit, so a variable can't be passed. */
+export type AppText = (typeof APP_TEXTS)[number];
+
+/**
+ * Turns one of the app's own fixed sentences into ScrubbedText (it holds no personal
+ * details, so there is nothing to scrub). TypeScript accepts only an AppText; the check
+ * below also refuses anything else at run time, in case a type check was bypassed.
+ */
+export function appText(text: AppText): ScrubbedText {
+  if (!(APP_TEXTS as readonly string[]).includes(text)) {
+    throw new Error("appText() only accepts the app's own fixed sentences.");
+  }
+  return text as ScrubbedText;
+}
