@@ -88,6 +88,8 @@ describe("checkDosingNumbers", () => {
 
   const reyvow = "The recommended dose of REYVOW is 50 mg, 100 mg, or 200 mg taken orally.";
   it("a range that isn't in the label fails", () => fails("Take 50 to 200 mg.", reyvow));
+  // Owner-approved 2026-11-26 (follow-up).
+  it("a dash range that isn't in the label fails", () => fails("Take 50-200 mg.", reyvow));
   it("the doses written the label's way pass", () =>
     passes("Take 50 mg, 100 mg, or 200 mg.", reyvow));
 
@@ -98,6 +100,11 @@ describe("checkDosingNumbers", () => {
   });
 
   it("a frequency word that isn't in the label fails", () => fails("Inject 120 mg daily."));
+  // Owner-approved 2026-11-26 (follow-up).
+  it('"once a month" fails when the label says "once monthly"', () =>
+    fails("Inject 120 mg once a month."));
+  it('"half a tablet" fails when it isn\'t in the label', () =>
+    fails("Take half a tablet.", reyvow));
   it("a decimal number must match exactly", () => {
     passes("Take 2.5 mg.", "The dose is 2.5 mg.");
     fails("Take 2.5 mg.", "The dose is 25 mg.");
