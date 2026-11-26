@@ -10,9 +10,9 @@
 //   8. Log                   (T047) exactly one row for every reply
 //   9. Grading sample        (T057) pick some AI answers for the grader
 //
-// Steps 1 and 2 work so far. The other steps are empty slots that later tasks fill
-// in. A question that gets past step 2 gets a "try again later" reply for now, so
-// nothing is ever made up.
+// Steps 1, 2, and 4 work so far. The other steps are empty slots that later tasks
+// fill in. A question that isn't refused at step 4 gets a "try again later" reply for
+// now, so nothing is ever made up.
 //
 // Privacy: the raw question stays in memory only. This file never logs, saves, or
 // sends it back in a reply (FR-021).
@@ -22,6 +22,7 @@ import {
   type EmergencyReplyFields,
   type GetLabel,
 } from "@/lib/emergency/respond";
+import { buildRefusalReply, type RefusalReplyFields } from "@/lib/refusals/respond";
 import { isEnglish } from "./language";
 
 /** Shown on every reply (FR-003). */
@@ -47,12 +48,14 @@ export type AskReply = ReplyBase &
     | { kind: "english_only"; text: string }
     | { kind: "try_again"; text: string }
     | EmergencyReplyFields
+    | RefusalReplyFields
   );
 
 /**
  * What the steps use. Tests pass fakes; the real ones are used when nothing is
- * passed. The answer AI isn't used by any step yet (T040); emergency tests pass a
- * fake one to prove it is never called.
+ * passed. The answer AI is used only for personal-dosing summaries so far (T027).
+ * There is no real one until T039, so without a fake those get "try again later".
+ * Emergency tests pass a fake one to prove it is never called.
  */
 export interface AskDeps {
   /** Reads a drug's current saved label (default: the database, T011). */
@@ -60,7 +63,7 @@ export interface AskDeps {
   answerAI?: AnswerClient;
 }
 
-/** The real label lookup, loaded only when an emergency question needs a label. */
+/** The real label lookup, loaded only when a step needs a label. */
 const getSavedLabel: GetLabel = async (drug) => {
   const { getCurrentLabel } = await import("@/lib/labels/store");
   return getCurrentLabel(drug);
@@ -127,7 +130,18 @@ async function answer(question: string, deps: AskDeps): Promise<AskReply> {
   if (basic.done) return basic.reply;
 
   // Step 3: scrub (T033).
-  // Step 4: refusals (T027).
+
+  // Step 4: refusals (T026, T027). Plain rules on the question, in memory: comparison,
+  // other drug, which drug, personal dosing. Only a personal-dosing summary calls the
+  // answer AI, and it never gets the question (it gets a fixed app sentence).
+  const refusal = await buildRefusalReply(basic.text, {
+    getLabel: deps.getLabel ?? getSavedLabel,
+    answerAI: deps.answerAI,
+  });
+  if (refusal.kind === "reply") {
+    return withTruncated({ ...refusal.reply, disclaimer: DISCLAIMER }, basic.truncated);
+  }
+
   // Step 5: section search (T040).
   // Step 6: answer AI (T040).
   // Step 7: answer checks (T040, T044).

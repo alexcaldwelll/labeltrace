@@ -109,6 +109,12 @@ describe("short questions (under 30 characters, FR-055)", () => {
     expect(isEnglish("galcanezumab dose")).toBe(true);
   });
 
+  // T024: the full drug name lists, with typos, count as words.
+  it("'Imitrx dose?' and 'Imitrex dose?' count as English", () => {
+    expect(isEnglish("Imitrx dose?")).toBe(true);
+    expect(isEnglish("Imitrex dose?")).toBe(true);
+  });
+
   it("one unknown word makes a short question not English", () => {
     expect(isEnglish("Reyvow causa dolor?")).toBe(false);
   });

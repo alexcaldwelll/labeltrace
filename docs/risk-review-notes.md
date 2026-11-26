@@ -5,6 +5,20 @@ Safeguards). The risk review itself is written later, at the release milestone
 (`specs/001-labeltrace-qa/tasks.md`). Add an item here whenever work turns up a risk the
 review should weigh.
 
+## Refusal rules
+
+- **Interaction questions are refused even when the label covers them.** Any question
+  that names another drug or a drug class gets "talk to your doctor or pharmacist" (FR-013,
+  research R14). For example, "Can I take Reyvow with my SSRI?" never shows Reyvow's own
+  serotonin-syndrome warning with SSRIs.
+- **"Is Reyvow a triptan?" is refused as another drug** (a known false alarm, recorded as
+  a test). It's a candidate for a future exception for "is [our drug] a [class]"
+  questions.
+- **Misspelled other-drug names close to English words can pass the refusal rules and
+  rely on the AI backstop.** The closer-English rule (research R14) keeps common
+  misspellings like "migrane" from being refused, but a misspelled drug name that is as
+  close to an English word passes the rules (for example "Botx", 1 change from "box").
+
 ## Emergency phrases and messages
 
 - **The emergency phrase list hasn't been clinically validated.** The emergency phrases

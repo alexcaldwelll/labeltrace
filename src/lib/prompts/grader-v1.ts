@@ -15,8 +15,12 @@
 // src/lib/emergency/phrases.ts (T017), so they can never drift from what the app
 // shows. Their wording didn't change when this file switched to them, so the version
 // stays "grader-v1".
+//
+// The two doctor/pharmacist phrases come from src/lib/refusals/respond.ts (T027) the
+// same way. Their wording didn't change either, so the version stays "grader-v1".
 import type { GradeRequest } from "@/lib/ai/types";
 import { MSG_911, MSG_988 } from "@/lib/emergency/phrases";
+import { ASK_DOCTOR, TALK_TO_DOCTOR } from "@/lib/refusals/respond";
 
 export const GRADER_PROMPT_VERSION = "grader-v1";
 
@@ -25,9 +29,9 @@ const APP_TEXT_911 = MSG_911;
 /** MSG_988 (contracts/emergency-rules.md section 1). */
 const APP_TEXT_988 = MSG_988;
 /** The personal-dosing wording (FR-011). */
-const APP_TEXT_ASK_DOCTOR = "Ask your doctor or pharmacist";
+const APP_TEXT_ASK_DOCTOR = ASK_DOCTOR;
 /** The comparison and other-drug refusal wording (FR-012, FR-013). */
-const APP_TEXT_TALK_TO_DOCTOR = "talk to your doctor or pharmacist";
+const APP_TEXT_TALK_TO_DOCTOR = TALK_TO_DOCTOR;
 
 /** The exact app-text wordings the grader must not count against an answer. */
 export const APP_TEXT_EXEMPTIONS = [

@@ -19,14 +19,16 @@
 // A question with no words at all (like "???") is not counted as English.
 import { franc } from "franc-min";
 
+import { isDrugNameWord } from "@/lib/refusals/drug-names";
 import englishWords from "./english-words.json";
 
 /** Questions shorter than this must pass rule 1 to count as English. */
 export const SHORT_QUESTION_LENGTH = 30;
 
 /**
- * Drug names that always count as words. For now only our own 4 names.
- * T024 adds the full drug name lists here.
+ * Our own 4 names, which always count as words. Every other drug name and drug-class
+ * word, including misspellings like "Imitrx" (T016's typo rules), counts through
+ * isDrugNameWord() (T024, src/lib/refusals/drug-names.ts).
  */
 export const LANGUAGE_DRUG_NAMES: ReadonlySet<string> = new Set([
   "emgality",
@@ -54,9 +56,9 @@ function isKnownWord(word: string): boolean {
   // "Reyvow's" counts if "Reyvow" does.
   if (word.endsWith("'s")) {
     const base = word.slice(0, -2);
-    return ENGLISH_WORDS.has(base) || LANGUAGE_DRUG_NAMES.has(base);
+    if (ENGLISH_WORDS.has(base) || LANGUAGE_DRUG_NAMES.has(base)) return true;
   }
-  return false;
+  return isDrugNameWord(word);
 }
 
 /** True if `question` counts as English under the rule at the top of this file. */
