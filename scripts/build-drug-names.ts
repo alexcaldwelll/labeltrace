@@ -12,8 +12,12 @@
 //    decision 1A, 2026-11-26). An English word that the owner hasn't reviewed yet is
 //    left off and printed, so nothing is added without the owner.
 // 5. Our 4 names and the "never on the list" words are always removed.
+// 6. Common brands the count queries miss (src/lib/refusals/common-brands.json, owner-
+//    reviewed 2026-11-26) are each confirmed by an openFDA query: the drug label data
+//    first, then Drugs@FDA. If any brand isn't confirmed, the script stops.
 //
-// The saved file records the query addresses, the download date, and the count.
+// The saved file records the query addresses, the download date, the count, and how
+// each common brand was confirmed.
 //
 // Note: Node runs this file directly by stripping out the type labels. So every
 // import needs its full `.ts` file ending, and this file can't use `enum` or `namespace`.
@@ -74,7 +78,89 @@ export type OtherDrugsFile = {
   count: number;
   /** Lowercase name words, no repeats, sorted. */
   names: string[];
+  /** How each owner-reviewed common brand was confirmed in openFDA. */
+  common_brands: BrandCheck[];
 };
+
+/** The owner's list of common brands (src/lib/refusals/common-brands.json). */
+export type CommonBrandsFile = {
+  reviewed_by: string;
+  reviewed_on: string;
+  note: string;
+  brands: string[];
+};
+
+/** One common brand's openFDA confirmation. */
+export type BrandCheck = {
+  brand: string;
+  /** Which openFDA data confirmed it. */
+  dataset: "drug_label" | "drugsfda";
+  url: string;
+  /** How many records matched. */
+  matches: number;
+};
+
+/** The queries that confirm a brand, in order: the label data, then Drugs@FDA. */
+export function brandQueryUrls(brand: string): { dataset: BrandCheck["dataset"]; url: string }[] {
+  const quoted = encodeURIComponent(`"${brand}"`);
+  return [
+    {
+      dataset: "drug_label",
+      url: `https://api.fda.gov/drug/label.json?search=openfda.brand_name:${quoted}&limit=1`,
+    },
+    {
+      dataset: "drugsfda",
+      url: `https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:${quoted}&limit=1`,
+    },
+  ];
+}
+
+/**
+ * Adds the confirmed common brands to the list. Stops if any brand wasn't confirmed
+ * (no check, or 0 matches), or is one of our names or a "never on the list" word.
+ */
+export function addCommonBrands(
+  file: Omit<OtherDrugsFile, "common_brands">,
+  brands: readonly string[],
+  checks: readonly BrandCheck[],
+): OtherDrugsFile {
+  const removed = new Set<string>([...OUR_NAMES, ...NEVER_OTHER_DRUG]);
+  const byBrand = new Map(checks.map((check) => [check.brand, check]));
+  const unconfirmed = brands.filter((brand) => (byBrand.get(brand)?.matches ?? 0) < 1);
+  if (unconfirmed.length > 0) {
+    throw new Error(`These brands weren't confirmed in openFDA: ${unconfirmed.join(", ")}`);
+  }
+  const blocked = brands.filter((brand) => removed.has(brand));
+  if (blocked.length > 0) {
+    throw new Error(`These can't be on the other-drug list: ${blocked.join(", ")}`);
+  }
+  const names = [...new Set([...file.names, ...brands])].sort();
+  return {
+    ...file,
+    count: names.length,
+    names,
+    common_brands: brands.map((brand) => byBrand.get(brand)!),
+  };
+}
+
+/** Confirms one brand with openFDA (label data first, then Drugs@FDA). */
+async function confirmBrand(brand: string): Promise<BrandCheck> {
+  let last: BrandCheck | null = null;
+  for (const { dataset, url } of brandQueryUrls(brand)) {
+    const reply = await fetch(url);
+    // openFDA answers 404 when nothing matches.
+    if (reply.status === 404) {
+      last = { brand, dataset, url, matches: 0 };
+      continue;
+    }
+    if (!reply.ok) throw new Error(`Query failed: HTTP ${reply.status} from ${url}`);
+    const body = (await reply.json()) as { meta?: { results?: { total?: number } } };
+    const matches = body.meta?.results?.total ?? 0;
+    last = { brand, dataset, url, matches };
+    if (matches > 0) return last;
+  }
+  return last!;
+}
 
 /** One openFDA "count" reply: `results` is a list of `{ term, count }`. */
 type CountReply = { results?: { term?: unknown }[] };
@@ -103,7 +189,7 @@ export function buildDrugNameFile(
   englishWords: ReadonlySet<string>,
   review: Pick<EnglishWordReview, "kept" | "dropped">,
   downloadedOn: string,
-): { file: OtherDrugsFile; needsReview: string[] } {
+): { file: Omit<OtherDrugsFile, "common_brands">; needsReview: string[] } {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(downloadedOn)) {
     throw new Error(`The download date must look like 2026-11-26, not "${downloadedOn}".`);
   }
@@ -156,7 +242,18 @@ async function main(): Promise<void> {
     String(now.getMonth() + 1).padStart(2, "0"),
     String(now.getDate()).padStart(2, "0"),
   ].join("-");
-  const { file, needsReview } = buildDrugNameFile(replies, new Set(english.words), review, today);
+  const built = buildDrugNameFile(replies, new Set(english.words), review, today);
+  const common = JSON.parse(
+    readFileSync(new URL("../src/lib/refusals/common-brands.json", import.meta.url), "utf8"),
+  ) as CommonBrandsFile;
+  const checks: BrandCheck[] = [];
+  for (const brand of common.brands) {
+    checks.push(await confirmBrand(brand));
+    // Stay well under openFDA's limit of 240 requests a minute without a key.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  const file = addCommonBrands(built.file, common.brands, checks);
+  const needsReview = built.needsReview;
   const out = new URL("../src/lib/refusals/other-drugs.json", import.meta.url);
   writeFileSync(out, JSON.stringify(file, null, 2) + "\n");
   console.log(`Saved ${file.count} names to src/lib/refusals/other-drugs.json (${today}).`);

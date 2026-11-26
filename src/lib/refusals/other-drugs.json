@@ -7,10 +7,11 @@
     "https://api.fda.gov/drug/label.json?count=openfda.generic_name.exact&limit=1000"
   ],
   "downloaded_on": "2026-11-26",
-  "count": 897,
+  "count": 999,
   "names": [
     "abacavir",
     "abies",
+    "abilify",
     "abiraterone",
     "abrotanum",
     "absinthium",
@@ -25,6 +26,7 @@
     "acyclovir",
     "adamas",
     "adapalene",
+    "adderall",
     "adenosine",
     "adsol",
     "advil",
@@ -37,15 +39,19 @@
     "albicans",
     "albuterol",
     "alendronate",
+    "aleve",
     "alfuzosin",
     "allantoin",
+    "allegra",
     "allium",
     "allopurinol",
     "almotriptan",
     "alprazolam",
     "amantadine",
     "amara",
+    "ambien",
     "ambrisentan",
+    "amerge",
     "aminocaproic",
     "amiodarone",
     "amitriptyline",
@@ -82,7 +88,9 @@
     "aspartate",
     "aspirin",
     "asprin",
+    "atarax",
     "atenolol",
+    "ativan",
     "atogepant",
     "atomoxetine",
     "atorvastatin",
@@ -93,6 +101,7 @@
     "aurum",
     "avant",
     "avobenzone",
+    "axert",
     "axetil",
     "azacitidine",
     "azathioprine",
@@ -104,6 +113,7 @@
     "baryta",
     "basix",
     "belladonna",
+    "benadryl",
     "benazepril",
     "bencocaine",
     "bendamustine",
@@ -126,6 +136,7 @@
     "bisulfate",
     "bitartrate",
     "bivalirudin",
+    "bonine",
     "bortezomib",
     "botox",
     "brekiya",
@@ -140,6 +151,7 @@
     "buprenorphine",
     "bupropion",
     "burkhart",
+    "buspar",
     "buspirone",
     "butalbital",
     "butenafine",
@@ -182,13 +194,16 @@
     "cefprozil",
     "ceftriaxone",
     "cefuroxime",
+    "celebrex",
     "celecoxib",
+    "celexa",
     "cepa",
     "cephalexin",
     "cetirizine",
     "cetylpyridinium",
     "cevimeline",
     "chamomilla",
+    "chantix",
     "chelidonium",
     "childrens",
     "chloraprep",
@@ -201,6 +216,7 @@
     "chlorthalidone",
     "chlorzoxazone",
     "cholestyramine",
+    "cialis",
     "ciclopirox",
     "cilostazol",
     "cimetidine",
@@ -240,11 +256,15 @@
     "colestipol",
     "colocynthis",
     "comfrey",
+    "compazine",
     "condurango",
     "conium",
     "cornutum",
+    "coumadin",
+    "cozaar",
     "cpda",
     "cremo",
+    "crestor",
     "cruda",
     "crudum",
     "cuprum",
@@ -253,6 +273,7 @@
     "cyclobenzaprine",
     "cyclophosphamide",
     "cyclosporine",
+    "cymbalta",
     "cynapium",
     "cypionate",
     "cyproheptadine",
@@ -275,6 +296,7 @@
     "desonide",
     "desoximetasone",
     "desvenlafaxine",
+    "desyrel",
     "dexamethasone",
     "dexlansoprazole",
     "dexmedetomidine",
@@ -301,6 +323,7 @@
     "dimethyl",
     "dinitrate",
     "dioixide",
+    "diovan",
     "diphenhydramine",
     "diphenoxylate",
     "dipotassium",
@@ -319,6 +342,7 @@
     "doxorubicin",
     "doxycycline",
     "doxylamine",
+    "dramamine",
     "drosera",
     "drospirenone",
     "droxidopa",
@@ -329,6 +353,8 @@
     "ecolab",
     "econazole",
     "edisylate",
+    "effexor",
+    "elavil",
     "eletriptan",
     "eliquis",
     "eltrombopag",
@@ -384,7 +410,11 @@
     "fexofenadine",
     "finasteride",
     "fingolimod",
+    "fioricet",
+    "fiorinal",
     "flecainide",
+    "flexeril",
+    "flonase",
     "fluconazole",
     "fludeoxyglucose",
     "fludrocortisone",
@@ -399,6 +429,7 @@
     "fluvoxamine",
     "fosaprepitant",
     "fremanezumab",
+    "frova",
     "frovatriptan",
     "fulvestrant",
     "fumarate",
@@ -415,6 +446,7 @@
     "glonoinum",
     "glucagon",
     "gluconate",
+    "glucophage",
     "glyburide",
     "glycopyrrolate",
     "gnlm",
@@ -457,6 +489,7 @@
     "indapamide",
     "inderal",
     "indicus",
+    "indocin",
     "indomethacin",
     "influenzinum",
     "insulin",
@@ -471,18 +504,24 @@
     "itraconazole",
     "ivabradine",
     "ivermectin",
+    "januvia",
+    "jardiance",
     "jjmr",
     "kalmia",
+    "keppra",
     "ketamine",
     "ketoconazole",
     "ketorolac",
     "ketotifen",
+    "klonopin",
     "labetalol",
     "lacosamide",
     "lactulose",
+    "lamictal",
     "lamivudine",
     "lamotrigine",
     "lansoprazole",
+    "lasix",
     "latanoprost",
     "latifolia",
     "laxative",
@@ -500,14 +539,17 @@
     "levonorgestrel",
     "levothyroxine",
     "levulose",
+    "lexapro",
     "lidocaine",
     "linezolid",
     "liothyronine",
+    "lipitor",
     "liraglutide",
     "lisdexamfetamine",
     "lisinopril",
     "lithium",
     "loperamide",
+    "lopressor",
     "loratadine",
     "lorazepam",
     "losartan",
@@ -517,6 +559,7 @@
     "lubiprostone",
     "lurasidone",
     "lycopodium",
+    "lyrica",
     "lytta",
     "macitentan",
     "macrocrystals",
@@ -569,9 +612,11 @@
     "miconazole",
     "midazolam",
     "midodrine",
+    "midol",
     "migergot",
     "migo",
     "migraide",
+    "migranal",
     "migranow",
     "milrinone",
     "minocycline",
@@ -580,6 +625,7 @@
     "mirtazapine",
     "misoprostol",
     "mitomycin",
+    "mobic",
     "modafinil",
     "mofetil",
     "mometasone",
@@ -589,7 +635,9 @@
     "montelukast",
     "morphine",
     "motrin",
+    "mounjaro",
     "moxifloxacin",
+    "mucinex",
     "multivitamin",
     "mupirocin",
     "muriaticum",
@@ -605,13 +653,17 @@
     "naltrexone",
     "napellus",
     "naphazoline",
+    "naprosyn",
     "naproxen",
     "naratriptan",
+    "narcan",
     "natrum",
     "nebivolol",
     "nelarabine",
     "neomycin",
     "neostigmine",
+    "neurontin",
+    "nexium",
     "niacin",
     "niacinamide",
     "nicardipine",
@@ -622,13 +674,16 @@
     "nitrofurantoin",
     "nitroglycerin",
     "nitroprusside",
+    "norco",
     "norepinephrine",
     "norethindrone",
     "norgestimate",
     "nortriptyline",
+    "norvasc",
     "nsaid",
     "nurtec",
     "nutans",
+    "nuvigil",
     "nystatin",
     "occidentalis",
     "octachlorohydrex",
@@ -646,6 +701,7 @@
     "omeprazole",
     "onabotulinumtoxina",
     "ondansetron",
+    "onzetra",
     "orphenadrine",
     "oseltamivir",
     "oxaliplatin",
@@ -654,22 +710,28 @@
     "oxybutynin",
     "oxycodone",
     "oxymetazoline",
+    "ozempic",
     "paclitaxel",
     "paliperidone",
     "pamabrom",
+    "pamelor",
     "pamoate",
     "pantoprazole",
     "paricalcitol",
     "paroxetine",
     "passiflora",
+    "paxil",
     "pemetrexed",
     "penicillin",
     "pentachlorohydrex",
+    "pepcid",
+    "percocet",
     "perforatum",
     "permethrin",
     "perphenazine",
     "phenazopyridine",
     "phendimetrazine",
+    "phenergan",
     "phenobarbital",
     "phentermine",
     "phenylephrine",
@@ -683,6 +745,7 @@
     "piperonyl",
     "pirfenidone",
     "piroxicam",
+    "plavix",
     "plerixafor",
     "polacrilex",
     "polistirex",
@@ -698,7 +761,9 @@
     "prednisone",
     "pregabalin",
     "prilocaine",
+    "prilosec",
     "primidone",
+    "pristiq",
     "prochlorperazine",
     "promethazine",
     "propafenone",
@@ -707,7 +772,9 @@
     "propofol",
     "propranolol",
     "propylene",
+    "provigil",
     "proxetil",
+    "prozac",
     "prucalopride",
     "pseudoephedrine",
     "psyllium",
@@ -733,17 +800,21 @@
     "ranolazine",
     "rasagiline",
     "regadenoson",
+    "reglan",
     "relpax",
     "repaglinide",
     "rhus",
     "riboflavin",
     "rifampin",
     "rimegepant",
+    "risperdal",
     "risperidone",
+    "ritalin",
     "rivaroxaban",
     "rivastigmine",
     "rizafilm",
     "rizatriptan",
+    "robaxin",
     "rocuronium",
     "roflumilast",
     "ropinirole",
@@ -766,6 +837,7 @@
     "sempervirens",
     "senna",
     "sennosides",
+    "seroquel",
     "sertraline",
     "sesquichlorohydrate",
     "sevelamer",
@@ -775,12 +847,15 @@
     "silodosin",
     "simethicone",
     "simvastatin",
+    "singulair",
     "sinolm",
     "sirolimus",
     "sitagliptin",
+    "skelaxin",
     "solifenacin",
     "solu",
     "solubilis",
+    "soma",
     "sotalol",
     "spicata",
     "spigelia",
@@ -790,10 +865,12 @@
     "staphysagria",
     "stopain",
     "strychnos",
+    "suboxone",
     "subsalicylate",
     "succinate",
     "succinylcholine",
     "sucralfate",
+    "sudafed",
     "sugammadex",
     "sulbactam",
     "sulfacetamide",
@@ -808,6 +885,7 @@
     "symbravo",
     "symphytum",
     "symtouch",
+    "synthroid",
     "tacrolimus",
     "tadalafil",
     "tamoxifen",
@@ -843,6 +921,8 @@
     "topamax",
     "topcare",
     "topiramate",
+    "toprol",
+    "toradol",
     "torsemide",
     "tosymra",
     "toxicodendron",
@@ -858,17 +938,21 @@
     "trichlorohydrex",
     "trihydrate",
     "trimethoprim",
+    "trintellix",
     "trioxide",
     "trokendi",
     "trolamine",
     "tromethamine",
     "trospium",
     "trudhesa",
+    "trulicity",
     "tubocurarine",
     "tula",
+    "tums",
     "tylenol",
     "ubrelvy",
     "ubrogepant",
+    "ultram",
     "undecylenic",
     "ursodiol",
     "usnea",
@@ -876,6 +960,7 @@
     "valerate",
     "valeriana",
     "valganciclovir",
+    "valium",
     "valproate",
     "valproic",
     "valsartan",
@@ -884,27 +969,658 @@
     "vasopressin",
     "vegetabilis",
     "venlafaxine",
+    "ventolin",
     "verapamil",
     "vers",
     "versicolor",
     "vesicatoria",
     "vfrm",
+    "viagra",
+    "vicodin",
     "vigabatrin",
+    "vistaril",
+    "voltaren",
     "vomica",
     "voriconazole",
     "vulgaris",
     "vyepti",
+    "vyvanse",
     "warfarin",
+    "wegovy",
+    "wellbutrin",
+    "xanax",
+    "xarelto",
     "xylocaine",
     "zaleplon",
+    "zanaflex",
     "zavegepant",
     "zavzpret",
     "zembrace",
+    "zepbound",
+    "zestril",
+    "zofran",
     "zoledronic",
     "zolmiptriptan",
     "zolmitriptan",
+    "zoloft",
     "zolpidem",
     "zomig",
-    "zonisamide"
+    "zonisamide",
+    "zyprexa",
+    "zyrtec"
+  ],
+  "common_brands": [
+    {
+      "brand": "abilify",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22abilify%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "adderall",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22adderall%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "aleve",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22aleve%22&limit=1",
+      "matches": 28
+    },
+    {
+      "brand": "allegra",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22allegra%22&limit=1",
+      "matches": 13
+    },
+    {
+      "brand": "ambien",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22ambien%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "amerge",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22amerge%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "atarax",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22atarax%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "ativan",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22ativan%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "axert",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22axert%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "benadryl",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22benadryl%22&limit=1",
+      "matches": 24
+    },
+    {
+      "brand": "bonine",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22bonine%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "buspar",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22buspar%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "celebrex",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22celebrex%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "celexa",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22celexa%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "chantix",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22chantix%22&limit=1",
+      "matches": 4
+    },
+    {
+      "brand": "cialis",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22cialis%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "compazine",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22compazine%22&limit=1",
+      "matches": 7
+    },
+    {
+      "brand": "coumadin",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22coumadin%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "cozaar",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22cozaar%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "crestor",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22crestor%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "cymbalta",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22cymbalta%22&limit=1",
+      "matches": 4
+    },
+    {
+      "brand": "desyrel",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22desyrel%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "diovan",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22diovan%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "dramamine",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22dramamine%22&limit=1",
+      "matches": 16
+    },
+    {
+      "brand": "effexor",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22effexor%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "elavil",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22elavil%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "fioricet",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22fioricet%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "fiorinal",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22fiorinal%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "flexeril",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22flexeril%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "flonase",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22flonase%22&limit=1",
+      "matches": 8
+    },
+    {
+      "brand": "frova",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22frova%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "glucophage",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22glucophage%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "indocin",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22indocin%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "januvia",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22januvia%22&limit=1",
+      "matches": 9
+    },
+    {
+      "brand": "jardiance",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22jardiance%22&limit=1",
+      "matches": 9
+    },
+    {
+      "brand": "keppra",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22keppra%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "klonopin",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22klonopin%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "lamictal",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22lamictal%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "lasix",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22lasix%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "lexapro",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22lexapro%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "lipitor",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22lipitor%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "lopressor",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22lopressor%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "lyrica",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22lyrica%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "midol",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22midol%22&limit=1",
+      "matches": 11
+    },
+    {
+      "brand": "migranal",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22migranal%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "mobic",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22mobic%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "mounjaro",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22mounjaro%22&limit=1",
+      "matches": 6
+    },
+    {
+      "brand": "mucinex",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22mucinex%22&limit=1",
+      "matches": 143
+    },
+    {
+      "brand": "naprosyn",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22naprosyn%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "narcan",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22narcan%22&limit=1",
+      "matches": 7
+    },
+    {
+      "brand": "neurontin",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22neurontin%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "nexium",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22nexium%22&limit=1",
+      "matches": 4
+    },
+    {
+      "brand": "norco",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22norco%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "norvasc",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22norvasc%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "nuvigil",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22nuvigil%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "onzetra",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22onzetra%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "ozempic",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22ozempic%22&limit=1",
+      "matches": 4
+    },
+    {
+      "brand": "pamelor",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22pamelor%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "paxil",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22paxil%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "pepcid",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22pepcid%22&limit=1",
+      "matches": 16
+    },
+    {
+      "brand": "percocet",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22percocet%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "phenergan",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22phenergan%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "plavix",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22plavix%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "prilosec",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22prilosec%22&limit=1",
+      "matches": 5
+    },
+    {
+      "brand": "pristiq",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22pristiq%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "provigil",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22provigil%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "prozac",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22prozac%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "reglan",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22reglan%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "risperdal",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22risperdal%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "ritalin",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22ritalin%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "robaxin",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22robaxin%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "seroquel",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22seroquel%22&limit=1",
+      "matches": 4
+    },
+    {
+      "brand": "singulair",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22singulair%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "skelaxin",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22skelaxin%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "soma",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22soma%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "suboxone",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22suboxone%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "sudafed",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22sudafed%22&limit=1",
+      "matches": 20
+    },
+    {
+      "brand": "synthroid",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22synthroid%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "toprol",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22toprol%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "toradol",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22toradol%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "trintellix",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22trintellix%22&limit=1",
+      "matches": 4
+    },
+    {
+      "brand": "trulicity",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22trulicity%22&limit=1",
+      "matches": 6
+    },
+    {
+      "brand": "tums",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22tums%22&limit=1",
+      "matches": 31
+    },
+    {
+      "brand": "ultram",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22ultram%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "valium",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22valium%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "ventolin",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22ventolin%22&limit=1",
+      "matches": 8
+    },
+    {
+      "brand": "viagra",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22viagra%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "vicodin",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22vicodin%22&limit=1",
+      "matches": 4
+    },
+    {
+      "brand": "vistaril",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22vistaril%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "voltaren",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22voltaren%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "vyvanse",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22vyvanse%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "wegovy",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22wegovy%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "wellbutrin",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22wellbutrin%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "xanax",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22xanax%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "xarelto",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22xarelto%22&limit=1",
+      "matches": 7
+    },
+    {
+      "brand": "zanaflex",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22zanaflex%22&limit=1",
+      "matches": 3
+    },
+    {
+      "brand": "zepbound",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22zepbound%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "zestril",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22zestril%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "zofran",
+      "dataset": "drugsfda",
+      "url": "https://api.fda.gov/drug/drugsfda.json?search=products.brand_name:%22zofran%22&limit=1",
+      "matches": 5
+    },
+    {
+      "brand": "zoloft",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22zoloft%22&limit=1",
+      "matches": 1
+    },
+    {
+      "brand": "zyprexa",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22zyprexa%22&limit=1",
+      "matches": 2
+    },
+    {
+      "brand": "zyrtec",
+      "dataset": "drug_label",
+      "url": "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22zyrtec%22&limit=1",
+      "matches": 23
+    }
   ]
 }

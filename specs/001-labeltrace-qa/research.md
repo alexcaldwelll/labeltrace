@@ -305,8 +305,10 @@ Words that may be new are explained the first time they appear.
       "clarity" isn't Claritin.
     - **Closer-English rule**: a misspelled word at least as close to an English word as
       to another drug's name isn't that drug ("migrane" is migraine, not the product
-      "migraide"). The trade-off: some misspelled drug names pass the rules (for example
-      "Botx", 1 change from "box") and rely on layer 2.
+      "migraide"). English words that are themselves on the drug list (aspirin) don't
+      count. The trade-off: some misspelled drug names pass the rules (for example
+      "Botx", 1 change from "box"); in a check of 1,367 simple typos of well-known names,
+      88 (6%) passed, almost all of names with 7 letters or fewer. They rely on layer 2.
     - If a misspelled word is equally close to one of our names and another drug, it
       counts as the other drug (refused).
   - **Trigger words other than drug names must be exact** (capitals, punctuation, and
@@ -553,7 +555,8 @@ Words that may be new are explained the first time they appear.
   2. `https://api.fda.gov/drug/label.json?search=indications_and_usage:migraine&count=openfda.generic_name.exact&limit=1000`
   3. `https://api.fda.gov/drug/label.json?count=openfda.brand_name.exact&limit=1000`
   4. `https://api.fda.gov/drug/label.json?count=openfda.generic_name.exact&limit=1000`
-- **Download date**: 2026-11-26. **Number of names**: 897.
+- **Download date**: 2026-11-26. **Number of names**: 999 (897 from the 4 queries, plus
+  102 common brands).
 - **Cleaning** (owner's decision 1A, 2026-11-26): openFDA's names are product names
   ("Dove", "Water", "Migraine Relief"), so each name is split into words and words under 4
   letters are dropped. A word that isn't on the English word list (R19) is kept
@@ -567,6 +570,21 @@ Words that may be new are explained the first time they appear.
 - **Drug-class words**: hand-written and reviewed by the owner (2026-11-26), like the
   emergency phrase list, because openFDA has no field with the class words people type.
   They live in `src/lib/refusals/drug-names.ts` (`DRUG_CLASS_WORDS`, `DRUG_CLASS_PHRASES`).
+- **Known gap**: these queries count labels, so a brand sold under one label (for example
+  Zoloft, Lexapro, Xanax, Prozac, Ambien, Benadryl, Ozempic, Aleve) isn't in the top
+  1,000. The common-brands list below adds the best-known ones; any other such brand
+  isn't on the list, and questions about it rely on the AI backstop (R14 layer 2).
+  A fuller openFDA source is follow-up task T091.
+- **Common brands** (owner-reviewed 2026-11-26, `src/lib/refusals/common-brands.json`):
+  102 very common brands the count queries miss (for example Zoloft, Lexapro, Xanax,
+  Ozempic, Lipitor). Hand-picked, but never added from memory: every time the script
+  runs, it confirms each brand with an openFDA query, first in the drug label data
+  (`openfda.brand_name:"<brand>"`), then in Drugs@FDA (`products.brand_name:"<brand>"`),
+  and stops if any isn't confirmed. On 2026-11-26, 76 were confirmed in the label data and
+  26 in Drugs@FDA. `other-drugs.json` records each brand's dataset, query address, and
+  number of matches (`common_brands`). The 13 migraine brands the owner asked about
+  (Topamax, Inderal, Depakote, Maxalt, Zomig, Relpax, Treximet, Nurtec, Ubrelvy, Qulipta,
+  Aimovig, Ajovy, Vyepti) were already on the list from the queries.
 
 ## R21. Releases
 

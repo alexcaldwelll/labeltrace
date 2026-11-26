@@ -26,8 +26,12 @@ export type AppText = (typeof APP_TEXTS)[number];
 
 /**
  * Turns one of the app's own fixed sentences into ScrubbedText (it holds no personal
- * details, so there is nothing to scrub). TypeScript accepts only an AppText.
+ * details, so there is nothing to scrub). TypeScript accepts only an AppText; the check
+ * below also refuses anything else at run time, in case a type check was bypassed.
  */
 export function appText(text: AppText): ScrubbedText {
+  if (!(APP_TEXTS as readonly string[]).includes(text)) {
+    throw new Error("appText() only accepts the app's own fixed sentences.");
+  }
   return text as ScrubbedText;
 }

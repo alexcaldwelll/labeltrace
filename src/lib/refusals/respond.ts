@@ -46,6 +46,8 @@ export type RefusalReplyFields =
   | {
       kind: "refusal";
       reason: "personal_dosing";
+      /** Which drug's dosing is shown (for "Answering about Reyvow …"). */
+      drug: Drug;
       text: string;
       sections: string[];
       label_date: string;
@@ -120,6 +122,7 @@ async function personalDosing(
       reply: {
         kind: "refusal",
         reason: "personal_dosing",
+        drug,
         text: `${dosingLead(drug)} ${reply.answer.trim()}`,
         sections: [section.display_name],
         label_date: result.label.labelDate,

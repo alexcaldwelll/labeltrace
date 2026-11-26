@@ -165,7 +165,7 @@ export function isPersonalDosing(questionWords: readonly string[]): boolean {
     }
   }
   const hasDoseWord =
-    questionWords.some((word) => DOSE_WORDS.has(word)) ||
+    questionWords.some((word) => DOSE_WORDS.has(word) || /^\d+(?:\.\d+)?mg$/.test(word)) ||
     DOSE_PHRASES.some((phrase) => has(questionWords, phrase));
   return hasDoseWord && DOSING_TRIGGERS_WITH_DOSE_WORD.some((t) => has(questionWords, t));
 }

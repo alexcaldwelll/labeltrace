@@ -16,7 +16,8 @@
 //    decision 2A, 2026-11-26): "clarity" isn't Claritin, "diabetic" isn't diuretic.
 //    And a misspelled word that is at least as close to an English word as to another
 //    drug's name isn't that drug (closer-English rule, 2026-11-26): "migrane" is
-//    migraine, not the product "migraide". The trade-off: a misspelled drug name near an English word
+//    migraine, not the product "migraide". English words on the drug list (aspirin)
+//    don't count for this. The trade-off: a misspelled drug name near an English word
 //    passes the rules and relies on the AI backstop (docs/risk-review-notes.md).
 // 3. Otherwise a word within T016's typo allowance of a name counts as that name
 //    ("Reyvo" → Reyvow, "Imitrx" → Imitrex). The closest name wins; if one of our names
@@ -174,10 +175,15 @@ export function matchDrugWord(typed: string): DrugMention | null {
   return null;
 }
 
-/** English words grouped by length, for the closer-English rule. */
+/**
+ * English words grouped by length, for the closer-English rule. Words that are on the
+ * other-drug list (like "aspirin") don't count: being close to one of those is being
+ * close to a drug.
+ */
 const ENGLISH_BY_LENGTH: ReadonlyMap<number, readonly string[]> = (() => {
   const byLength = new Map<number, string[]>();
   for (const word of ENGLISH_WORDS) {
+    if (OTHER_DRUG_NAMES.has(word)) continue;
     const list = byLength.get(word.length) ?? [];
     list.push(word);
     byLength.set(word.length, list);

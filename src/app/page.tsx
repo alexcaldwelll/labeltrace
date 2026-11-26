@@ -8,7 +8,8 @@
 //
 // Emergency replies are shown by EmergencyReply (T023): their messages come first in
 // the reply area, 911 above 988. A personal-dosing refusal (T027) also shows its
-// label section and label date. T041 adds answers and the other kinds.
+// label section and label date, and "Answering about Reyvow (you typed 'Reyvo')." when
+// the drug name was misspelled. T041 adds answers and the other kinds.
 //
 // Privacy: the question is only sent to /api/ask. It is never logged or saved here.
 import { useState } from "react";
@@ -20,6 +21,8 @@ import type { AskReply } from "@/lib/pipeline/ask";
 const ERROR_TEXT = "Sorry, something went wrong. Please try again.";
 
 type DosingReply = Extract<AskReply, { kind: "refusal"; reason: "personal_dosing" }>;
+
+const DRUG_NAMES = { emgality: "Emgality", reyvow: "Reyvow" } as const;
 
 export default function HomePage() {
   const [question, setQuestion] = useState("");
@@ -90,6 +93,11 @@ export default function HomePage() {
 function DosingRefusal({ reply }: { reply: DosingReply }) {
   return (
     <div className="dosing-refusal">
+      {reply.typed_as !== undefined && (
+        <p>
+          Answering about {DRUG_NAMES[reply.drug]} (you typed &lsquo;{reply.typed_as}&rsquo;).
+        </p>
+      )}
       <p>{reply.text}</p>
       <p>
         Label section: {reply.sections.join(", ")} (label date: {formatLabelDate(reply.label_date)})

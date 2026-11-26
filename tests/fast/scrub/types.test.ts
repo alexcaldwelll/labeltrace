@@ -50,4 +50,8 @@ describe("appText", () => {
 
     expect(fixed).toBe(APP_TEXTS[0]);
   });
+
+  it("also refuses other text at run time, if a type check is bypassed", () => {
+    expect(() => appText("My name is Jane Doe" as never)).toThrow(/fixed sentences/);
+  });
 });

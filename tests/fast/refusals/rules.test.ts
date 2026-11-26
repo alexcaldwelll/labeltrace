@@ -139,3 +139,13 @@ describe("closer-English rule: known slip (recorded on purpose)", () => {
   // on the AI backstop (research R14 layer 2; docs/risk-review-notes.md).
   check([["Does Emgality interact with Botx?", pass("emgality")]]);
 });
+
+// Owner-approved test (2026-11-26, item 6).
+describe("personal dosing with both drugs named → which drug (decision 4A)", () => {
+  check([["How much Emgality and Reyvow should I take?", WHICH]]);
+});
+
+// Owner-approved (2026-11-26, detail 6): a number joined to "mg" counts as a dose word.
+describe("'100mg' counts as a dose word", () => {
+  check([["Is 100mg of Reyvow safe for me?", dosing("reyvow")]]);
+});
