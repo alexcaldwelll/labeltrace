@@ -9,7 +9,8 @@
 // Emergency replies are shown by EmergencyReply (T023): their messages come first in
 // the reply area, 911 above 988. A personal-dosing refusal (T027) also shows its
 // label section and label date, and "Answering about Reyvow (you typed 'Reyvo')." when
-// the drug name was misspelled. T041 adds answers and the other kinds.
+// the drug name was misspelled. The word-for-word fallback (T028) is shown as a quote
+// under "From the [drug] label, word for word:". T041 adds answers and the other kinds.
 //
 // Privacy: the question is only sent to /api/ask. It is never logged or saved here.
 import { useState } from "react";
@@ -91,6 +92,12 @@ export default function HomePage() {
 
 /** A personal-dosing refusal: the text, then the label section and label date. */
 function DosingRefusal({ reply }: { reply: DosingReply }) {
+  // The text starts with the app's fixed lead, which ends with the first ": " ("…about
+  // dosing in general:"). For the word-for-word fallback (T028), the label text after it
+  // is shown as a quote under its own line.
+  const split = reply.text.indexOf(": ");
+  const lead = split === -1 ? reply.text : reply.text.slice(0, split + 1);
+  const rest = split === -1 ? "" : reply.text.slice(split + 2);
   return (
     <div className="dosing-refusal">
       {reply.typed_as !== undefined && (
@@ -98,7 +105,15 @@ function DosingRefusal({ reply }: { reply: DosingReply }) {
           Answering about {DRUG_NAMES[reply.drug]} (you typed &lsquo;{reply.typed_as}&rsquo;).
         </p>
       )}
-      <p>{reply.text}</p>
+      {reply.dosing_source === "label_text" ? (
+        <>
+          <p>{lead}</p>
+          <p>From the {DRUG_NAMES[reply.drug]} label, word for word:</p>
+          <blockquote>{rest}</blockquote>
+        </>
+      ) : (
+        <p>{reply.text}</p>
+      )}
       <p>
         Label section: {reply.sections.join(", ")} (label date: {formatLabelDate(reply.label_date)})
       </p>

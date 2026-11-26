@@ -263,7 +263,8 @@ Words that may be new are explained the first time they appear.
     answers run at the same time, each with the same deadline.
   - Personal-dosing summaries go through the same checks. If they fail, the dosing
     fallback (word-for-word "Dosage and Administration" text, spec PC-7) is used, not the
-    pointer.
+    pointer. The fallback is also used when no answer AI is available (down, failing, or
+    not built yet), and when the dosing AI marks its summary `not_covered` or `refusal`.
 - The AI returns **structured output** (a fixed JSON shape: answer text, sections used,
   answer type), so code can check it reliably.
 
