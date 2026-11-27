@@ -33,6 +33,12 @@ review should weigh.
   scrubber (T032) won't turn it into `[NAME]`. A question that uses it also gets the
   other-drug refusal.
 
+- **The word-for-word dosing fallback is long and hard to read.** When a dosing summary
+  fails the number check (T028), the whole "Dosage and Administration" section is shown.
+  For Emgality that's 414 words with run-on headings ("2 DOSAGE AND ADMINISTRATION For
+  subcutaneous use only. ( 2.1 , 2.2 , 2.3 ) …"). It's exempt from the 120-word limit
+  (FR-015) because it's label text, but a reader may struggle with it.
+
 ## Emergency phrases and messages
 
 - **The emergency phrase list hasn't been clinically validated.** The emergency phrases

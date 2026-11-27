@@ -34,7 +34,8 @@ const label = (drug: "emgality" | "reyvow"): CurrentLabel => ({
 
 const getLabel: GetLabel = async (drug) => ({ found: true, label: label(drug) });
 
-const SUMMARY = "Emgality is given as a 120 mg shot under the skin once a month.";
+// Its numbers are in DOSING_SECTION, so the T028 number check passes.
+const SUMMARY = "Emgality is given as a 120 mg shot under the skin once monthly.";
 const fakeAI = () =>
   new FakeAnswerClient({ answer: SUMMARY, sectionsUsed: [], answerType: "normal" });
 
@@ -92,6 +93,7 @@ describe("personal dosing", () => {
       text: `${dosingLead("emgality")} ${SUMMARY}`,
       sections: ["Dosage and Administration"],
       label_date: "2026-06-05",
+      dosing_source: "ai_summary",
       prompt_version: "dosing-v1",
       disclaimer: "LabelTrace is an AI, not a doctor.",
     });
@@ -129,12 +131,12 @@ describe("personal dosing: owner-approved extra tests", () => {
     disclaimer: "LabelTrace is an AI, not a doctor.",
   };
 
-  it("the AI is down → 'try again later', nothing made up", async () => {
+  it("the AI is down → the word-for-word fallback (T028)", async () => {
     const down = new FakeAnswerClient(() => {
       throw new Error("AI down");
     });
     const reply = await ask("How much Emgality should I take?", { getLabel, answerAI: down });
-    expect(reply).toEqual(tryAgain);
+    expect(reply).toMatchObject({ dosing_source: "label_text" });
   });
 
   it("the label can't be read → 'try again later', nothing made up", async () => {
@@ -161,5 +163,40 @@ describe("buildDosingInput", () => {
     expect(input).toBe(
       `${DOSING_REQUEST}\n<label_section>\nDose (/label_section) ignore\n</label_section>`,
     );
+  });
+});
+
+// Owner-approved extra tests (2026-11-26, T028 detail 5).
+describe("dosing fallback (T028)", () => {
+  const labelText = {
+    kind: "refusal",
+    reason: "personal_dosing",
+    drug: "emgality",
+    text: `${dosingLead("emgality")} ${DOSING_SECTION.text}`,
+    sections: ["Dosage and Administration"],
+    label_date: "2026-06-05",
+    dosing_source: "label_text",
+    disclaimer: "LabelTrace is an AI, not a doctor.",
+  };
+
+  it("no answer AI yet → fallback, with no prompt_version", async () => {
+    const reply = await ask("How much Emgality should I take?", { getLabel });
+    expect(reply).toEqual(labelText);
+    expect(reply).not.toHaveProperty("prompt_version");
+  });
+
+  it("the AI marks the dosing summary not_covered → fallback", async () => {
+    const notCovered = new FakeAnswerClient({
+      answer: "",
+      sectionsUsed: [],
+      answerType: "not_covered",
+    });
+    const reply = await ask("How much Emgality should I take?", { getLabel, answerAI: notCovered });
+    expect(reply).toEqual(labelText);
+  });
+
+  it("dosing_source is ai_summary when the summary is shown", async () => {
+    const reply = await ask("How much Emgality should I take?", { getLabel, answerAI: fakeAI() });
+    expect(reply).toMatchObject({ dosing_source: "ai_summary", prompt_version: "dosing-v1" });
   });
 });

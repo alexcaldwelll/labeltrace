@@ -23,6 +23,7 @@ import {
   type GetLabel,
 } from "@/lib/emergency/respond";
 import { buildRefusalReply, type RefusalReplyFields } from "@/lib/refusals/respond";
+import type { AnswerTypeReplyFields } from "./answer-type";
 import { isEnglish } from "./language";
 
 /** Shown on every reply (FR-003). */
@@ -49,6 +50,8 @@ export type AskReply = ReplyBase &
     | { kind: "try_again"; text: string }
     | EmergencyReplyFields
     | RefusalReplyFields
+    // T029: made by answer-type.ts once the answer step exists (T040).
+    | AnswerTypeReplyFields
   );
 
 /**
