@@ -51,6 +51,9 @@ src/lib/pipeline/language.ts
 # The English word list the language check uses for short questions
 src/lib/pipeline/english-words.json
 
+# The reply for each answer type the AI gives (normal, not covered, refusal backstop)
+src/lib/pipeline/answer-type.ts
+
 # Answer checks (word count, reading level, citations, dosing numbers)
 src/lib/checks/**
 

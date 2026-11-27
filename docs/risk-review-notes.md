@@ -32,12 +32,28 @@ review should weigh.
   (the allergy brand) on the other-drug list, and drug names are known words, so the
   scrubber (T032) won't turn it into `[NAME]`. A question that uses it also gets the
   other-drug refusal.
+- **Five more common first names are also drug names: Amara, Caine, Naja, Senna, and
+  Tula.** Each is on the other-drug list and on the common first-name list (R22), so,
+  like Allegra, the scrubber won't mask them as names.
 
 - **The word-for-word dosing fallback is long and hard to read.** When a dosing summary
   fails the number check (T028), the whole "Dosage and Administration" section is shown.
   For Emgality that's 414 words with run-on headings ("2 DOSAGE AND ADMINISTRATION For
   subcutaneous use only. ( 2.1 , 2.2 , 2.3 ) …"). It's exempt from the 120-word limit
   (FR-015) because it's label text, but a reader may struggle with it.
+
+## Scrubber limits
+
+- **Lowercase names often slip through.** The intro-phrase rule only masks a name that
+  starts with a capital letter (owner's decision 3A, 2026-11-27), so lowercase names
+  after "I'm" (for example "i'm jane") aren't masked by it. The name finder sometimes
+  catches them ("i'm jane" was caught in testing), but not reliably. Elsewhere,
+  lowercase names usually stay visible: "jane doe here, does reyvow cause sleepiness?"
+  is unchanged.
+- **Places, street addresses, and birth dates aren't masked.** The spec covers names,
+  emails, and phone numbers only (FR-020). "I live in Texas" stays as typed.
+- **A 10-digit product code is masked as a phone number.** "NDC 0002-1436-01" becomes
+  "NDC [PHONE]", because it has the shape of a phone number.
 
 ## Emergency phrases and messages
 

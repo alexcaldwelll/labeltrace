@@ -193,20 +193,35 @@ Words that may be new are explained the first time they appear.
   AI or storage.
   - **Emails**: a standard email pattern → `[EMAIL]`.
   - **Phone numbers**: US and international number patterns → `[PHONE]`.
-  - **Names**, in three layers. "Mask when unsure" wins:
-    1. Intro phrases: "I'm X", "my name is X", "this is X", sign-offs like "thanks, X".
+  - **Names**, in three layers. "Mask when unsure" wins. Each run of name words becomes
+    one `[NAME]` ("Jane Doe" → `[NAME]`):
+    1. Intro phrases: "I'm X", "I am X", "my name is X", "this is X", and sign-offs
+       ("thanks", "thank you", "thx", "regards", "best", "cheers", "sincerely", then X).
+       X is masked only if it starts with a capital letter and isn't a protected word;
+       capitalized words right after it (the last name) are masked with it. So "I'm
+       pregnant" stays (owner's decision 3A, 2026-11-27).
     2. A name finder from the `compromise` text library, which runs on our server.
-    3. Any capitalized word that isn't at the start of a sentence and isn't on a known-word
-       list → `[NAME]`. The known-word list holds: our 4 drug names, **every name on the
-       other-drug list** (`src/lib/refusals/other-drugs.json`, R14), label section names,
-       and common English words.
+       Titles in front (Dr., Mr., Mrs., Ms.) stay visible. **Guard**: a single everyday
+       English word it flags at the start of a sentence is left alone ("Will Emgality
+       make me tired?"); a two-word name there ("Bob Johnson said…") is still masked.
+    3. Any capitalized word that isn't at the start of a sentence and isn't protected →
+       `[NAME]`, if it isn't an everyday English word **or** it is on the common
+       first-name list (R22). So "Grace" and "Will" mid-sentence are masked; so is "in
+       May" (owner's decision 2A, 2026-11-27).
+  - **Protected words** (never masked by any layer; owner's decision 1A, 2026-11-27):
+    our 4 drug names, **every name on the other-drug list**
+    (`src/lib/refusals/other-drugs.json`, R14) and the class words, their near-miss
+    typos (below), and label section names. Everyday English words are **not**
+    protected: the English word list holds nearly every common name (jane, smith, maria,
+    grace), so protecting them would let the name finder's finds through. English words
+    only stop layer 3.
   - **Why other drugs are known words**: the scrubber runs **before** the refusal rules.
     If "Imitrex" or "Ubrelvy" were masked as `[NAME]`, the comparison and other-drug
     refusals could never see them. Drug names aren't personal details, so keeping them
-    is safe. The scrubber also never masks a word on the known-word list, even when the
-    name finder (layer 2) flags it.
-  - **Misspelled drug names (spec PC-9)**: a word that is a near-miss typo of a drug name
-    on the known-word list (same typo rules as R8) is also left visible, so "Imitrx" and
+    is safe. The scrubber never masks a protected word, even when the name finder (layer
+    2) flags it.
+  - **Misspelled drug names (spec PC-9)**: a word that is a near-miss typo of a protected
+    drug name (same typo rules as R8) is also left visible, so "Imitrx" and
     "Reyvo" still reach the refusal rules and drug matching. **Safeguard**: if that word is
     also on the common first-name list (R22), it is masked anyway. This keeps the privacy
     cost small: only an unusual name one or two letters off a drug name could stay
@@ -634,8 +649,14 @@ Words that may be new are explained the first time they appear.
     total, across all years and both sexes.
   - **Built by**: `scripts/build-first-names.ts` (task T032), saved to
     `src/lib/scrub/common-first-names.json` with its source URL, download date, and count.
-- _Added by task T032: the exact download URL, the download date, and the number of
-  names._
+- **The download**: `https://www.ssa.gov/oact/babynames/names.zip`, from the SSA page
+  "Beyond the Top 1000 Names" (`https://www.ssa.gov/oact/babynames/limits.html`). The
+  SSA site refuses automated downloads (HTTP 403), so the owner downloads the zip by
+  hand in a browser, and the script reads that file (owner's decision 4A, 2026-11-27):
+  `npm run names:build -- ~/Downloads/names.zip`.
+- **This list**: downloaded 2026-11-27; data for 1880–2025; SHA-256 of the zip
+  `cd78e975ed7bb358e018dd62fbe14ced89295e9581c49172ca4eedcb011b3724`; **11,872 names**
+  with 1,000+ births.
 - **Why SSA data**: it's public, free, official, and covers U.S. first names going back
   many decades. U.S. Census data mostly covers last names, so it fits this job less well.
 - **Alternatives**: A hand-written list (rejected: written from memory, and incomplete).
