@@ -6,6 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { GetLabel } from "@/lib/emergency/respond";
+import type { AskDeps } from "@/lib/pipeline/ask";
 import type { CurrentLabel } from "@/lib/labels/store";
 import { FakeAnswerClient } from "../../helpers/fake-ai";
 
@@ -22,7 +23,7 @@ vi.mock("@/lib/scrub", async (importOriginal) => {
   return { ...real, scrub: spies.scrub };
 });
 
-const { ask } = await import("@/lib/pipeline/ask");
+const { ask, TRY_AGAIN_TEXT } = await import("@/lib/pipeline/ask");
 const { serverLog } = await import("@/lib/log/server-log");
 const { scrub } = await import("@/lib/scrub");
 
@@ -71,6 +72,13 @@ function everythingLogged(): string {
   return calls.map((args) => args.map((arg) => JSON.stringify(arg)).join(" ")).join("\n");
 }
 
+/** The logger's own output (what reaches Netlify's logs). */
+function consoleOutput(): string {
+  return [...vi.mocked(console.info).mock.calls, ...vi.mocked(console.error).mock.calls]
+    .map((args) => args.join(" "))
+    .join("\n");
+}
+
 beforeEach(() => {
   for (const method of ["log", "info", "warn", "error", "debug"] as const) {
     vi.spyOn(console, method).mockImplementation(() => {});
@@ -112,6 +120,28 @@ describe("the raw text never reaches the console or the server logger", () => {
     const logged = everythingLogged();
     for (const detail of [question, "Maria", "Lopez", "maria@example.com"]) {
       expect(hasDetail(logged, detail), detail).toBe(false);
+    }
+  });
+});
+
+// Owner-approved (2026-11-27): the catch-all in ask.ts.
+describe("an unexpected error in a step", () => {
+  it("gets try again later, and the log holds [QUESTION] and no raw detail", async () => {
+    // A test-only way to make a step throw: reading getLabel fails, with the raw
+    // question in the error message.
+    const deps = {} as AskDeps;
+    Object.defineProperty(deps, "getLabel", {
+      get() {
+        throw new Error(`Step failed for: ${SCENARIO_1}`);
+      },
+    });
+    const reply = await ask(SCENARIO_1, deps);
+    expect(reply).toMatchObject({ kind: "try_again", text: TRY_AGAIN_TEXT });
+    expect(serverLog.error).toHaveBeenCalledTimes(1);
+    const output = consoleOutput();
+    expect(output).toContain("Step failed for: [QUESTION]");
+    for (const detail of [SCENARIO_1, ...DETAILS]) {
+      expect(hasDetail(output, detail), detail).toBe(false);
     }
   });
 });

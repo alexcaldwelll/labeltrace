@@ -3,7 +3,7 @@
 // the rest of the message is scrubbed.
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { QUESTION_MASK, serverLog } from "@/lib/log/server-log";
+import { NUMBER_MASK, QUESTION_MASK, serverLog } from "@/lib/log/server-log";
 import { scrub } from "@/lib/scrub";
 
 const QUESTION =
@@ -96,5 +96,22 @@ describe("errors", () => {
       removeFromMessage: QUESTION,
     });
     for (const detail of DETAILS) expect(hasDetail(written(), detail), detail).toBe(false);
+  });
+
+  // Owner's decision (2026-11-27): in error messages only, 4+ digits become [NUMBER].
+  it("masks part of a phone number in an error message", () => {
+    spyOnConsole();
+    serverLog.error("ask_failed", new Error("Failed on: Hi, I'm [NAME], 555-123"));
+    const line = JSON.parse(String(vi.mocked(console.error).mock.calls[0]![0]));
+    expect(line.message).toBe(`Failed on: Hi, I'm [NAME], ${NUMBER_MASK}`);
+    expect(written()).not.toContain("555-123");
+  });
+
+  it("questions keep their dose numbers", () => {
+    spyOnConsole();
+    const question = "Is 1000 mg of Reyvow too much? Is 2.5 mL ok?";
+    expect(scrub(question)).toBe(question);
+    serverLog.info("asked", { question: scrub(question) });
+    expect(written()).toContain("Is 1000 mg of Reyvow too much? Is 2.5 mL ok?");
   });
 });
