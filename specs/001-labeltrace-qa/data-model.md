@@ -133,10 +133,13 @@ People who can sign in (FR-029). Linked one-to-one to a Supabase Auth user.
 
 | Field | Type | Rules |
 |---|---|---|
-| user_id | → auth user | Primary key |
+| user_id | → auth user | Primary key. A login with decisions can't be deleted; set `active` to no instead |
 | display_name | text | |
-| role | text | `reviewer` or `owner`. The owner can do everything a reviewer can (FR-033). |
-| active | yes/no | Inactive people are blocked |
+| role | text | `reviewer` or `owner`. The owner can do everything a reviewer can (FR-033). **At most one owner** (owner's decision, 2026-11-27) |
+| active | yes/no | Required. Inactive people are blocked |
+
+- **Who can change it**: nobody through the app or the API. The owner adds rows in the
+  Supabase SQL editor (T079). A signed-in user can read only their own row.
 
 ## review_decisions
 
@@ -146,8 +149,8 @@ People who can sign in (FR-029). Linked one-to-one to a Supabase Auth user.
 | log_entry_id | → log_entries | |
 | reviewer_id | → reviewers | Required (FR-031) |
 | decision | text | `approve` or `flag` |
-| reason | text | **Required when `flag`** (FR-032) |
-| decided_at | time | Required |
+| reason | text | **Required when `flag`**, and not blank (FR-032) |
+| decided_at | time | Required. Set by the database (`now()`), not app code |
 
 ## grader_results
 

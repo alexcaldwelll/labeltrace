@@ -5,6 +5,8 @@
 //
 // Each test runs inside a transaction that is rolled back, so nothing is left
 // behind in the database.
+import { randomUUID } from "node:crypto";
+
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -166,6 +168,9 @@ describe("test_runs", () => {
 describe("server-only access", () => {
   for (const role of ["anon", "authenticated"]) {
     for (const table of ["log_entries", "test_runs"]) {
+      // T051 gives signed-in users read permission on log_entries, with a rule that
+      // shows rows only to active reviewers (tested just below).
+      if (role === "authenticated" && table === "log_entries") continue;
       it(`blocks the ${role} role from reading ${table}`, async () => {
         await db.query(`set local role ${role}`);
         const code = await failingQuery(`select * from public.${table}`);
@@ -174,4 +179,21 @@ describe("server-only access", () => {
       });
     }
   }
+
+  // T051 (migration 0006; owner-approved 2026-11-27): a signed-in user can read
+  // log_entries only through their own active reviewers row (tests/fast/db/review-rls.test.ts).
+  it("a signed-in non-reviewer sees 0 log_entries rows", async () => {
+    const userId = randomUUID();
+    await db.query("insert into auth.users (id) values ($1)", [userId]);
+    await db.query("insert into public.log_entries (answer_type) values ('prompt_for_question')");
+    await db.query("select set_config('request.jwt.claims', $1, true)", [
+      JSON.stringify({ sub: userId, role: "authenticated" }),
+    ]);
+    await db.query("set local role authenticated");
+    const { rows } = await db.query<{ n: number }>(
+      "select count(*)::int as n from public.log_entries",
+    );
+    expect(rows[0]!.n).toBe(0);
+    await db.query("reset role");
+  });
 });
