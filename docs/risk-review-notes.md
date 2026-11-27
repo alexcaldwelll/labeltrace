@@ -52,6 +52,10 @@ review should weigh.
   is unchanged.
 - **Places, street addresses, and birth dates aren't masked.** The spec covers names,
   emails, and phone numbers only (FR-020). "I live in Texas" stays as typed.
+- **"Son" and "Baby" are never masked as names.** Both are on the common first-name
+  list, but they're also relationship words, which the scrubber never masks (so "My
+  sister Maria" becomes "My sister [NAME]"). Someone actually named Son or Baby stays
+  visible.
 - **A 10-digit product code is masked as a phone number.** "NDC 0002-1436-01" becomes
   "NDC [PHONE]", because it has the shape of a phone number.
 

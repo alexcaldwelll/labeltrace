@@ -211,7 +211,11 @@ Words that may be new are explained the first time they appear.
   - **Protected words** (never masked by any layer; owner's decision 1A, 2026-11-27):
     our 4 drug names, **every name on the other-drug list**
     (`src/lib/refusals/other-drugs.json`, R14) and the class words, their near-miss
-    typos (below), and label section names. Everyday English words are **not**
+    typos (below), label section names, and **relationship words** (57 words such as
+    sister, wife, mom, son, grandma, aunt, friend, doctor, nurse, with "-s" or "'s";
+    owner-approved 2026-11-27). When the name finder flags a relationship word with a
+    name ("sister Maria"), only the name is masked: "My sister [NAME]". Everyday English
+    words are **not**
     protected: the English word list holds nearly every common name (jane, smith, maria,
     grace), so protecting them would let the name finder's finds through. English words
     only stop layer 3.
@@ -517,7 +521,17 @@ Words that may be new are explained the first time they appear.
   - It accepts question text only as `ScrubbedText` (the scrubbed type), so passing raw
     text won't compile.
   - For blank and non-English questions it takes no question text at all (FR-055).
-  - Errors are logged by type and message only, never with the request body.
+  - Errors are logged by type and message only, never with the request body. Before an
+    error message is written (owner's decisions, 2026-11-27):
+    1. The raw question is cut out of it and replaced with `[QUESTION]`. The logger
+       gets the raw question only for this cut; it never writes it.
+    2. The rest of the message is scrubbed like a question (names, emails, phones).
+    3. Any run of 4 or more digits, even split by dashes, dots, or spaces, becomes
+       `[NUMBER]`, so part of a phone number ("555-123") can't show. This is for error
+       messages only; questions keep their numbers ("1000 mg").
+  - A thrown value that isn't an Error is logged only by its kind (for example
+    "string"), never its value, since the value could be anything, even the request
+    body.
   - Lint bans `console` everywhere in `src/**` except this one file.
 - A fast test spies on the logger and on `console` and fails if raw text shows up. The
   fast tier's SC-006 test searches every database table for the raw text after the

@@ -13,6 +13,8 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { DB_PERMISSIONS_LOCK } from "../../helpers/db-permissions-lock";
+
 // Local Supabase's fixed, public default address. Not a secret: it only works on
 // this computer or the GitHub runner, and the online database never uses it.
 const LOCAL_DB_URL =
@@ -30,6 +32,8 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await db.query("begin");
+  // One permission-changing transaction at a time (tests/helpers/db-permissions-lock.ts).
+  await db.query(DB_PERMISSIONS_LOCK);
   await db.query("grant ai_tests_writer to current_user");
 });
 afterEach(async () => {
