@@ -24,6 +24,10 @@
 //    on the common first-name list (owner's decision 2A: "Grace", "Will", and also
 //    "in May"). "I", "I'm", "I've" are never names.
 //
+// A possessive "'s" stays visible after a masked name ("Dr. [NAME]'s advice"), and the
+// letters inside the masks [EMAIL], [PHONE], [NAME] are never checked as names (owner-
+// approved 2026-11-27).
+//
 // "Start of a sentence": the start of the text, or right after ".", "!", "?", or a new
 // line (not the "." of a title like "Dr.").
 import nlp from "compromise";
@@ -56,7 +60,15 @@ const INTRO =
 /** Words: letters, with apostrophes inside ("I'm", "Smith's"). */
 const WORD = /\p{L}[\p{L}'’]*/gu;
 
+/** The masks scrubbing puts in. Their letters are never checked as names. */
+const MASK_TOKEN = /\[(?:EMAIL|PHONE|NAME)\]/g;
+
 type Span = { start: number; end: number };
+
+/** "Smith's" → "Smith". */
+function withoutPossessive(word: string): string {
+  return word.replace(/['’]s$/u, "");
+}
 
 function isCapitalized(word: string): boolean {
   return /^\p{Lu}/u.test(word);
@@ -69,7 +81,7 @@ function isI(word: string): boolean {
 
 /** True if no layer may mask this word. */
 function isProtected(word: string, firstNames: ReadonlySet<string>): boolean {
-  const lower = word.toLowerCase();
+  const lower = withoutPossessive(word).toLowerCase();
   if (NEVER_OTHER_DRUG.has(lower) || SECTION_WORDS.has(lower)) return true;
   const drug = matchDrugWord(lower);
   if (drug === null) return false;
@@ -92,9 +104,9 @@ export function isSentenceStart(text: string, index: number): boolean {
   return wordBefore === undefined || !TITLES.has(wordBefore);
 }
 
-/** The span of a word. */
+/** The span of a word, without a possessive "'s" at the end. */
 function wordSpan(start: number, word: string): Span {
-  return { start, end: start + word.length };
+  return { start, end: start + withoutPossessive(word).length };
 }
 
 /** Layer 1: names after intro phrases. */
@@ -132,7 +144,15 @@ function finderSpans(text: string, firstNames: ReadonlySet<string>): Span[] {
       if (!word || TITLES.has(word.toLowerCase()) || isI(word)) continue;
       if (isProtected(word, firstNames)) continue;
       const start = term.offset.start + term.text.indexOf(word);
-      words.push(wordSpan(start, word));
+      if (text.slice(start, start + word.length) === word) {
+        words.push(wordSpan(start, word));
+      } else {
+        // The finder's position didn't line up with the text: mask the word
+        // everywhere it appears (mask when unsure).
+        for (const match of text.matchAll(WORD)) {
+          if (match[0] === word) words.push(wordSpan(match.index, word));
+        }
+      }
     }
     // Guard: one English word at the start of a sentence is left alone.
     if (words.length === 1) {
@@ -152,7 +172,7 @@ function capitalSpans(text: string, firstNames: ReadonlySet<string>): Span[] {
     const word = match[0];
     if (!isCapitalized(word) || isI(word) || isSentenceStart(text, match.index)) continue;
     if (isProtected(word, firstNames)) continue;
-    const lower = word.toLowerCase();
+    const lower = withoutPossessive(word).toLowerCase();
     if (!ENGLISH_WORDS.has(lower) || firstNames.has(lower)) {
       spans.push(wordSpan(match.index, word));
     }
@@ -183,11 +203,16 @@ export function maskNames(
   text: string,
   firstNames: ReadonlySet<string> = COMMON_FIRST_NAMES,
 ): string {
+  const masks: Span[] = [...text.matchAll(MASK_TOKEN)].map((m) => ({
+    start: m.index,
+    end: m.index + m[0].length,
+  }));
+  const insideMask = (span: Span) => masks.some((m) => span.start < m.end && span.end > m.start);
   const spans = [
     ...introSpans(text, firstNames),
     ...finderSpans(text, firstNames),
     ...capitalSpans(text, firstNames),
-  ].filter((span) => span.end > span.start);
+  ].filter((span) => span.end > span.start && !insideMask(span));
   let out = text;
   for (const span of joinSpans(text, spans).reverse()) {
     out = out.slice(0, span.start) + NAME_MASK + out.slice(span.end);

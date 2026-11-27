@@ -7,6 +7,7 @@ import {
   MIN_TOTAL_BIRTHS,
   SOURCE_PAGE,
   SOURCE_URL,
+  yearOf,
 } from "../../../scripts/build-first-names";
 
 const SHA = "a".repeat(64);
@@ -31,5 +32,23 @@ describe("buildFirstNamesFile", () => {
     expect(file.downloaded_on).toBe("2026-11-27");
     expect(file.sha256).toBe(SHA);
     expect([file.first_year, file.last_year]).toEqual([1880, 1990]);
+  });
+
+  it("stops on a line that isn't Name,Sex,Births", () => {
+    expect(() =>
+      buildFirstNamesFile([{ year: 2000, text: "Alex,X,5\n" }], SHA, "2026-11-27"),
+    ).toThrow(/yob2000\.txt line 1/);
+  });
+
+  it("stops on a bad date or checksum", () => {
+    expect(() => buildFirstNamesFile(FILES, SHA, "11/27/2026")).toThrow(/download date/);
+    expect(() => buildFirstNamesFile(FILES, "abc", "2026-11-27")).toThrow(/SHA-256/);
+  });
+});
+
+describe("yearOf", () => {
+  it("reads the year from yearly file names only", () => {
+    expect(yearOf("yob1990.txt")).toBe(1990);
+    expect(yearOf("NationalReadMe.pdf")).toBeNull();
   });
 });

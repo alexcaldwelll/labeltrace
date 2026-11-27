@@ -32,6 +32,9 @@ review should weigh.
   (the allergy brand) on the other-drug list, and drug names are known words, so the
   scrubber (T032) won't turn it into `[NAME]`. A question that uses it also gets the
   other-drug refusal.
+- **Five more common first names are also drug names: Amara, Caine, Naja, Senna, and
+  Tula.** Each is on the other-drug list and on the common first-name list (R22), so,
+  like Allegra, the scrubber won't mask them as names.
 
 - **The word-for-word dosing fallback is long and hard to read.** When a dosing summary
   fails the number check (T028), the whole "Dosage and Administration" section is shown.

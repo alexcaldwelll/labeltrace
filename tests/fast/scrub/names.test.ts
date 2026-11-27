@@ -14,6 +14,8 @@ describe("layer 1: intro phrases", () => {
     ],
     ["my name is Sam Lee and I take Reyvow", "my name is [NAME] and I take Reyvow"],
     ["thanks, Pat", "thanks, [NAME]"],
+    ["Thanks, Pat", "Thanks, [NAME]"],
+    ["I'm Will and I use Emgality", "I'm [NAME] and I use Emgality"],
   ])("%j", (text, expected) => {
     expect(maskNames(text)).toBe(expected);
   });
@@ -23,6 +25,10 @@ describe("layer 1: intro phrases", () => {
       "Can I take Reyvow while pregnant? I'm pregnant.",
     );
   });
+
+  it("doesn't mask a drug name after an intro phrase", () => {
+    expect(maskNames("This is Reyvow's label, right?")).toBe("This is Reyvow's label, right?");
+  });
 });
 
 describe("layer 2: the name finder (decision 1A)", () => {
@@ -30,6 +36,9 @@ describe("layer 2: the name finder (decision 1A)", () => {
     ["Bob Johnson said Reyvow made him dizzy.", "[NAME] said Reyvow made him dizzy."],
     ["Dr. Smith told me to ask about Emgality.", "Dr. [NAME] told me to ask about Emgality."],
     ["Can my wife Maria take Emgality?", "Can my wife [NAME] take Emgality?"],
+    ["My daughter Grace gets migraines.", "My daughter [NAME] gets migraines."],
+    ["My doctor Patel said no.", "My doctor [NAME] said no."],
+    ["Is Dr. Smith's advice right?", "Is Dr. [NAME]'s advice right?"],
   ])("%j", (text, expected) => {
     expect(maskNames(text)).toBe(expected);
   });
@@ -47,6 +56,12 @@ describe("layer 3: capitalized words mid-sentence", () => {
   it("masks a common first name even if it's an English word (decision 2A)", () => {
     expect(maskNames("Can I buy Reyvow in May?")).toBe("Can I buy Reyvow in [NAME]?");
   });
+
+  it("never masks the word I", () => {
+    expect(maskNames("Can I take it? Yes I can, I've checked.")).toBe(
+      "Can I take it? Yes I can, I've checked.",
+    );
+  });
 });
 
 describe("known words that are never masked", () => {
@@ -56,6 +71,8 @@ describe("known words that are never masked", () => {
     "Is Reyvow better than Imitrex?",
     "What are the side effects of Ubrelvy?",
     "Can I take Reyvow with Sumatriptan?",
+    "Does Emgality interact with Advil or Tylenol?",
+    "Is Allegra safe with Reyvow?",
   ])("%j", (text) => {
     expect(maskNames(text)).toBe(text);
   });
@@ -107,8 +124,14 @@ describe("the first-name safeguard (PC-9)", () => {
     }
   });
 
+  it("masks a made-up first name that is a drug typo", () => {
+    expect(maskNames("Ask Reyvo about it", new Set(["reyvo"]))).toBe("Ask [NAME] about it");
+    expect(maskNames("Ask Reyvo about it", new Set())).toBe("Ask Reyvo about it");
+  });
+
   it("records its source and download date", () => {
     expect(firstNamesFile.source_url).toBe("https://www.ssa.gov/oact/babynames/names.zip");
     expect(firstNamesFile.downloaded_on).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(firstNamesFile.count).toBe(firstNamesFile.names.length);
   });
 });

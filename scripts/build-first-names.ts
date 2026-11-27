@@ -67,12 +67,16 @@ export function yearOf(fileName: string): number | null {
 /** Adds up births per lowercase name across every yearly file. */
 export function totalBirths(files: readonly YearFile[]): Map<string, number> {
   const totals = new Map<string, number>();
-  for (const { text } of files) {
-    for (const line of text.split(/\r?\n/)) {
-      if (line.trim() === "") continue;
-      const [name = "", , births = "0"] = line.trim().split(",");
-      totals.set(name.toLowerCase(), (totals.get(name.toLowerCase()) ?? 0) + Number(births));
-    }
+  for (const { year, text } of files) {
+    text.split(/\r?\n/).forEach((line, index) => {
+      if (line.trim() === "") return;
+      const match = /^([A-Za-z]+),([FM]),(\d+)$/.exec(line.trim());
+      if (!match) {
+        throw new Error(`yob${year}.txt line ${index + 1} isn't "Name,Sex,Births": ${line}`);
+      }
+      const name = match[1]!.toLowerCase();
+      totals.set(name, (totals.get(name) ?? 0) + Number(match[3]));
+    });
   }
   return totals;
 }
@@ -83,6 +87,11 @@ export function buildFirstNamesFile(
   sha256: string,
   downloadedOn: string,
 ): FirstNamesFile {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(downloadedOn)) {
+    throw new Error(`The download date must look like 2026-11-27, not "${downloadedOn}".`);
+  }
+  if (!/^[0-9a-f]{64}$/.test(sha256)) throw new Error("The SHA-256 checksum looks wrong.");
+  if (files.length === 0) throw new Error("The zip has no yearly files (yob1880.txt, ...).");
   const years = files.map((file) => file.year).sort((a, b) => a - b);
   const totals = totalBirths(files);
   const names = [...totals]

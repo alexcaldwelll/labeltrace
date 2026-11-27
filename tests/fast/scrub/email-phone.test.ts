@@ -8,8 +8,13 @@ describe("maskEmails", () => {
   it.each([
     ["Write to jane@example.com please", "Write to [EMAIL] please"],
     ["j.doe+mig@mail.co.uk", "[EMAIL]"],
+    ["Hi, jane@example.com, 555-123-4567.", "Hi, [EMAIL], 555-123-4567."],
   ])("masks %j", (text, expected) => {
     expect(maskEmails(text)).toBe(expected);
+  });
+
+  it("leaves text without an email alone", () => {
+    expect(maskEmails("Is Reyvow @ 100 mg ok?")).toBe("Is Reyvow @ 100 mg ok?");
   });
 });
 
@@ -20,6 +25,7 @@ describe("maskPhones", () => {
     ["+44 20 7946 0958", "[PHONE]"],
     ["1-800-555-1234", "[PHONE]"],
     ["5551234567", "[PHONE]"],
+    ["555.123.4567", "[PHONE]"],
     ["my number is 555-1234", "my number is [PHONE]"],
   ])("masks %j", (text, expected) => {
     expect(maskPhones(text)).toBe(expected);
@@ -27,10 +33,12 @@ describe("maskPhones", () => {
 
   it.each([
     "Is 120 mg the usual dose?",
+    "Is 120mg the usual dose?",
     "Is 2.5 mL right?",
     "1,000 units",
     "My label is dated 2026-11-26",
     "My label is dated 11/26/2026",
+    "Take 50 to 200 mg",
   ])("doesn't mask %j", (text) => {
     expect(maskPhones(text)).toBe(text);
   });
