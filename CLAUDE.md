@@ -28,6 +28,7 @@ If you break any of these rules or a constitution rule:
 - Never commit straight to the `main` branch.
 - Do all work on a separate branch.
 - Open a pull request so I can review it before anything is merged.
+- Before every push or pull request, check which GitHub account `gh` is using (`gh api user`). If it isn't `labeltrace-bot`, stop and tell me: "gh is logged in as X, not labeltrace-bot." Don't switch accounts yourself, and never use my account or my saved login, even just to read something. The `gh` login is shared by every repo on this Mac, so it can change when I work on other projects.
 
 ## 5. Keep secrets out of GitHub
 Never put API keys, passwords, tokens, or other secrets in any file that goes to GitHub.
