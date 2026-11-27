@@ -14,6 +14,8 @@ import { randomBytes } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { DB_PERMISSIONS_LOCK } from "../../helpers/db-permissions-lock";
+
 // Local Supabase's fixed, public default address. Not a secret: it only works on
 // this computer or the GitHub runner, and the online database never uses it.
 const LOCAL_DB_URL =
@@ -86,6 +88,8 @@ describe("scripts/gate-login-check.mjs", () => {
     // Inside a transaction that is rolled back, so the rule comes back afterward.
     await admin.query("begin");
     try {
+      // One permission-changing transaction at a time (tests/helpers/db-permissions-lock.ts).
+      await admin.query(DB_PERMISSIONS_LOCK);
       await admin.query("drop policy test_runs_gate_reader_reads_all on public.test_runs");
       await admin.query("grant ai_gate_reader to current_user");
       await admin.query("set local role ai_gate_reader");

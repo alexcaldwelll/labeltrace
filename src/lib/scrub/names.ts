@@ -6,7 +6,10 @@
 //   the "never on the list" words (all through T024's drug-names.ts);
 // - near-miss typos of those drug names ("Reyvo", "Imitrx"; T016's typo rules), unless
 //   the word is on the common first-name list (R22), which is always masked;
-// - words in label section names ("Warnings and Precautions").
+// - words in label section names ("Warnings and Precautions");
+// - relationship words (RELATIONSHIP_WORDS: sister, doctor, grandma, ...), with "-s" or
+//   "'s" (owner-approved 2026-11-27). When the name finder flags one together with a
+//   name, only the name is masked: "My sister Maria" → "My sister [NAME]".
 // Everyday English words are NOT protected. They only stop layer 3.
 //
 // The three layers. Each run of name words becomes one [NAME] ("Jane Doe" → [NAME]):
@@ -54,6 +57,83 @@ const SECTION_WORDS: ReadonlySet<string> = new Set(
 
 const TITLES: ReadonlySet<string> = new Set(["dr", "mr", "mrs", "ms"]);
 
+/** Words for people in someone's life. Never masked (owner-approved list, 2026-11-27). */
+export const RELATIONSHIP_WORDS: ReadonlySet<string> = new Set([
+  // family
+  "sister",
+  "brother",
+  "sibling",
+  "wife",
+  "husband",
+  "spouse",
+  "partner",
+  "boyfriend",
+  "girlfriend",
+  "fiance",
+  "fiancee",
+  // parents
+  "mom",
+  "mum",
+  "mommy",
+  "mama",
+  "mother",
+  "dad",
+  "daddy",
+  "papa",
+  "father",
+  "parent",
+  // children
+  "son",
+  "daughter",
+  "child",
+  "children",
+  "kid",
+  "baby",
+  // grandparents and grandchildren
+  "grandma",
+  "grandmother",
+  "grandpa",
+  "grandfather",
+  "granny",
+  "grandson",
+  "granddaughter",
+  // wider family
+  "aunt",
+  "auntie",
+  "uncle",
+  "cousin",
+  "niece",
+  "nephew",
+  // step-family
+  "stepmom",
+  "stepmother",
+  "stepdad",
+  "stepfather",
+  "stepson",
+  "stepdaughter",
+  // other people
+  "friend",
+  "roommate",
+  "neighbor",
+  "coworker",
+  "boss",
+  // health workers
+  "doctor",
+  "nurse",
+  "pharmacist",
+  "neurologist",
+  "dentist",
+  "therapist",
+]);
+
+/** True for a relationship word, also with "-s" or "'s" ("sisters", "sister's"). */
+function isRelationshipWord(lower: string): boolean {
+  return (
+    RELATIONSHIP_WORDS.has(lower) ||
+    (lower.endsWith("s") && RELATIONSHIP_WORDS.has(lower.slice(0, -1)))
+  );
+}
+
 const INTRO =
   /\b(?:i['’]m|i am|my name is|this is|thanks|thank you|thx|regards|best|cheers|sincerely)\b,?[ \t]+/giu;
 
@@ -83,6 +163,7 @@ function isI(word: string): boolean {
 function isProtected(word: string, firstNames: ReadonlySet<string>): boolean {
   const lower = withoutPossessive(word).toLowerCase();
   if (NEVER_OTHER_DRUG.has(lower) || SECTION_WORDS.has(lower)) return true;
+  if (isRelationshipWord(lower)) return true;
   const drug = matchDrugWord(lower);
   if (drug === null) return false;
   // A near-miss typo of a drug name stays visible, unless it's a common first name.

@@ -64,6 +64,23 @@ describe("layer 3: capitalized words mid-sentence", () => {
   });
 });
 
+// Owner-approved (2026-11-27): relationship words stay outside the name mask.
+describe("relationship words", () => {
+  it.each([
+    ["My sister Maria also takes Reyvow.", "My sister [NAME] also takes Reyvow."],
+    ["Aunt Mary takes Emgality.", "Aunt [NAME] takes Emgality."],
+    ["Doctor Patel said no.", "Doctor [NAME] said no."],
+    ["My grandma Rose uses Emgality.", "My grandma [NAME] uses Emgality."],
+    ["My sister's friend Jake takes Reyvow.", "My sister's friend [NAME] takes Reyvow."],
+  ])("%j", (text, expected) => {
+    expect(maskNames(text)).toBe(expected);
+  });
+
+  it("a relationship word on its own is never masked", () => {
+    expect(maskNames("My Mom said Reyvow is fine.")).toBe("My Mom said Reyvow is fine.");
+  });
+});
+
 describe("known words that are never masked", () => {
   it.each([
     "What are the side effects of Emgality and Reyvow?",
