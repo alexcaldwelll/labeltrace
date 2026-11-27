@@ -112,6 +112,8 @@ function namesNearDrugs(names: ReadonlySet<string>): string[] {
 describe("the first-name safeguard (PC-9)", () => {
   const capitalized = (name: string) => name[0]!.toUpperCase() + name.slice(1);
 
+  // A 30-second limit (owner-approved 2026-11-27): this search takes about 6.7 seconds
+  // on GitHub's runner. Speeding it up is follow-up task T092.
   it("masks every common first name one letter off a drug name", () => {
     const pairs = namesNearDrugs(COMMON_FIRST_NAMES);
     if (pairs.length > 0) {
@@ -122,7 +124,7 @@ describe("the first-name safeguard (PC-9)", () => {
       // The real lists have no such pair: check a made-up one instead.
       expect(maskNames("Ask Reyvo about it", new Set(["reyvo"]))).toBe("Ask [NAME] about it");
     }
-  });
+  }, 30_000);
 
   it("masks a made-up first name that is a drug typo", () => {
     expect(maskNames("Ask Reyvo about it", new Set(["reyvo"]))).toBe("Ask [NAME] about it");

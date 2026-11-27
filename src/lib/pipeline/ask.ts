@@ -10,19 +10,24 @@
 //   8. Log                   (T047) exactly one row for every reply
 //   9. Grading sample        (T057) pick some AI answers for the grader
 //
-// Steps 1, 2, and 4 work so far. The other steps are empty slots that later tasks
-// fill in. A question that isn't refused at step 4 gets a "try again later" reply for
-// now, so nothing is ever made up.
+// Steps 1 to 4 work so far. The other steps are empty slots that later tasks fill in.
+// A question that isn't refused at step 4 gets a "try again later" reply for now, so
+// nothing is ever made up.
 //
 // Privacy: the raw question stays in memory only. This file never logs, saves, or
-// sends it back in a reply (FR-021).
+// sends it back in a reply (FR-021). From step 3 on, every step gets only the scrubbed
+// text. An unexpected error in any step is logged through the server logger, with the
+// raw question cut out of its message, and gets "try again later" (owner-approved
+// 2026-11-27), so the route always answers with one of the contract's replies.
 import type { AnswerClient } from "@/lib/ai/types";
 import {
   buildEmergencyReply,
   type EmergencyReplyFields,
   type GetLabel,
 } from "@/lib/emergency/respond";
+import { serverLog } from "@/lib/log/server-log";
 import { buildRefusalReply, type RefusalReplyFields } from "@/lib/refusals/respond";
+import { scrub } from "@/lib/scrub";
 import type { AnswerTypeReplyFields } from "./answer-type";
 import { isEnglish } from "./language";
 
@@ -121,6 +126,15 @@ export async function ask(question: string, deps: AskDeps = {}): Promise<AskRepl
 }
 
 async function answer(question: string, deps: AskDeps): Promise<AskReply> {
+  try {
+    return await steps(question, deps);
+  } catch (error) {
+    serverLog.error("ask_failed", error, { removeFromMessage: question });
+    return { kind: "try_again", text: TRY_AGAIN_TEXT, disclaimer: DISCLAIMER };
+  }
+}
+
+async function steps(question: string, deps: AskDeps): Promise<AskReply> {
   // Step 1: emergency check (T022, FR-004, FR-008). Runs on the full raw question,
   // in memory, before the 1,000-character cut, the language check, scrubbing, and
   // everything else, so an emergency phrase anywhere is still caught. A match
@@ -132,12 +146,14 @@ async function answer(question: string, deps: AskDeps): Promise<AskReply> {
   const basic = basicChecks(question);
   if (basic.done) return basic.reply;
 
-  // Step 3: scrub (T033).
+  // Step 3: scrub (T033, FR-020). Names, emails, and phone numbers are masked. Every
+  // later step gets only this text.
+  const scrubbed = scrub(basic.text);
 
-  // Step 4: refusals (T026, T027). Plain rules on the question, in memory: comparison,
+  // Step 4: refusals (T026, T027). Plain rules on the scrubbed question: comparison,
   // other drug, which drug, personal dosing. Only a personal-dosing summary calls the
   // answer AI, and it never gets the question (it gets a fixed app sentence).
-  const refusal = await buildRefusalReply(basic.text, {
+  const refusal = await buildRefusalReply(scrubbed, {
     getLabel: deps.getLabel ?? getSavedLabel,
     answerAI: deps.answerAI,
   });

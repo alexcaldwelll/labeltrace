@@ -19,7 +19,7 @@ import type { GetLabel } from "@/lib/emergency/respond";
 import { checkDosingNumbers } from "@/lib/checks/dosing-numbers";
 import type { CurrentLabel, Drug } from "@/lib/labels/store";
 import { DOSING_PROMPT_VERSION, DOSING_REQUEST, DOSING_SECTION_KEY } from "@/lib/prompts/dosing-v1";
-import { appText } from "@/lib/scrub/types";
+import { appText, type ScrubbedText } from "@/lib/scrub/types";
 import { applyRefusalRules } from "./rules";
 
 /** The personal-dosing wording (FR-011). */
@@ -76,9 +76,9 @@ export interface RefusalDeps {
   answerAI?: AnswerClient;
 }
 
-/** Step 4: applies the refusal rules and builds the reply. */
+/** Step 4: applies the refusal rules and builds the reply. Takes only scrubbed text (step 3). */
 export async function buildRefusalReply(
-  question: string,
+  question: ScrubbedText,
   deps: RefusalDeps,
 ): Promise<RefusalOutcome> {
   const result = applyRefusalRules(question);
