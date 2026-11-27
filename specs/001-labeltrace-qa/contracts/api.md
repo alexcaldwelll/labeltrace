@@ -36,7 +36,7 @@ binding: code and tests must match them.
 | `ask_which_drug` | No drug named | `text: "Do you mean Emgality or Reyvow?"` |
 | `prompt_for_question` | Blank question | `text` |
 | `english_only` | Not English | `text: "I can only answer in English right now."` |
-| `try_again` | Answer AI down or slow | `text`. Nothing made up. Logged with `answer_type = error`. |
+| `try_again` | Answer AI down or slow, or an unexpected error | `text`. Nothing made up. Logged with `answer_type = error`. |
 
 **Emergency example (informational, medical)**
 
