@@ -314,6 +314,10 @@ All personal details in tests are made up (FR-022).
   - Tests: this file; it must find 0 matches. It becomes a stronger check once US6 writes log rows (re-run in T047).
   - Needs: T033.
 
+- [ ] T092 [US5] **Follow-up (owner, 2026-11-27)**: speed up the name-pair search in `tests/fast/scrub/names.test.ts` ("masks every common first name one letter off a drug name"). It takes about 2 seconds on a laptop and about 6.7 seconds on GitHub's runner, so it has a 30-second limit for now (PR #65). Most of the time goes to checking each nearby first name against every drug name with the full typo rules.
+  - Tests: the same test, under the default 5-second limit.
+  - Needs: T032.
+
 **Checkpoint**: Scrubbing is in place before any real AI is connected. Drug names survive
 scrubbing, so refusals still work.
 
