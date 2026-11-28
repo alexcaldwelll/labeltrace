@@ -28,6 +28,9 @@ function fakeStore() {
     async start(run) {
       writes.push({ kind: "start", run });
     },
+    async addGrade() {
+      // Grading has its own tests (tests/fast/grading/test-run-recorder.test.ts).
+    },
     async finish(id, counts, status) {
       writes.push({ kind: "finish", id, counts, status });
     },
@@ -91,6 +94,21 @@ describe("test-run recorder", () => {
       counts: { signedEntries: 3, passed: 3, failed: 0, total: 3 },
       status: "passed",
     });
+  });
+
+  // Owner-approved (2026-11-27, T059 detail 8).
+  it("the grader was down → incomplete, even if every test passed", async () => {
+    const { runStatus } = await import("@/lib/ci/run-status");
+    const counts = { signedEntries: 3, passed: 3, failed: 0, total: 3 };
+    expect(runStatus(counts)).toBe("passed");
+    expect(runStatus(counts, true)).toBe("incomplete");
+  });
+
+  // Owner's decision (2026-11-27): failed takes priority over incomplete.
+  it("a test failed and the grader was down → failed, not incomplete", async () => {
+    const { runStatus } = await import("@/lib/ci/run-status");
+    const counts = { signedEntries: 3, passed: 2, failed: 1, total: 3 };
+    expect(runStatus(counts, true)).toBe("failed");
   });
 
   it("one test fails → failed", async () => {

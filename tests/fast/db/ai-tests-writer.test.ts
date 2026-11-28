@@ -97,6 +97,56 @@ describe("ai_tests_writer: what it may do", () => {
   });
 });
 
+// T059 (migration 0009; owner-approved 2026-11-27, detail 7): test grades go in only
+// through record_test_grade(), and only for a run that is still running.
+function recordGrade(runId: string, grade = "pass") {
+  return {
+    sql: "select public.record_test_grade($1, 'refusals-001', 'q', 'a', 'test-grader', $2, 'reason')",
+    params: [runId, grade],
+  };
+}
+
+describe("ai_tests_writer: test grades (T059)", () => {
+  it("records a grade for a running run", async () => {
+    await actAsWriter();
+    const id = await addRunningRow();
+    const g = recordGrade(id);
+    await db.query(g.sql, g.params);
+    await actAsAdmin();
+    const { rows } = await db.query(
+      "select source, test_entry_id, grade from public.grader_results where test_run_id = $1",
+      [id],
+    );
+    expect(rows).toEqual([{ source: "test", test_entry_id: "refusals-001", grade: "pass" }]);
+  });
+
+  it("can't record a grade for a finished run", async () => {
+    await actAsWriter();
+    const id = await addRunningRow();
+    const f = finish(id, 1, 0, 1, "passed");
+    await db.query(f.sql, f.params);
+    const g = recordGrade(id);
+    expect(await failingQuery(g.sql, g.params)).toBe("22023");
+  });
+
+  it("can't add grader_results rows directly", async () => {
+    await actAsAdmin();
+    const id = await addRunningRow();
+    await actAsWriter();
+    const code = await failingQuery(
+      `insert into public.grader_results (source, test_run_id, test_entry_id, scrubbed_question, answer, grader_model, grade)
+       values ('test', $1, 'x', 'q', 'a', 'test-grader', 'pass')`,
+      [id],
+    );
+    expect(code).toBe("42501");
+  });
+
+  it("can't read grader_results", async () => {
+    await actAsWriter();
+    expect(await failingQuery("select * from public.grader_results limit 1")).toBe("42501");
+  });
+});
+
 describe("ai_tests_writer: what it may not do", () => {
   it("can't add a row that is already 'passed'", async () => {
     await actAsWriter();
