@@ -15,7 +15,8 @@
 //      (T056), and the grade is saved with record_test_grade() (decision 2A). Grading
 //      happens after the pipeline made its reply, so the reply itself called no AI.
 //      A failed grade doesn't change the run's status (FR-037). If the grader couldn't
-//      grade any answer, the run ends as `incomplete`; the rest are still graded.
+//      grade any answer, the run ends as `incomplete` when every test passed (a failed
+//      run stays `failed`); the rest are still graded.
 //   6. Finishes the row with the counts and the status from src/lib/ci/run-status.ts.
 //
 // It logs only counts and ids, never a question or an answer.
