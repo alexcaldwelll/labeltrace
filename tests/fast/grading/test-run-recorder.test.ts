@@ -105,6 +105,8 @@ describe("grading every test answer (T059)", () => {
       "normal-002",
       "normal-003",
     ]);
+    // Owner-approved (2026-11-27): every saved grade carries the run's id.
+    expect(grades.every((grade) => grade.runId === "run-1")).toBe(true);
   });
 
   it("a failed grade leaves the run passed and creates a flag", async () => {
@@ -156,6 +158,8 @@ describe("grading every test answer (T059)", () => {
       }),
     );
     expect(grades).toHaveLength(1);
+    // Owner-approved (2026-11-27): the grade stores exactly the reply text.
+    expect(grades[0]!.answer).toBe(replyText(reply));
   });
 
   it("the grader throwing on one answer → run incomplete, even if every answer passed", async () => {
@@ -164,7 +168,7 @@ describe("grading every test answer (T059)", () => {
       answer("normal-002", "How is Emgality given?"),
       answer("normal-003", "Can Reyvow make me sleepy?"),
     ];
-    const { store, finished } = fakeStore();
+    const { store, grades, finished } = fakeStore();
     const grading = fakeGrader((request) => {
       if (request.question.startsWith("How is Emgality")) throw new Error("grader down");
       return "pass";
@@ -174,5 +178,7 @@ describe("grading every test answer (T059)", () => {
     );
     expect(result.status).toBe("incomplete");
     expect(finished).toEqual([{ status: "incomplete" }]);
+    // Owner-approved (2026-11-27): the other answers are still graded.
+    expect(grades.map((grade) => grade.entryId)).toEqual(["normal-001", "normal-003"]);
   });
 });
