@@ -5,9 +5,11 @@
 // found, at least one test ran, and every test that ran passed. Anything else is
 // `failed`.
 //
-// T059: if the grader was down for any test answer, the run is `incomplete`, never
-// `passed`, even if every test passed (constitution Release Safeguards). A failed
-// grade doesn't change the status (FR-037).
+// T059: if every test passed but the grader couldn't grade at least one test answer,
+// the run is `incomplete`, never `passed` (constitution Release Safeguards). `failed`
+// takes priority: if the run would fail anyway (a test failed, or no signed-off
+// entries), it stays `failed` even when the grader was also down (owner's decision,
+// 2026-11-27). A failed grade doesn't change the status (FR-037).
 //
 // Counts are per test, not per entry: the grader calibration test grades 10
 // entries but counts as 1 test, so its own "4 of 5 good answers" rule stays intact
@@ -35,10 +37,10 @@ function isCount(value: number): boolean {
 
 /** `graderDown`: the grader couldn't grade at least one test answer (T059). */
 export function runStatus(counts: RunCounts, graderDown = false): RunStatus {
-  if (graderDown) return "incomplete";
   const { signedEntries, passed, failed, total } = counts;
   if (![signedEntries, passed, failed, total].every(isCount)) return "failed";
   if (passed + failed !== total) return "failed";
   if (signedEntries < 1 || total < 1 || failed !== 0) return "failed";
-  return "passed";
+  // Every test passed: incomplete only if the grader couldn't grade an answer.
+  return graderDown ? "incomplete" : "passed";
 }

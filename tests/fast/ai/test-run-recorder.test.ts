@@ -104,6 +104,13 @@ describe("test-run recorder", () => {
     expect(runStatus(counts, true)).toBe("incomplete");
   });
 
+  // Owner's decision (2026-11-27): failed takes priority over incomplete.
+  it("a test failed and the grader was down → failed, not incomplete", async () => {
+    const { runStatus } = await import("@/lib/ci/run-status");
+    const counts = { signedEntries: 3, passed: 2, failed: 1, total: 3 };
+    expect(runStatus(counts, true)).toBe("failed");
+  });
+
   it("one test fails → failed", async () => {
     const result = await recordAiTestRun(
       input({
