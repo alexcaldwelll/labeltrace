@@ -86,6 +86,81 @@ describe("ai_gate_reader: what it may do", () => {
   });
 });
 
+// T086 (migration 0008): it reads the grader flags and the owner's decisions, only the
+// columns ai-gate needs (owner-approved 2026-11-27).
+async function addFlagWithDecision(): Promise<{ gradeId: string; runId: string }> {
+  const runId = await addPassedRun();
+  const ownerId = randomUUID();
+  await db.query("insert into auth.users (id) values ($1)", [ownerId]);
+  await db.query(
+    "insert into public.reviewers (user_id, display_name, role, active) values ($1, 'Test owner', 'owner', true)",
+    [ownerId],
+  );
+  const { rows } = await db.query<{ id: string }>(
+    `insert into public.grader_results
+       (source, test_run_id, test_entry_id, scrubbed_question, answer, grader_model, grade)
+     values ('test', $1, 'refusals-001', 'q', 'a', 'test-grader', 'fail') returning id`,
+    [runId],
+  );
+  const gradeId = rows[0]!.id;
+  await db.query(
+    `insert into public.owner_flag_decisions (grader_result_id, owner_id, agrees_with_grader, reason)
+     values ($1, $2, true, 'Looks right.')`,
+    [gradeId, ownerId],
+  );
+  return { gradeId, runId };
+}
+
+describe("ai_gate_reader: the grader tables (T086)", () => {
+  // Owner-approved (2026-11-27): it can't see the stored questions, answers, or reasons.
+  it.each([
+    ["grader_results", "grader_reason"],
+    ["grader_results", "scrubbed_question"],
+    ["grader_results", "answer"],
+    ["owner_flag_decisions", "reason"],
+  ])("can't read %s.%s", async (table, column) => {
+    await addFlagWithDecision();
+    await actAsReader();
+    expect(await failingQuery(`select ${column} from public.${table}`)).toBe("42501");
+  });
+
+  it("reads grader_results and owner_flag_decisions rows", async () => {
+    const { gradeId, runId } = await addFlagWithDecision();
+    await actAsReader();
+    const grades = await db.query(
+      "select id, source, test_run_id, needs_owner_decision from public.grader_results where id = $1",
+      [gradeId],
+    );
+    expect(grades.rows).toEqual([
+      { id: gradeId, source: "test", test_run_id: runId, needs_owner_decision: true },
+    ]);
+    const decisions = await db.query(
+      "select grader_result_id from public.owner_flag_decisions where grader_result_id = $1",
+      [gradeId],
+    );
+    expect(decisions.rows).toEqual([{ grader_result_id: gradeId }]);
+  });
+
+  it("can't add a grader_results or owner_flag_decisions row", async () => {
+    const { gradeId } = await addFlagWithDecision();
+    await actAsReader();
+    expect(
+      await failingQuery(
+        `insert into public.grader_results (source, test_run_id, test_entry_id, scrubbed_question, answer, grader_model, grade)
+         values ('test', $1, 'x', 'q', 'a', 'test-grader', 'pass')`,
+        [randomUUID()],
+      ),
+    ).toBe("42501");
+    expect(
+      await failingQuery(
+        `insert into public.owner_flag_decisions (grader_result_id, owner_id, agrees_with_grader, reason)
+         values ($1, $2, true, 'x')`,
+        [gradeId, randomUUID()],
+      ),
+    ).toBe("42501");
+  });
+});
+
 describe("ai_gate_reader: what it may not do", () => {
   it("can't add a test_runs row", async () => {
     await actAsReader();
