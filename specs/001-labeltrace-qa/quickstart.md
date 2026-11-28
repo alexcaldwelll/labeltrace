@@ -152,13 +152,16 @@ with saved sample replies.
    `node scripts/writer-login-check.mjs`. Wait for the `ai_tests_writer password
    (hidden):` prompt before pasting the writer password; it builds the
    `AI_TESTS_DATABASE_URL` connection itself and never prints the password.
-   **Expected**: `Encrypted: true` and "All 8 checks are as expected": adding a
-   `running` row and finishing it with `finish_test_run` work; finishing it again, adding
-   a `passed` row, changing or deleting a row directly, and reading `test_runs` or
-   `log_entries` are all **refused**. Its practice row uses commit `000…0` (40 zeros) and
-   branch `practice-writer-check`, so `ai-gate` can never match it. Afterward, delete
-   that row in the online SQL Editor using the id it prints
-   (`delete from public.test_runs where id = '<id>';`). If it can't connect, stop and
+   **Expected**: `Encrypted: true` and "All 9 checks are as expected": adding a
+   `running` row, recording a **pass** grade on it with `record_test_grade` (T059), and
+   finishing it with `finish_test_run` work; finishing it again, adding a `passed` row,
+   changing or deleting a row directly, and reading `test_runs` or `log_entries` are all
+   **refused**. Its practice row uses commit `000…0` (40 zeros) and branch
+   `practice-writer-check`, so `ai-gate` can never match it, and the practice grade is a
+   pass, so it never creates a flag. Afterward, in the online SQL Editor, delete the
+   practice grade first and then the run, using the run id it prints:
+   `delete from public.grader_results where test_run_id = '<id>';`
+   `delete from public.test_runs where id = '<id>';` If it can't connect, stop and
    look into it instead of retrying, for the same reason as step 6.
 8. **Before approving any `ai-tests` run**: open the PR's "Files changed" tab and check whether it changes `.github/workflows/**`, `tests/ai/**`, `src/lib/ci/**`, or `scripts/ai-gate.ts`. If it does, read those changes before approving. The run uses the PR's own copy of them, so a changed runner or gate could report a fake pass (research.md R16, leftover risks).
 

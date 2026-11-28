@@ -3,7 +3,11 @@
 //
 // A run is `passed` only if at least one checked (signed-off) answer-key entry was
 // found, at least one test ran, and every test that ran passed. Anything else is
-// `failed`. (`incomplete`, for when the grader is down, is added in T059.)
+// `failed`.
+//
+// T059: if the grader was down for any test answer, the run is `incomplete`, never
+// `passed`, even if every test passed (constitution Release Safeguards). A failed
+// grade doesn't change the status (FR-037).
 //
 // Counts are per test, not per entry: the grader calibration test grades 10
 // entries but counts as 1 test, so its own "4 of 5 good answers" rule stays intact
@@ -12,7 +16,7 @@
 // Plain TypeScript with no imports, so tests/ai/setup.ts can load it with plain
 // Node.
 
-export type RunStatus = "passed" | "failed";
+export type RunStatus = "passed" | "failed" | "incomplete";
 
 export interface RunCounts {
   /** How many signed-off entries the answer-key and calibration loaders found. */
@@ -29,7 +33,9 @@ function isCount(value: number): boolean {
   return Number.isInteger(value) && value >= 0;
 }
 
-export function runStatus(counts: RunCounts): RunStatus {
+/** `graderDown`: the grader couldn't grade at least one test answer (T059). */
+export function runStatus(counts: RunCounts, graderDown = false): RunStatus {
+  if (graderDown) return "incomplete";
   const { signedEntries, passed, failed, total } = counts;
   if (![signedEntries, passed, failed, total].every(isCount)) return "failed";
   if (passed + failed !== total) return "failed";

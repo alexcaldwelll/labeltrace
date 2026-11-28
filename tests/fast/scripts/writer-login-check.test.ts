@@ -1,5 +1,5 @@
 // scripts/writer-login-check.mjs (quickstart section 9, step 7): it builds the same
-// connection string as the AI_TESTS_DATABASE_URL secret, and its 8 checks come out
+// connection string as the AI_TESTS_DATABASE_URL secret, and its 9 checks come out
 // as expected against the real ai_tests_writer role, so a future edit can't
 // silently break the check.
 //
@@ -44,6 +44,12 @@ beforeAll(async () => {
 
 afterAll(async () => {
   try {
+    // The practice grades first (T059), then the practice runs, as in quickstart step 7.
+    await admin.query(
+      `delete from public.grader_results
+        where test_run_id in (select id from public.test_runs where branch = $1)`,
+      [script.PRACTICE_BRANCH],
+    );
     await admin.query("delete from public.test_runs where branch = $1", [script.PRACTICE_BRANCH]);
     await admin.query("alter role ai_tests_writer with nologin password null");
   } finally {
@@ -61,7 +67,7 @@ describe("scripts/writer-login-check.mjs", () => {
     );
   });
 
-  it("all 8 checks come out as expected against the real role, with a practice-safe row", async () => {
+  it("all 9 checks come out as expected against the real role, with a practice-safe row", async () => {
     const url = new URL(LOCAL_DB_URL);
     const db = new pg.Client({
       connectionString: script.buildUrl(password, {
@@ -81,7 +87,7 @@ describe("scripts/writer-login-check.mjs", () => {
       await db.end();
     }
     expect(ok).toBe(true);
-    expect(lines.filter((line) => line.startsWith("OK "))).toHaveLength(8);
+    expect(lines.filter((line) => line.startsWith("OK "))).toHaveLength(9);
     expect(lines.some((line) => line.startsWith("PROBLEM"))).toBe(false);
 
     const { rows } = await admin.query(
@@ -91,6 +97,18 @@ describe("scripts/writer-login-check.mjs", () => {
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
       expect(row).toEqual({ commit_sha: "0".repeat(40), branch: "practice-writer-check" });
+    }
+
+    // T059 (owner's decision): the practice grade is a pass, on the all-zeros practice run.
+    const grades = await admin.query(
+      `select g.grade, r.commit_sha from public.grader_results g
+         join public.test_runs r on r.id = g.test_run_id
+        where r.branch = $1`,
+      [script.PRACTICE_BRANCH],
+    );
+    expect(grades.rows.length).toBeGreaterThan(0);
+    for (const row of grades.rows) {
+      expect(row).toEqual({ grade: "pass", commit_sha: "0".repeat(40) });
     }
   });
 });

@@ -8,12 +8,22 @@
 //   3. Counts the signed-off entries (answer key + grader calibration set). A loader
 //      refuses any unsigned entry, so one unsigned entry fails the run.
 //   4. Runs every AI-tier test (vitest project "ai") and counts tests passed/failed.
-//   5. Finishes the row with the counts and the status from src/lib/ci/run-status.ts.
+//   5. T059: grades EVERY test answer right away (FR-035), including emergency replies
+//      and rule-based refusals. Each answer test attaches its finished answer to its
+//      test (tests/ai/answers.ts, decision 1A). After the tests finish, each question
+//      is scrubbed (scrub(), T033), the answer is graded by the second-AI grader
+//      (T056), and the grade is saved with record_test_grade() (decision 2A). Grading
+//      happens after the pipeline made its reply, so the reply itself called no AI.
+//      A failed grade doesn't change the run's status (FR-037). If the grader couldn't
+//      grade any answer, the run ends as `incomplete`; the rest are still graded.
+//   6. Finishes the row with the counts and the status from src/lib/ci/run-status.ts.
+//
+// It logs only counts and ids, never a question or an answer.
 //
 // Database: it connects with AI_TESTS_DATABASE_URL, the limited `ai_tests_writer`
 // login (supabase/migrations/0004_ai_tests_writer.sql). That login can only add
-// `running` rows and finish them with public.finish_test_run(). It never uses the
-// database's admin key.
+// `running` rows, finish them with public.finish_test_run(), and save test grades
+// with public.record_test_grade() (0009). It never uses the database's admin key.
 //
 // This file runs with plain Node, so its own imports are relative and end in `.ts`.
 // Files that use the "@/" shortcut (the loaders, the tests) are loaded through
@@ -24,6 +34,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import pg from "pg";
 import { ANSWER_MODEL, GRADER_MODEL } from "../../src/config/models.ts";
 import { runStatus, type RunCounts, type RunStatus } from "../../src/lib/ci/run-status.ts";
+import type { GradeReply, GradeRequest } from "../../src/lib/ai/types.ts";
+import type { ScrubbedText } from "../../src/lib/scrub/types.ts";
+import type { TestAnswer } from "./answers.ts";
 
 /** The starting fields of a test_runs row. */
 export interface StartedRun {
@@ -34,15 +47,35 @@ export interface StartedRun {
   graderModel: string;
 }
 
+/** One saved test grade. */
+export interface TestGrade {
+  runId: string;
+  entryId: string;
+  question: ScrubbedText;
+  answer: string;
+  graderModel: string;
+  grade: GradeReply["grade"];
+  reason: string;
+}
+
 /** Where runs are recorded. The real one is the database; tests use a fake. */
 export interface RunStore {
   start(run: StartedRun): Promise<void>;
+  addGrade(grade: TestGrade): Promise<void>;
   finish(id: string, counts: RunCounts, status: RunStatus): Promise<void>;
 }
 
 export interface TestCounts {
   passed: number;
   failed: number;
+  /** The finished test answers, to be graded (T059). */
+  answers?: TestAnswer[];
+}
+
+/** What grading needs: the scrubber and the grader (made only when first needed). */
+export interface Grading {
+  scrub: (raw: string) => ScrubbedText;
+  grader: () => Promise<{ grade(request: GradeRequest): Promise<GradeReply> }>;
 }
 
 export interface RecorderInput {
@@ -55,6 +88,8 @@ export interface RecorderInput {
   countSignedEntries: () => Promise<number>;
   /** Runs every AI-tier test. */
   runTests: () => Promise<TestCounts>;
+  /** Scrubs and grades the test answers. Without it, any answer counts as not graded. */
+  grading?: Grading;
   store: RunStore;
   newId?: () => string;
   log?: (message: string) => void;
@@ -103,14 +138,52 @@ export async function recordAiTestRun(input: RecorderInput): Promise<RecordedRun
     signedEntries = 0;
   }
 
-  // 5. Finish the row.
+  // 5. Grade every test answer. One that can't be graded makes the run incomplete;
+  //    the rest are still graded.
+  const answers = tests.answers ?? [];
+  let notGraded = 0;
+  const graded = { pass: 0, fail: 0 };
+  let grader: Awaited<ReturnType<Grading["grader"]>> | undefined;
+  for (const answer of answers) {
+    try {
+      if (!input.grading) throw new Error("no grader");
+      grader ??= await input.grading.grader();
+      const question = input.grading.scrub(answer.question);
+      const reply = await grader.grade({
+        question,
+        sections: answer.sections,
+        answer: answer.answer,
+      });
+      await input.store.addGrade({
+        runId: id,
+        entryId: answer.entryId,
+        question,
+        answer: answer.answer,
+        graderModel: GRADER_MODEL.id,
+        grade: reply.grade,
+        reason: reply.reason,
+      });
+      graded[reply.grade] += 1;
+    } catch {
+      // Only the count is logged: an error message could hold the question.
+      notGraded += 1;
+    }
+  }
+  if (answers.length > 0) {
+    log(
+      `Graded ${answers.length} answers: ${graded.pass} pass, ${graded.fail} fail, ` +
+        `${notGraded} grader errors.`,
+    );
+  }
+
+  // 6. Finish the row.
   const counts: RunCounts = {
     signedEntries,
     passed: tests.passed,
     failed: tests.failed,
     total: tests.passed + tests.failed,
   };
-  const status = runStatus(counts);
+  const status = runStatus(counts, notGraded > 0);
   await input.store.finish(id, counts, status);
   log(
     `Test run ${id} finished: ${status} (${counts.passed} passed, ${counts.failed} failed, ` +
@@ -129,6 +202,17 @@ export function databaseRunStore(client: pg.Client): RunStore {
          values ($1, $2, $3, $4, $5, now(), 'running')`,
         [run.id, run.commitSha, run.branch, run.answerModel, run.graderModel],
       );
+    },
+    async addGrade(grade) {
+      await client.query("select public.record_test_grade($1, $2, $3, $4, $5, $6, $7)", [
+        grade.runId,
+        grade.entryId,
+        grade.question,
+        grade.answer,
+        grade.graderModel,
+        grade.grade,
+        grade.reason,
+      ]);
     },
     async finish(id, counts, status) {
       await client.query("select public.finish_test_run($1, $2, $3, $4, $5)", [
@@ -167,6 +251,12 @@ async function main(): Promise<void> {
   const client = new pg.Client({ connectionString: databaseUrl });
   await client.connect();
   const vitest = await startAiVitest();
+  // Loaded through the "ai" project, so its settings apply (the "server-only"
+  // stand-in, vitest.config.ts).
+  const aiProject = vitest.getProjectByName("ai");
+  const scrubber = await aiProject.import<typeof import("../../src/lib/scrub/index.ts")>(
+    fileURLToPath(new URL("../../src/lib/scrub/index.ts", import.meta.url)),
+  );
   try {
     const result = await recordAiTestRun({
       commitSha,
@@ -186,6 +276,7 @@ async function main(): Promise<void> {
         const run = await vitest.start();
         let passed = 0;
         let failed = 0;
+        const answers: TestAnswer[] = [];
         for (const testModule of run.testModules) {
           const tests = [...testModule.children.allTests()];
           // A test file that couldn't load has no tests; count it as 1 failure.
@@ -193,10 +284,24 @@ async function main(): Promise<void> {
           for (const test of tests) {
             if (test.result().state === "passed") passed += 1;
             else failed += 1; // failed, skipped, or never finished
+            // T059: every answer a test attached is graded, whether the test passed or not.
+            const answer = test.meta().testAnswer;
+            if (answer) answers.push(answer);
           }
         }
         failed += run.unhandledErrors.length;
-        return { passed, failed };
+        return { passed, failed, answers };
+      },
+      // Loaded through the "ai" project, which understands the "@/" shortcut and swaps
+      // "server-only" for an empty stand-in (vitest.config.ts).
+      grading: {
+        scrub: (raw) => scrubber.scrub(raw),
+        async grader() {
+          const { createGraderClient } = await aiProject.import<
+            typeof import("../../src/lib/ai/grader.ts")
+          >(fileURLToPath(new URL("../../src/lib/ai/grader.ts", import.meta.url)));
+          return createGraderClient();
+        },
       },
     });
     process.exitCode = result.status === "passed" ? 0 : 1;

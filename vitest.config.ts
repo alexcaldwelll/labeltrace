@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 
 const src = fileURLToPath(new URL("./src", import.meta.url));
 const noAiClient = fileURLToPath(new URL("./tests/fast/stubs/no-ai-client.ts", import.meta.url));
+const serverOnlyStub = fileURLToPath(new URL("./tests/ai/server-only-stub.ts", import.meta.url));
 
 export default defineConfig({
   resolve: {
@@ -33,6 +34,12 @@ export default defineConfig({
         test: {
           name: "ai",
           include: ["tests/ai/**/*.test.{ts,tsx}"],
+        },
+        resolve: {
+          // T059: the AI-tier runner loads the grader client through Vitest, so the
+          // "server-only" guard is swapped for an empty stand-in here (the "ai"
+          // project only; fast tests still block the real AI clients).
+          alias: { "server-only": serverOnlyStub },
         },
       },
     ],

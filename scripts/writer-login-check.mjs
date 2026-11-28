@@ -8,15 +8,18 @@
 // pasting), and builds the connection string itself from the same template as the
 // AI_TESTS_DATABASE_URL secret. Then:
 //   1. adds one practice test_runs row with status 'running'   -> should WORK
-//   2. finishes it with finish_test_run(id, 1, 0, 1, 'passed')  -> should WORK
-//   3. runs the same finish_test_run call again                 -> should be REFUSED
-//   4. adds a row with status 'passed'                          -> should be REFUSED
-//   5. changes the practice row directly                        -> should be REFUSED
-//   6. deletes the practice row directly                        -> should be REFUSED
-//   7. reads test_runs                                          -> should be REFUSED
-//   8. reads log_entries                                        -> should be REFUSED
+//   2. records a PASS grade on it with record_test_grade (T059) -> should WORK
+//   3. finishes it with finish_test_run(id, 1, 0, 1, 'passed')  -> should WORK
+//   4. runs the same finish_test_run call again                 -> should be REFUSED
+//   5. adds a row with status 'passed'                          -> should be REFUSED
+//   6. changes the practice row directly                        -> should be REFUSED
+//   7. deletes the practice row directly                        -> should be REFUSED
+//   8. reads test_runs                                          -> should be REFUSED
+//   9. reads log_entries                                        -> should be REFUSED
 // The practice row's commit is 40 zeros (never a real commit) and its branch is
 // practice-writer-check, so ai-gate can never match it, even if it isn't deleted.
+// The practice grade is a pass, so it never creates a flag for the owner
+// (owner's decision, 2026-11-27).
 // It never prints the password or the full connection string.
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -115,33 +118,42 @@ export async function runChecks(db, log = console.log) {
      values ($1, $2, $3, 'practice', 'practice', now(), 'running')`,
     [id, PRACTICE_COMMIT, PRACTICE_BRANCH],
   );
-  await expectWorks("2. finish it", "select public.finish_test_run($1, 1, 0, 1, 'passed')", [id]);
+  await expectWorks(
+    "2. record a pass grade on it",
+    `select public.record_test_grade($1, 'practice-writer-check', 'practice question',
+       'practice answer', 'practice', 'pass', 'practice grade')`,
+    [id],
+  );
+  await expectWorks("3. finish it", "select public.finish_test_run($1, 1, 0, 1, 'passed')", [id]);
   await expectRefused(
-    "3. finish it again",
+    "4. finish it again",
     "select public.finish_test_run($1, 1, 0, 1, 'passed')",
     [id],
   );
   await expectRefused(
-    "4. add a 'passed' row",
+    "5. add a 'passed' row",
     `insert into public.test_runs (id, commit_sha, branch, answer_model, grader_model, status)
      values ($1, $2, $3, 'practice', 'practice', 'passed')`,
     [randomUUID(), PRACTICE_COMMIT, PRACTICE_BRANCH],
   );
   await expectRefused(
-    "5. change a row",
+    "6. change a row",
     "update public.test_runs set status = 'failed' where id = $1",
     [id],
   );
-  await expectRefused("6. delete a row", "delete from public.test_runs where id = $1", [id]);
-  await expectRefused("7. read test_runs", "select * from public.test_runs limit 1");
-  await expectRefused("8. read log_entries", "select * from public.log_entries limit 1");
+  await expectRefused("7. delete a row", "delete from public.test_runs where id = $1", [id]);
+  await expectRefused("8. read test_runs", "select * from public.test_runs limit 1");
+  await expectRefused("9. read log_entries", "select * from public.log_entries limit 1");
 
   log(
     allGood
-      ? "\nAll 8 checks are as expected."
+      ? "\nAll 9 checks are as expected."
       : "\nSome checks were NOT as expected (see PROBLEM lines).",
   );
-  log(`\nPractice row id (delete it with your admin login): ${id}`);
+  log(
+    `\nPractice run id: ${id}. Delete the practice grade first, then the run, with your ` +
+      "admin login (quickstart section 9, step 7).",
+  );
   return allGood;
 }
 
