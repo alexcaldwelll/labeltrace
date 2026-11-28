@@ -13,6 +13,8 @@
 //   4. reads log_entries                                       -> should be REFUSED
 //   5. reads grader_results (the columns ai-gate needs, T086)  -> should WORK
 //   6. reads owner_flag_decisions (the same, T086)             -> should WORK
+//   7. reads the hidden columns (grader_reason, scrubbed_question, answer, and the
+//      decision reason)                                        -> each should be REFUSED
 // Check 2 is there because a read with 0 rows would look the same with or without
 // the row rule (without it, Row Level Security hides every row, with no error).
 // If check 3 were ever wrongly allowed, its row uses commit 40 zeros and branch
@@ -80,7 +82,7 @@ export function askHidden(prompt) {
   });
 }
 
-/** Runs the 6 checks on a connected client. Returns true if all are as expected. */
+/** Runs the 7 checks on a connected client. Returns true if all are as expected. */
 export async function runChecks(db, log = console.log) {
   let allGood = true;
 
@@ -154,9 +156,32 @@ export async function runChecks(db, log = console.log) {
     log(`PROBLEM  6. read owner_flag_decisions: was refused (${error.code}) but should work`);
   }
 
+  // Check 7 (owner-approved 2026-11-27): the columns ai-gate doesn't need stay hidden.
+  const hidden = [
+    ["grader_results", "grader_reason"],
+    ["grader_results", "scrubbed_question"],
+    ["grader_results", "answer"],
+    ["owner_flag_decisions", "reason"],
+  ];
+  const readable = [];
+  for (const [table, column] of hidden) {
+    try {
+      await db.query(`select ${column} from public.${table} limit 1`);
+      readable.push(`${table}.${column}`);
+    } catch {
+      // Refused, as it should be.
+    }
+  }
+  if (readable.length === 0) {
+    log("OK       7. read the hidden grader columns: each refused");
+  } else {
+    allGood = false;
+    log(`PROBLEM  7. read the hidden grader columns: WORKED for ${readable.join(", ")}`);
+  }
+
   log(
     allGood
-      ? "\nAll 6 checks are as expected."
+      ? "\nAll 7 checks are as expected."
       : "\nSome checks were NOT as expected (see PROBLEM lines).",
   );
   return allGood;

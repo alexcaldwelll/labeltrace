@@ -1,5 +1,5 @@
 // scripts/gate-login-check.mjs (quickstart section 9, step 6): it builds the same
-// connection string as the AI_GATE_DATABASE_URL secret, its 6 checks come out as
+// connection string as the AI_GATE_DATABASE_URL secret, its 7 checks come out as
 // expected against the real ai_gate_reader role, and it catches a missing row rule,
 // so a future edit can't silently break the check.
 //
@@ -60,7 +60,7 @@ describe("scripts/gate-login-check.mjs", () => {
     );
   });
 
-  it("all 6 checks come out as expected against the real role", async () => {
+  it("all 7 checks come out as expected against the real role", async () => {
     const url = new URL(LOCAL_DB_URL);
     const db = new pg.Client({
       connectionString: script.buildUrl(password, {
@@ -80,7 +80,7 @@ describe("scripts/gate-login-check.mjs", () => {
       await db.end();
     }
     expect(ok).toBe(true);
-    expect(lines.filter((line) => line.startsWith("OK "))).toHaveLength(6);
+    expect(lines.filter((line) => line.startsWith("OK "))).toHaveLength(7);
     expect(lines.some((line) => line.startsWith("PROBLEM"))).toBe(false);
   });
 

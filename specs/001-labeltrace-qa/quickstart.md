@@ -140,10 +140,11 @@ with saved sample replies.
    `node scripts/gate-login-check.mjs`. Wait for the `ai_gate_reader password (hidden):`
    prompt before pasting the gate password; it builds the `AI_GATE_DATABASE_URL`
    connection itself and never prints the password. **Expected**: `Encrypted: true` and
-   "All 6 checks are as expected": it can read `test_runs`, the row rule for it is in
-   place, adding a `test_runs` row or reading `log_entries` is **refused**, and it can
-   read `grader_results` and `owner_flag_decisions` (only the columns ai-gate needs,
-   T086). If it can't
+   "All 7 checks are as expected": it can read `test_runs`, the row rule for it is in
+   place, adding a `test_runs` row or reading `log_entries` is **refused**, it can read
+   `grader_results` and `owner_flag_decisions` (only the columns ai-gate needs, T086),
+   and reading their hidden columns (`grader_reason`, `scrubbed_question`, `answer`,
+   and the decision `reason`) is **refused**. If it can't
    connect, stop and look into it instead of retrying: Supabase's pooler can block a
    login for a while after repeated wrong passwords.
 7. **Writer login** (`ai_tests_writer`, password set only through a scrambled version,

@@ -112,6 +112,18 @@ async function addFlagWithDecision(): Promise<{ gradeId: string; runId: string }
 }
 
 describe("ai_gate_reader: the grader tables (T086)", () => {
+  // Owner-approved (2026-11-27): it can't see the stored questions, answers, or reasons.
+  it.each([
+    ["grader_results", "grader_reason"],
+    ["grader_results", "scrubbed_question"],
+    ["grader_results", "answer"],
+    ["owner_flag_decisions", "reason"],
+  ])("can't read %s.%s", async (table, column) => {
+    await addFlagWithDecision();
+    await actAsReader();
+    expect(await failingQuery(`select ${column} from public.${table}`)).toBe("42501");
+  });
+
   it("reads grader_results and owner_flag_decisions rows", async () => {
     const { gradeId, runId } = await addFlagWithDecision();
     await actAsReader();
