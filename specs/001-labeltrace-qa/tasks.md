@@ -340,7 +340,7 @@ normal questions with personal details) are in T087, after T040.
 - [ ] T079 **Owner task**: after T051 is applied online (T082), create your own login in the online Supabase project and add your `reviewers` row with `role = owner`, `active = yes`.
   - Steps: (1) Supabase dashboard → **Authentication → Users → Add user → Create new user**: your email and a password, with **Auto confirm** ticked. Type the password only into Supabase, never into a chat. (2) Copy that user's **User UID**. (3) In the **SQL editor**, run `insert into public.reviewers (user_id, display_name, role, active) values ('<your User UID>', '<your name>', 'owner', true);`. Only one owner row is allowed (migration 0006). (4) Tell Claude it's done; the bot can't check the online database (research R16).
   - Needs: T051.
-- [ ] T052 [US8] Create `src/lib/auth/session.ts` (`@supabase/ssr`; `requireReviewer()` and `requireOwner()`, where owner counts as reviewer, FR-033) and the login page `src/app/login/page.tsx` (email and password).
+- [X] T052 [US8] Create `src/lib/auth/session.ts` (`@supabase/ssr`; `requireReviewer()` and `requireOwner()`, where owner counts as reviewer, FR-033) and the login page `src/app/login/page.tsx` (email and password).
   - Tests: `tests/fast/review/session.test.ts`: signed out → 401; inactive → 403; owner passes `requireReviewer`.
   - Layout: The login page must stay inside the root layout (`src/app/layout.tsx`), so the "LabelTrace is an AI, not a doctor." banner always shows (FR-003). Don't add a separate root layout or a second copy of the banner.
   - **Consider requiring MFA for the owner login** (owner's note, 2026-11-27): the owner decides grader flags, so a stolen owner password would let someone clear flags. Bring the options (for example Supabase's authenticator-app MFA, checked in `requireOwner()`) before building.
@@ -355,9 +355,12 @@ normal questions with personal details) are in T087, after T040.
   - The recorder writes with the limited `ai_tests_writer` login (T073). Give it permission to add `grader_results` rows (and anything else this task writes) in a new migration, as narrowly as for `test_runs`; it still must not read or change other rows.
   - Tests: `tests/fast/grading/test-run-recorder.test.ts` (fake AI and fake grader): every test answer gets a grade; a failed grade leaves the run `passed` and creates a flag; **an emergency entry gets a grade, and the pipeline's fake AI is still called 0 times for it**; a rule-based refusal entry gets a grade; **the grader throwing on one answer → run `incomplete`**, even if every answer passed its checks.
   - Needs: T055, T056, T073.
+- [ ] T093 [US9] **Owner MFA** (owner's decision 1A, 2026-11-28; must be done before T060): the owner login decides grader flags, so a stolen password alone must not be enough. (1) Turn on Supabase's authenticator-app (TOTP) MFA (`supabase/config.toml` `[auth.mfa.totp]`, and the same setting online), with an enrollment step for the owner and a code step after the password on the login page. (2) `requireOwner()` also requires the stronger sign-in level (`aal2`). (3) **Database check**: a new migration changes the `owner_flag_decisions` insert rule (0007) so it also requires `auth.jwt() ->> 'aal' = 'aal2'`. Bring the files and details first.
+  - Tests: a password-only owner session → `requireOwner()` 403; an `aal2` owner session passes; in the database, an owner insert with `aal1` is refused and with `aal2` works.
+  - Needs: T052, T055.
 - [ ] T060 [US9] Create owner routes `src/app/api/owner/flags/route.ts` (GET, filter `source`), `src/app/api/owner/flags/[grader_result_id]/decision/route.ts` (POST; reason required; second decision → 409), and `src/app/api/owner/grader-summary/route.ts` (total, disagreements, rate, `by_month`; FR-039).
   - Tests: `tests/fast/owner/api.test.ts`: reviewer → 403; no reason → 400; second decision → 409; 6 disagreements out of 40 → rate 0.15 with the right month counts; 0 decisions → rate 0 with no error.
-  - Needs: T052, T055.
+  - Needs: T052, T055, T093.
 - [ ] T061 [P] [US9] Create owner pages `src/app/owner/flags/page.tsx` and `src/app/owner/grader-summary/page.tsx` (shows `grading_gave_up` entries and the disagreement rate).
   - Tests: `tests/fast/ui/owner-pages.test.tsx`: a non-owner is blocked; the rate is displayed.
   - Layout: Both owner pages must stay inside the root layout (`src/app/layout.tsx`), so the "LabelTrace is an AI, not a doctor." banner always shows (FR-003). Don't add a separate root layout or a second copy of the banner.
