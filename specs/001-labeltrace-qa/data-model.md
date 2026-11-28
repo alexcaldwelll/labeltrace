@@ -157,24 +157,39 @@ People who can sign in (FR-029). Linked one-to-one to a Supabase Auth user.
 | Field | Type | Rules |
 |---|---|---|
 | id | id | |
-| log_entry_id | → log_entries | |
-| grader_model | text | Must be from a different company than `log_entries.model_name` (FR-034) |
+| source | text | `real` or `test` |
+| log_entry_id | → log_entries | Required for `real`; empty for `test` |
+| test_run_id | → test_runs | Required for `test`; empty for `real` |
+| test_entry_id | text | The answer-key entry. Required for `test`; empty for `real` |
+| scrubbed_question | text | Required for `test`; empty for `real` (real rows read it from the log) |
+| answer | text | Required for `test`; empty for `real` |
+| grader_model | text | Required. Must be from a different company than the answer AI (FR-034), checked in code (`src/config/models.ts`), since the database doesn't know which company makes which model |
 | grade | text | `pass` or `fail` |
 | grader_reason | text | |
-| source | text | `real` or `test` |
-| graded_at | time | |
-| needs_owner_decision | yes/no | Yes when `grade = fail` (FR-037) |
+| graded_at | time | Required. Set by the database (`now()`) |
+| needs_owner_decision | yes/no | Worked out by the database: yes exactly when `grade = fail` (FR-037) |
+
+- **Test answers stand on their own** (owner's decision 1A, 2026-11-27): test answers
+  have no log rows (the log writer is T047, and the CI writer login never touches
+  `log_entries`), so a test grade holds its run, its answer-key entry, and the scrubbed
+  question and answer the owner reviews.
+- **Who can read it**: only the active owner (and `ai_gate_reader`, only `id`, `source`,
+  `test_run_id`, `needs_owner_decision`; T086). Nobody adds grades through the API.
 
 ## owner_flag_decisions
 
 | Field | Type | Rules |
 |---|---|---|
 | id | id | |
-| grader_result_id | → grader_results | One decision per flag |
-| owner_id | → reviewers | Must have role `owner` |
-| agrees_with_grader | yes/no | |
-| reason | text | Required (FR-038) |
-| decided_at | time | |
+| grader_result_id | → grader_results | One decision per flag. Only on a failed grade |
+| owner_id | → reviewers | Must have role `owner` (checked by the database for every new decision) |
+| agrees_with_grader | yes/no | Required |
+| reason | text | Required, and not blank (FR-038) |
+| decided_at | time | Required. Set by the database (`now()`) |
+
+- **Who can use it**: only the active owner can read it or add a decision, under their
+  own ID. Nobody can change or delete a decision. `ai_gate_reader` reads only `id` and
+  `grader_result_id` (T086).
 
 - **Disagreement rate** (FR-039, SC-011) = decisions where `agrees_with_grader = no` ÷ all
   decisions. Shown on the owner's page, with counts by month.
@@ -238,5 +253,6 @@ drug_labels 1──* label_sections
 drug_labels 1──* log_entries
 log_entries 1──* review_decisions *──1 reviewers
 log_entries 1──* grader_results 1──0..1 owner_flag_decisions *──1 reviewers(owner)
+test_runs   1──* grader_results (source = test)
 test_runs   1──* log_entries (source = test)
 ```

@@ -1,5 +1,5 @@
 // quickstart.md section 9, step 6: check the ONLINE ai_gate_reader login can only
-// read test_runs. Run it in your own Terminal, from the labeltrace folder (the
+// read test_runs and the grader flags (T086). Run it in your own Terminal, from the labeltrace folder (the
 // certificate path below is relative to it):
 //   cd ~/Desktop/labeltrace
 //   node scripts/gate-login-check.mjs
@@ -11,6 +11,8 @@
 //   2. the row rule for this role is in place (pg_policies)    -> should be FOUND
 //   3. adds a test_runs row                                    -> should be REFUSED
 //   4. reads log_entries                                       -> should be REFUSED
+//   5. reads grader_results (the columns ai-gate needs, T086)  -> should WORK
+//   6. reads owner_flag_decisions (the same, T086)             -> should WORK
 // Check 2 is there because a read with 0 rows would look the same with or without
 // the row rule (without it, Row Level Security hides every row, with no error).
 // If check 3 were ever wrongly allowed, its row uses commit 40 zeros and branch
@@ -78,7 +80,7 @@ export function askHidden(prompt) {
   });
 }
 
-/** Runs the 4 checks on a connected client. Returns true if all are as expected. */
+/** Runs the 6 checks on a connected client. Returns true if all are as expected. */
 export async function runChecks(db, log = console.log) {
   let allGood = true;
 
@@ -131,9 +133,30 @@ export async function runChecks(db, log = console.log) {
     log(`OK       4. read log_entries: refused (${error.code})`);
   }
 
+  // Checks 5 and 6 (T086, migration 0008): only the columns ai-gate needs.
+  try {
+    const { rows } = await db.query(
+      "select count(id)::int as n from public.grader_results where needs_owner_decision",
+    );
+    log(`OK       5. read grader_results: worked (sees ${rows[0].n} flag(s))`);
+  } catch (error) {
+    allGood = false;
+    log(`PROBLEM  5. read grader_results: was refused (${error.code}) but should work`);
+  }
+
+  try {
+    const { rows } = await db.query(
+      "select count(grader_result_id)::int as n from public.owner_flag_decisions",
+    );
+    log(`OK       6. read owner_flag_decisions: worked (sees ${rows[0].n} decision(s))`);
+  } catch (error) {
+    allGood = false;
+    log(`PROBLEM  6. read owner_flag_decisions: was refused (${error.code}) but should work`);
+  }
+
   log(
     allGood
-      ? "\nAll 4 checks are as expected."
+      ? "\nAll 6 checks are as expected."
       : "\nSome checks were NOT as expected (see PROBLEM lines).",
   );
   return allGood;
